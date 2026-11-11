@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+@theme {
+  --color-siftrix-navy: #17152E;
+  --color-siftrix-royal: #493B78;
+  --color-siftrix-electric: #8B6DFF;
+  --color-siftrix-lavender: #B9A9F5;
+  --color-siftrix-soft: #E5DFF5;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--color-siftrix-navy);
+  color: var(--color-siftrix-soft);
+}
+
+@keyframes siftrix-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes siftrix-particle {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(0.95);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate3d(0, -12px, 0) scale(1.1);
+    opacity: 0.85;
+  }
+}
+
+@keyframes siftrix-orbit {
+  from {
+    transform: rotateX(70deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateX(70deg) rotateZ(360deg);
+  }
+}
+
+@keyframes siftrix-scan-sweep {
+  0% {
+    transform: translateY(-20%);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translateY(420%);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-20%);
+    opacity: 0.25;
+  }
+}
+
+@layer components {
+  /* Light Soft Lavender 3D surface card */
+  .siftrix-card-3d {
+    background-color: var(--color-siftrix-soft);
+    color: var(--color-siftrix-navy);
+    border: 1px solid var(--color-siftrix-lavender);
+    box-shadow:
+      0 14px 36px rgba(23, 21, 46, 0.55),
+      0 0 24px rgba(139, 109, 255, 0.16),
+      inset 0 1px 0 rgba(229, 223, 245, 0.85);
+  }
+
+  .siftrix-card-3d-hover {
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 280ms ease,
+      border-color 280ms ease;
+  }
+
+  .siftrix-card-3d-hover:hover {
+    transform: translateY(-6px);
+    border-color: var(--color-siftrix-electric);
+    box-shadow:
+      0 22px 44px rgba(23, 21, 46, 0.65),
+      0 0 30px rgba(139, 109, 255, 0.34),
+      inset 0 1px 0 rgba(229, 223, 245, 0.95);
+  }
+
+  /* Recessed panel inside Soft Lavender cards */
+  .siftrix-panel-inset {
+    background-color: rgba(185, 169, 245, 0.28);
+    border: 1px solid rgba(185, 169, 245, 0.85);
+  }
+
+  /* Frosted dark glassmorphism scanner card */
+  .siftrix-glass-scanner {
+    background: linear-gradient(
+      145deg,
+      rgba(73, 59, 120, 0.45) 0%,
+      rgba(23, 21, 46, 0.9) 55%,
+      rgba(73, 59, 120, 0.34) 100%
+    );
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(185, 169, 245, 0.34);
+    box-shadow:
+      0 24px 60px rgba(23, 21, 46, 0.78),
+      0 0 34px rgba(139, 109, 255, 0.22),
+      inset 0 1px 0 rgba(229, 223, 245, 0.28);
+  }
+
+  /* Electric Purple 3D primary CTA button */
+  .siftrix-btn-primary {
+    background-color: var(--color-siftrix-electric);
+    color: var(--color-siftrix-navy);
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgba(229, 223, 245, 0.55),
+      0 6px 20px rgba(139, 109, 255, 0.42);
+    transition: background-color 200ms ease,
+      box-shadow 200ms ease,
+      transform 180ms ease;
+  }
+
+  .siftrix-btn-primary:hover:not(:disabled) {
+    background-color: var(--color-siftrix-lavender);
+    box-shadow:
+      inset 0 1px 0 rgba(229, 223, 245, 0.85),
+      0 8px 26px rgba(185, 169, 245, 0.55);
+  }
+
+  /* Royal Purple secondary action on dark backgrounds */
+  .siftrix-btn-dark-secondary {
+    background-color: rgba(73, 59, 120, 0.72);
+    color: var(--color-siftrix-soft);
+    border: 1px solid rgba(185, 169, 245, 0.38);
+    box-shadow: 0 4px 14px rgba(23, 21, 46, 0.45);
+    transition: background-color 200ms ease, border-color 200ms ease;
+  }
+
+  .siftrix-btn-dark-secondary:hover:not(:disabled) {
+    background-color: var(--color-siftrix-royal);
+    border-color: var(--color-siftrix-electric);
+  }
+
+  /* Subtle neutral control inside Soft Lavender cards */
+  .siftrix-btn-light-neutral {
+    background-color: rgba(255, 255, 255, 0.6);
+    color: var(--color-siftrix-navy);
+    border: 1px solid var(--color-siftrix-lavender);
+    transition: border-color 200ms ease, background-color 200ms ease;
+  }
+
+  .siftrix-btn-light-neutral:hover:not(:disabled) {
+    background-color: var(--color-siftrix-soft);
+    border-color: var(--color-siftrix-electric);
+  }
+
+  .animate-siftrix-float {
+    animation: siftrix-float 5.5s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .animate-siftrix-particle {
+    animation: siftrix-particle 6s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  .animate-siftrix-orbit {
+    animation: siftrix-orbit 18s linear infinite;
+    will-change: transform;
+  }
+
+  .animate-siftrix-scan {
+    animation: siftrix-scan-sweep 2.1s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-siftrix-float,
+  .animate-siftrix-particle,
+  .animate-siftrix-orbit,
+  .animate-siftrix-scan {
+    animation: none !important;
+  }
+
+  .siftrix-card-3d-hover:hover {
+    transform: none !important;
+  }
+}
