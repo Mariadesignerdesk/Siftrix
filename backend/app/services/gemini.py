@@ -116,14 +116,15 @@ class GeminiClient:
                     return parsed
 
                 except httpx.TimeoutException as e:
+                    timeout_type = type(e).__name__
                     last_fallback_reason = "timeout"
                     if attempt < MAX_RETRIES:
                         logger.warning(
-                            f"Gemini API request timed out. Retrying in {self.retry_delay}s (attempt {attempt + 1}/{MAX_RETRIES})..."
+                            f"Gemini API request timed out ({timeout_type}). Retrying in {self.retry_delay}s (attempt {attempt + 1}/{MAX_RETRIES})..."
                         )
                         await asyncio.sleep(self.retry_delay)
                         continue
-                    logger.error(f"Gemini API request timed out after retry: {e}")
+                    logger.error(f"Gemini API request timed out after retry ({timeout_type}): {e}")
                     return self._heuristic_fallback(prompt, reason="timeout")
 
                 except httpx.HTTPStatusError as e:
