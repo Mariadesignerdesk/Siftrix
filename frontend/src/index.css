@@ -1,17 +1,52 @@
 @import "tailwindcss";
 
 @theme {
-  --color-siftrix-navy: #17152E;
-  --color-siftrix-royal: #493B78;
-  --color-siftrix-electric: #8B6DFF;
-  --color-siftrix-lavender: #B9A9F5;
-  --color-siftrix-soft: #E5DFF5;
+  --color-siftrix-beige: #F0EBE2;
+  --color-siftrix-pearl: #F7F3EC;
+  --color-siftrix-sand: #E1D9CC;
+  --color-siftrix-white: #FFFFFF;
+  --color-siftrix-charcoal: #25252A;
+  --color-siftrix-charcoal-soft: #2E2D33;
+  --color-siftrix-obsidian: #1B1B20;
+  --color-siftrix-charcoal-border: #3E3C43;
+  --color-siftrix-gold: #C5A15D;
+  --color-siftrix-champagne: #D8B56D;
+  --color-siftrix-antique: #A77B32;
+  --color-siftrix-antique-ink: #765214;
+  --color-siftrix-graphite: #302E2B;
+  --color-siftrix-muted: #77736D;
+  --color-siftrix-muted-dark: #58544E;
+  --color-siftrix-border: #D7CFC2;
+
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-editorial: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 html {
   scroll-behavior: smooth;
-  background-color: var(--color-siftrix-navy);
-  color: var(--color-siftrix-soft);
+  scroll-padding-top: 6rem;
+  background-color: var(--color-siftrix-beige);
+  color: var(--color-siftrix-graphite);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(197, 161, 93, 0.28);
+  color: #25252A;
+}
+
+@keyframes siftrix-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 @keyframes siftrix-float {
@@ -19,18 +54,7 @@ html {
     transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(0, -10px, 0);
-  }
-}
-
-@keyframes siftrix-particle {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(0.95);
-    opacity: 0.3;
-  }
-  50% {
-    transform: translate3d(0, -12px, 0) scale(1.1);
-    opacity: 0.85;
+    transform: translate3d(0, -8px, 0);
   }
 }
 
@@ -43,136 +67,347 @@ html {
   }
 }
 
+@keyframes siftrix-orbit-reverse {
+  from {
+    transform: rotateX(68deg) rotateY(-12deg) rotateZ(360deg);
+  }
+  to {
+    transform: rotateX(68deg) rotateY(-12deg) rotateZ(0deg);
+  }
+}
+
 @keyframes siftrix-scan-sweep {
   0% {
     transform: translateY(-20%);
-    opacity: 0.25;
+    opacity: 0.22;
   }
   50% {
     transform: translateY(420%);
-    opacity: 0.9;
+    opacity: 0.85;
   }
   100% {
     transform: translateY(-20%);
-    opacity: 0.25;
+    opacity: 0.22;
+  }
+}
+
+@keyframes siftrix-pulse-slow {
+  0%, 100% {
+    opacity: 0.65;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes siftrix-radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes siftrix-gold-sweep {
+  0% {
+    transform: translateX(-125%) skewX(-18deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.72;
+  }
+  75% {
+    opacity: 0.72;
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes siftrix-intro-emblem {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
 @layer components {
-  /* Light Soft Lavender 3D surface card */
-  .siftrix-card-3d {
-    background-color: var(--color-siftrix-soft);
-    color: var(--color-siftrix-navy);
-    border: 1px solid var(--color-siftrix-lavender);
+  .font-editorial {
+    font-family: var(--font-editorial);
+  }
+
+  /* Metallic Gold Typography for Dark Charcoal Surfaces */
+  .siftrix-gold-text {
+    color: #D8B56D;
+    background: linear-gradient(125deg, #F6E6BC 0%, #D8B56D 38%, #C5A15D 68%, #F0D99E 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Burnished Metallic Gold Typography with High Readability on Light Surfaces */
+  .siftrix-gold-text-on-light {
+    color: #8F6621;
+    background: linear-gradient(130deg, #6F4C14 0%, #A77B32 36%, #C5A15D 64%, #7E591C 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Elevated Soft White / Pearl architectural card on Warm Beige or Sand surfaces */
+  .siftrix-card {
+    background-color: var(--color-siftrix-white);
+    color: var(--color-siftrix-graphite);
+    border: 1px solid var(--color-siftrix-border);
     box-shadow:
-      0 14px 36px rgba(23, 21, 46, 0.55),
-      0 0 24px rgba(139, 109, 255, 0.16),
-      inset 0 1px 0 rgba(229, 223, 245, 0.85);
+      0 1px 2px rgba(48, 46, 43, 0.04),
+      0 18px 36px -22px rgba(48, 46, 43, 0.16);
   }
 
-  .siftrix-card-3d-hover {
-    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 280ms ease,
-      border-color 280ms ease;
-  }
-
-  .siftrix-card-3d-hover:hover {
-    transform: translateY(-6px);
-    border-color: var(--color-siftrix-electric);
+  .siftrix-card-pearl {
+    background-color: var(--color-siftrix-pearl);
+    color: var(--color-siftrix-graphite);
+    border: 1px solid var(--color-siftrix-border);
     box-shadow:
-      0 22px 44px rgba(23, 21, 46, 0.65),
-      0 0 30px rgba(139, 109, 255, 0.34),
-      inset 0 1px 0 rgba(229, 223, 245, 0.95);
+      inset 0 1px 0 rgba(255, 255, 255, 0.72),
+      0 14px 32px -20px rgba(48, 46, 43, 0.14);
   }
 
-  /* Recessed panel inside Soft Lavender cards */
+  .siftrix-card-hover {
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 260ms ease,
+      border-color 260ms ease;
+  }
+
+  .siftrix-card-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgba(197, 161, 93, 0.78);
+    box-shadow:
+      0 8px 20px -10px rgba(167, 123, 50, 0.2),
+      0 22px 42px -18px rgba(37, 37, 42, 0.18);
+  }
+
+  /* Deep Charcoal command panel with champagne-gold specular finish */
+  .siftrix-card-charcoal {
+    background:
+      radial-gradient(ellipse 85% 55% at 50% 0%, rgba(216, 181, 109, 0.08), transparent 65%),
+      var(--color-siftrix-charcoal);
+    color: var(--color-siftrix-beige);
+    border: 1px solid rgba(197, 161, 93, 0.24);
+    box-shadow:
+      inset 0 1px 0 rgba(216, 181, 109, 0.16),
+      0 2px 8px rgba(18, 18, 22, 0.2),
+      0 26px 48px -22px rgba(18, 18, 22, 0.45);
+  }
+
+  /* Compact Charcoal Glass card floating on light studio backgrounds */
+  .siftrix-glass-charcoal {
+    background: linear-gradient(155deg, rgba(44, 43, 50, 0.92) 0%, rgba(30, 30, 35, 0.94) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--color-siftrix-pearl);
+    border: 1px solid rgba(197, 161, 93, 0.42);
+    box-shadow:
+      inset 0 1px 0 rgba(246, 230, 188, 0.18),
+      0 14px 30px -14px rgba(25, 25, 30, 0.44);
+  }
+
+  /* Recessed Pearl / Beige inset well inside Soft White cards */
   .siftrix-panel-inset {
-    background-color: rgba(185, 169, 245, 0.28);
-    border: 1px solid rgba(185, 169, 245, 0.85);
+    background-color: var(--color-siftrix-pearl);
+    color: var(--color-siftrix-graphite);
+    border: 1px solid var(--color-siftrix-border);
   }
 
-  /* Frosted dark glassmorphism scanner card */
-  .siftrix-glass-scanner {
-    background: linear-gradient(
-      145deg,
-      rgba(73, 59, 120, 0.45) 0%,
-      rgba(23, 21, 46, 0.9) 55%,
-      rgba(73, 59, 120, 0.34) 100%
-    );
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(185, 169, 245, 0.34);
+  /* Nested panel inside Deep Charcoal surfaces */
+  .siftrix-panel-charcoal-inset {
+    background: linear-gradient(180deg, rgba(48, 47, 54, 0.9) 0%, rgba(37, 37, 42, 0.95) 100%);
+    color: var(--color-siftrix-beige);
+    border: 1px solid rgba(197, 161, 93, 0.22);
+    box-shadow: inset 0 1px 0 rgba(216, 181, 109, 0.1);
+  }
+
+  /* Luxury Pearl & White Console Frame */
+  .siftrix-scanner-surface {
+    background: linear-gradient(180deg, #FFFFFF 0%, #FBF8F3 100%);
+    color: var(--color-siftrix-graphite);
+    border: 1px solid rgba(197, 161, 93, 0.42);
     box-shadow:
-      0 24px 60px rgba(23, 21, 46, 0.78),
-      0 0 34px rgba(139, 109, 255, 0.22),
-      inset 0 1px 0 rgba(229, 223, 245, 0.28);
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 4px 12px rgba(48, 46, 43, 0.05),
+      0 28px 54px -24px rgba(37, 37, 42, 0.22);
   }
 
-  /* Electric Purple 3D primary CTA button */
-  .siftrix-btn-primary {
-    background-color: var(--color-siftrix-electric);
-    color: var(--color-siftrix-navy);
+  /* Rich Metallic Champagne-Gold Primary CTA (high-contrast Charcoal ink) */
+  .siftrix-btn-gold {
+    background: linear-gradient(135deg, #EBD49E 0%, #D8B56D 32%, #C5A15D 68%, #A77B32 100%);
+    color: #1F1E22;
+    border: 1px solid #966D28;
     font-weight: 600;
     box-shadow:
-      inset 0 1px 0 rgba(229, 223, 245, 0.55),
-      0 6px 20px rgba(139, 109, 255, 0.42);
-    transition: background-color 200ms ease,
-      box-shadow 200ms ease,
+      inset 0 1px 0 rgba(255, 250, 236, 0.72),
+      0 2px 4px rgba(37, 37, 42, 0.12),
+      0 10px 22px -10px rgba(167, 123, 50, 0.56);
+    transition:
+      filter 200ms ease,
+      box-shadow 220ms ease,
       transform 180ms ease;
   }
 
-  .siftrix-btn-primary:hover:not(:disabled) {
-    background-color: var(--color-siftrix-lavender);
+  .siftrix-btn-gold:hover:not(:disabled) {
+    filter: brightness(1.03);
+    transform: translateY(-1px);
     box-shadow:
-      inset 0 1px 0 rgba(229, 223, 245, 0.85),
-      0 8px 26px rgba(185, 169, 245, 0.55);
+      inset 0 1px 0 rgba(255, 252, 240, 0.85),
+      0 4px 8px rgba(37, 37, 42, 0.16),
+      0 14px 26px -10px rgba(167, 123, 50, 0.68);
   }
 
-  /* Royal Purple secondary action on dark backgrounds */
-  .siftrix-btn-dark-secondary {
-    background-color: rgba(73, 59, 120, 0.72);
-    color: var(--color-siftrix-soft);
-    border: 1px solid rgba(185, 169, 245, 0.38);
-    box-shadow: 0 4px 14px rgba(23, 21, 46, 0.45);
-    transition: background-color 200ms ease, border-color 200ms ease;
+  /* Deep Charcoal Editorial CTA */
+  .siftrix-btn-charcoal {
+    background: linear-gradient(180deg, #2E2D34 0%, #25252A 100%);
+    color: var(--color-siftrix-pearl);
+    border: 1px solid rgba(197, 161, 93, 0.36);
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgba(216, 181, 109, 0.14),
+      0 4px 12px -4px rgba(25, 25, 30, 0.34);
+    transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 180ms ease;
   }
 
-  .siftrix-btn-dark-secondary:hover:not(:disabled) {
-    background-color: var(--color-siftrix-royal);
-    border-color: var(--color-siftrix-electric);
+  .siftrix-btn-charcoal:hover:not(:disabled) {
+    background: linear-gradient(180deg, #35343C 0%, #29292F 100%);
+    border-color: rgba(216, 181, 109, 0.75);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px -6px rgba(25, 25, 30, 0.42);
   }
 
-  /* Subtle neutral control inside Soft Lavender cards */
+  /* Crisp Soft White / Pearl secondary button on light backgrounds */
+  .siftrix-btn-secondary {
+    background-color: var(--color-siftrix-white);
+    color: var(--color-siftrix-graphite);
+    border: 1px solid var(--color-siftrix-border);
+    box-shadow: 0 1px 3px rgba(48, 46, 43, 0.05);
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, transform 180ms ease;
+  }
+
+  .siftrix-btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-siftrix-pearl);
+    border-color: var(--color-siftrix-gold);
+    color: var(--color-siftrix-charcoal);
+    transform: translateY(-1px);
+  }
+
+  /* Secondary outline control inside Deep Charcoal cards */
+  .siftrix-btn-charcoal-outline {
+    background-color: var(--color-siftrix-charcoal-soft);
+    color: var(--color-siftrix-pearl);
+    border: 1px solid rgba(197, 161, 93, 0.35);
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+
+  .siftrix-btn-charcoal-outline:hover:not(:disabled) {
+    background-color: #36353D;
+    border-color: var(--color-siftrix-champagne);
+    color: var(--color-siftrix-white);
+  }
+
+  /* Neutral Warm Beige / Pearl control inside Soft White cards */
   .siftrix-btn-light-neutral {
-    background-color: rgba(255, 255, 255, 0.6);
-    color: var(--color-siftrix-navy);
-    border: 1px solid var(--color-siftrix-lavender);
-    transition: border-color 200ms ease, background-color 200ms ease;
+    background-color: var(--color-siftrix-pearl);
+    color: var(--color-siftrix-graphite);
+    border: 1px solid var(--color-siftrix-border);
+    transition: border-color 200ms ease, background-color 200ms ease, color 200ms ease;
   }
 
   .siftrix-btn-light-neutral:hover:not(:disabled) {
-    background-color: var(--color-siftrix-soft);
-    border-color: var(--color-siftrix-electric);
+    background-color: var(--color-siftrix-sand);
+    border-color: var(--color-siftrix-gold);
+    color: var(--color-siftrix-charcoal);
+  }
+
+  .siftrix-command-pill {
+    background-color: var(--color-siftrix-white);
+    color: var(--color-siftrix-graphite);
+    border: 1px solid var(--color-siftrix-border);
+    box-shadow: 0 1px 2px rgba(48, 46, 43, 0.04);
+    transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .siftrix-command-pill:hover:not(:disabled) {
+    background-color: var(--color-siftrix-pearl);
+    border-color: var(--color-siftrix-gold);
+  }
+
+  /* Subtle Warm Architectural Drafting Grid */
+  .siftrix-cyber-grid {
+    background-image:
+      linear-gradient(to right, rgba(167, 123, 50, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(167, 123, 50, 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  /* Subtle Charcoal Technical Grid */
+  .siftrix-charcoal-grid {
+    background-image:
+      linear-gradient(to right, rgba(216, 181, 109, 0.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(216, 181, 109, 0.055) 1px, transparent 1px);
+    background-size: 52px 52px;
+  }
+
+  .animate-siftrix-enter {
+    animation: siftrix-enter 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .animate-siftrix-float {
-    animation: siftrix-float 5.5s ease-in-out infinite;
+    animation: siftrix-float 6.4s ease-in-out infinite;
     will-change: transform;
   }
 
-  .animate-siftrix-particle {
-    animation: siftrix-particle 6s ease-in-out infinite;
-    will-change: transform, opacity;
+  .animate-siftrix-orbit {
+    animation: siftrix-orbit 26s linear infinite;
+    will-change: transform;
   }
 
-  .animate-siftrix-orbit {
-    animation: siftrix-orbit 18s linear infinite;
+  .animate-siftrix-orbit-reverse {
+    animation: siftrix-orbit-reverse 34s linear infinite;
     will-change: transform;
   }
 
   .animate-siftrix-scan {
     animation: siftrix-scan-sweep 2.1s ease-in-out infinite;
     will-change: transform, opacity;
+  }
+
+  .animate-siftrix-pulse-slow {
+    animation: siftrix-pulse-slow 3.8s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+
+  .animate-siftrix-radar {
+    animation: siftrix-radar-sweep 24s linear infinite;
+    will-change: transform;
+  }
+
+  .animate-siftrix-gold-sweep {
+    animation: siftrix-gold-sweep 1.25s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+    will-change: transform, opacity;
+  }
+
+  .animate-siftrix-intro-emblem {
+    animation: siftrix-intro-emblem 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .siftrix-tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -181,14 +416,22 @@ html {
     scroll-behavior: auto;
   }
 
+  .animate-siftrix-enter,
   .animate-siftrix-float,
-  .animate-siftrix-particle,
   .animate-siftrix-orbit,
-  .animate-siftrix-scan {
+  .animate-siftrix-orbit-reverse,
+  .animate-siftrix-scan,
+  .animate-siftrix-pulse-slow,
+  .animate-siftrix-radar,
+  .animate-siftrix-gold-sweep,
+  .animate-siftrix-intro-emblem {
     animation: none !important;
   }
 
-  .siftrix-card-3d-hover:hover {
+  .siftrix-card-hover:hover,
+  .siftrix-btn-gold:hover:not(:disabled),
+  .siftrix-btn-charcoal:hover:not(:disabled),
+  .siftrix-btn-secondary:hover:not(:disabled) {
     transform: none !important;
   }
 }

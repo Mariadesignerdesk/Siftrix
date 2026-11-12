@@ -3,7 +3,7 @@ import { clampRiskScore } from './scanPresentation'
 
 export type ScanVerdictFilter = 'all' | ScanVerdict
 export type ScanRiskFilter = 'all' | ScanRiskLevel
-export type ScanTargetFilter = 'all' | 'url' | 'message'
+export type ScanTargetFilter = 'all' | 'url' | 'message' | 'email'
 export type ScanSortField = 'date' | 'risk_score'
 export type SortDirection = 'asc' | 'desc'
 

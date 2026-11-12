@@ -36,6 +36,8 @@ describe('router and scan presentation utilities', () => {
 
   it('extracts valid landing section IDs from URL hashes for history scroll restoration', () => {
     expect(getLandingSectionIdFromHash('#features')).toBe('features')
+    expect(getLandingSectionIdFromHash('#how-it-works')).toBe('how-it-works')
+    expect(getLandingSectionIdFromHash('#command-center')).toBe('command-center')
     expect(getLandingSectionIdFromHash('#about')).toBe('about')
     expect(getLandingSectionIdFromHash('#scan')).toBe('scan')
     expect(getLandingSectionIdFromHash('#home')).toBe('home')

@@ -102,6 +102,21 @@ describe('scanHistory utilities', () => {
         targetType: 'message',
       }).map((s) => s.id)
     ).toEqual(['scan-2', 'scan-4'])
+
+    const emailDataset = [
+      ...SAMPLE_DATASET,
+      makeScan({
+        id: 'scan-5',
+        target_type: 'email',
+        target_content: 'Subject: Wire transfer verification needed',
+      }),
+    ]
+    expect(
+      filterScans(emailDataset, {
+        ...DEFAULT_SCAN_FILTERS,
+        targetType: 'email',
+      }).map((s) => s.id)
+    ).toEqual(['scan-5'])
   })
 
   it('combines search and multiple filters and detects empty filtered results', () => {

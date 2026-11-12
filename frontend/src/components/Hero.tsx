@@ -1,94 +1,109 @@
 import HeroShield3D from './HeroShield3D'
 
-const HERO_PARTICLES: ReadonlyArray<{
-  top: string
-  left: string
-  size: string
-  delay: string
-  tone: 'electric' | 'lavender'
-}> = [
-  { top: '16%', left: '8%', size: 'w-1.5 h-1.5', delay: '0s', tone: 'lavender' },
-  { top: '28%', left: '42%', size: 'w-1 h-1', delay: '1.1s', tone: 'electric' },
-  { top: '72%', left: '14%', size: 'w-1.5 h-1.5', delay: '2.2s', tone: 'electric' },
-  { top: '80%', left: '48%', size: 'w-1 h-1', delay: '0.7s', tone: 'lavender' },
-  { top: '20%', left: '68%', size: 'w-1.5 h-1.5', delay: '1.7s', tone: 'lavender' },
-  { top: '66%', left: '88%', size: 'w-1.5 h-1.5', delay: '2.8s', tone: 'electric' },
-  { top: '14%', left: '90%', size: 'w-1 h-1', delay: '3.4s', tone: 'lavender' },
-  { top: '84%', left: '72%', size: 'w-1 h-1', delay: '1.9s', tone: 'electric' },
-]
-
 export default function Hero() {
   return (
     <section
       id="home"
-      className="relative overflow-hidden bg-gradient-to-br from-siftrix-navy via-siftrix-royal/40 to-siftrix-navy border-b border-siftrix-royal/50 px-6 md:px-10 py-16 md:py-24 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-10"
+      className="relative overflow-hidden bg-gradient-to-b from-siftrix-pearl via-siftrix-beige to-[#E8E0D2] border-b border-siftrix-border px-5 sm:px-6 md:px-10 py-14 sm:py-16 lg:py-20"
     >
-      {/* Subtle Ambient Background Lighting & Floating Particles */}
+      {/* Subtle Warm Studio Champagne Illumination */}
       <div
         aria-hidden="true"
-        className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-siftrix-royal/30 blur-3xl pointer-events-none"
+        className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-siftrix-sand/65 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="absolute -bottom-24 right-0 w-96 h-96 rounded-full bg-siftrix-electric/15 blur-3xl pointer-events-none"
+        className="pointer-events-none absolute top-10 right-6 h-[28rem] w-[28rem] rounded-full bg-siftrix-champagne/25 blur-3xl"
       />
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none overflow-hidden">
-        {HERO_PARTICLES.map((particle, idx) => (
-          <span
-            key={idx}
-            className={`absolute rounded-full animate-siftrix-particle ${particle.size} ${
-              particle.tone === 'electric'
-                ? 'bg-siftrix-electric shadow-[0_0_10px_rgba(139,109,255,0.85)]'
-                : 'bg-siftrix-lavender shadow-[0_0_8px_rgba(185,169,245,0.75)]'
-            }`}
-            style={{
-              top: particle.top,
-              left: particle.left,
-              animationDelay: particle.delay,
-            }}
-          />
-        ))}
-      </div>
 
-      {/* Left Content */}
-      <div className="relative z-10 max-w-xl md:max-w-lg lg:max-w-xl">
-        <p className="text-siftrix-lavender font-semibold tracking-wide mb-4">
-          AI-POWERED CYBERSECURITY
-        </p>
+      <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-10 animate-siftrix-enter">
+        {/* Left Editorial Composition */}
+        <div className="w-full max-w-xl lg:flex-1">
+          <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-siftrix-gold/50 bg-siftrix-white/90 px-4 py-1.5 text-[11px] font-semibold tracking-[0.16em] uppercase text-siftrix-graphite shadow-2xs mb-6">
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 rounded-full bg-gradient-to-br from-siftrix-champagne to-siftrix-antique"
+            />
+            <span>AI-POWERED CYBERSECURITY</span>
+          </div>
 
-        <h1 className="text-4xl md:text-5xl font-bold text-siftrix-soft leading-tight">
-          Stay One Step Ahead of Online Scams.
-        </h1>
+          <h1 className="text-4xl sm:text-5xl xl:text-[3.4rem] font-bold text-siftrix-charcoal leading-[1.1] tracking-[-0.03em]">
+            Stay One Step Ahead of{' '}
+            <span className="inline-block font-editorial italic font-bold text-[1.1em] siftrix-gold-text-on-light pr-2 pb-1 underline decoration-siftrix-gold/70 decoration-2 underline-offset-8">
+              Online Scams.
+            </span>
+          </h1>
 
-        <p className="text-siftrix-lavender/90 mt-6 text-lg">
-          Protect yourself from phishing attacks and online scams
-          with intelligent AI-powered security analysis.
-        </p>
+          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-siftrix-antique-ink">
+            SIFTRIX · Intelligence. Protection. Confidence.
+          </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={() => document.getElementById('scan')?.scrollIntoView({ behavior: 'smooth' })}
-            className="siftrix-btn-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-navy focus-visible:ring-siftrix-electric px-6 py-3 rounded-lg whitespace-nowrap w-full sm:w-auto text-center cursor-pointer"
-            aria-label="Start scanning by scrolling to the threat analysis tool"
-          >
-            Start Scanning
-          </button>
+          <p className="text-siftrix-muted-dark mt-3 text-base sm:text-lg leading-relaxed max-w-lg">
+            Protect yourself from phishing attacks and online scams with
+            multi-agent AI threat orchestration across suspicious links, SMS,
+            WhatsApp lures, and emails.
+          </p>
 
-          <button
-            type="button"
-            onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-            className="siftrix-btn-dark-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-navy focus-visible:ring-siftrix-electric px-6 py-3 rounded-lg whitespace-nowrap w-full sm:w-auto text-center cursor-pointer"
-            aria-label="Explore platform features"
-          >
-            Explore Features
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3.5 mt-8 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() =>
+                document.getElementById('scan')?.scrollIntoView({ behavior: 'smooth' })
+              }
+              className="siftrix-btn-gold inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-beige focus-visible:ring-siftrix-charcoal px-7 py-3.5 rounded-xl whitespace-nowrap w-full sm:w-auto cursor-pointer"
+              aria-label="Start scanning by scrolling to the threat analysis tool"
+            >
+              <span>Start Scanning</span>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 10h11" />
+                <path d="M11 5l5 5-5 5" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                document
+                  .getElementById('features')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }
+              className="siftrix-btn-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-beige focus-visible:ring-siftrix-gold px-7 py-3.5 rounded-xl whitespace-nowrap w-full sm:w-auto text-center cursor-pointer font-semibold"
+              aria-label="Explore platform features"
+            >
+              Explore Features
+            </button>
+          </div>
+
+          {/* Preserved Factual Capability Badges */}
+          <div className="mt-8 flex flex-wrap items-center gap-2.5 text-xs font-medium text-siftrix-graphite">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
+              URL &amp; SSRF Validation
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
+              Message &amp; Email Lure Checks
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
+              EN + اردو Advisories
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Right Content: 3D Cybersecurity Shield */}
-      <div className="relative z-10">
-        <HeroShield3D />
+        {/* Right Open Floating 3D Shield + 3 Orbiting Agent Glass Nodes */}
+        <div className="w-full lg:w-[32rem] xl:w-[36rem] lg:shrink-0 flex justify-center lg:justify-end">
+          <HeroShield3D />
+        </div>
       </div>
     </section>
   )

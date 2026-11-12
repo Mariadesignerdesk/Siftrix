@@ -83,7 +83,7 @@ export function getScanDetailsErrorTitle(status: number): string {
 }
 
 /**
- * Converts a GET /api/scans/{scan_id} response into a discriminated view state,
+ * Converts a GET /api/history/{scan_id} response into a discriminated view state,
  * distinguishing 404 Not Found from network, timeout, server, or payload errors.
  */
 export function resolveScanDetailsState(

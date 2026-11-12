@@ -5,7 +5,7 @@ export const VERDICT_STYLES: Record<
   { badge: string; bar: string; label: string }
 > = {
   safe: {
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    badge: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     bar: 'bg-emerald-600',
     label: 'Safe',
   },
@@ -22,10 +22,10 @@ export const VERDICT_STYLES: Record<
 }
 
 export const RISK_LEVEL_STYLES: Record<ScanRiskLevel, string> = {
-  low: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  low: 'bg-emerald-50 text-emerald-800 border-emerald-200',
   medium: 'bg-amber-50 text-amber-800 border-amber-200',
-  high: 'bg-orange-50 text-orange-800 border-orange-200',
-  critical: 'bg-red-50 text-red-700 border-red-200',
+  high: 'bg-red-50 text-red-700 border-red-200',
+  critical: 'bg-red-100 text-red-900 border-red-300',
 }
 
 export function formatFieldLabel(key: string): string {
@@ -51,8 +51,8 @@ export function getVerdictStyle(verdict: ScanVerdict | string | undefined) {
     return VERDICT_STYLES[verdict as ScanVerdict]
   }
   return {
-    badge: 'bg-siftrix-royal/15 text-siftrix-navy border-siftrix-lavender',
-    bar: 'bg-siftrix-electric',
+    badge: 'bg-siftrix-sand text-siftrix-graphite border-siftrix-border',
+    bar: 'bg-siftrix-muted',
     label: formatFieldLabel(String(verdict || 'Unknown')),
   }
 }
@@ -61,5 +61,5 @@ export function getRiskLevelStyle(riskLevel: ScanRiskLevel | string | undefined)
   if (riskLevel && riskLevel in RISK_LEVEL_STYLES) {
     return RISK_LEVEL_STYLES[riskLevel as ScanRiskLevel]
   }
-  return 'bg-siftrix-royal/15 text-siftrix-navy border-siftrix-lavender'
+  return 'bg-siftrix-sand text-siftrix-graphite border-siftrix-border'
 }

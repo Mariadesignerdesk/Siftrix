@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchScans, type ScanResponse } from '../services/api'
+import { isMissingSessionUnauthorized } from '../utils/session'
 import {
   DEFAULT_SCAN_FILTERS,
   filterScans,
@@ -13,7 +14,7 @@ import {
   type ScanVerdictFilter,
   type SortDirection,
 } from '../utils/scanHistory'
-import { clampRiskScore, formatTimestamp } from '../utils/scanPresentation'
+import { clampRiskScore, formatTimestamp, getVerdictStyle } from '../utils/scanPresentation'
 import type { NavigateFn } from '../utils/router'
 import { RiskLevelBadge, TargetTypeBadge, VerdictBadge } from '../components/ScanBadges'
 
@@ -37,9 +38,13 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
     (response: Awaited<ReturnType<typeof fetchScans>>) => {
       if (!response.ok || !response.data) {
         setScans([])
-        setErrorMessage(
-          response.error || 'Unable to load scan history from the backend server.'
-        )
+        if (isMissingSessionUnauthorized(response.status)) {
+          setErrorMessage('')
+        } else {
+          setErrorMessage(
+            response.error || 'Unable to load scan history from the backend server.'
+          )
+        }
       } else {
         setScans(response.data)
         setErrorMessage('')
@@ -123,19 +128,24 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
   return (
     <section
       aria-label="Scan History"
-      className="px-6 md:px-10 py-10 md:py-14 max-w-6xl mx-auto space-y-6"
+      className="px-5 sm:px-6 md:px-10 py-10 md:py-14 max-w-7xl mx-auto space-y-6 animate-siftrix-enter"
     >
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Strong Dark Audit Log Header */}
+      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-siftrix-champagne/80 to-transparent"
+        />
+
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-siftrix-lavender">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-siftrix-champagne">
             Threat Audit Log
           </p>
-          <h2 className="text-3xl font-bold text-siftrix-soft mt-1">
+          <h2 className="text-3xl font-bold text-siftrix-white mt-1 tracking-tight">
             Scan History
           </h2>
-          <p className="text-siftrix-lavender/90 text-sm md:text-base mt-1">
-            Search, filter, and inspect previously analyzed URLs and messages.
+          <p className="text-[#C8C1B6] text-sm md:text-base mt-1">
+            Search, filter, and inspect previously analyzed URLs, messages, and emails.
           </p>
         </div>
 
@@ -143,7 +153,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
           <span
             role="status"
             aria-live="polite"
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-siftrix-royal/80 text-siftrix-soft border border-siftrix-lavender/35"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#1B1B20] text-siftrix-champagne border border-siftrix-gold/45 siftrix-tabular"
           >
             {isLoading
               ? 'Loading scans...'
@@ -157,7 +167,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
             disabled={isLoading}
             onClick={() => void handleRefresh()}
             aria-label="Refresh scan history"
-            className="px-4 py-2 rounded-lg siftrix-btn-dark-secondary disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+            className="px-4 py-2 rounded-xl siftrix-btn-charcoal-outline disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
           >
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
@@ -165,7 +175,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
           <button
             type="button"
             onClick={() => onNavigate('/', 'scan')}
-            className="siftrix-btn-primary px-5 py-2 rounded-lg text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-navy focus-visible:ring-siftrix-electric"
+            className="siftrix-btn-gold px-5 py-2 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-charcoal focus-visible:ring-siftrix-champagne"
           >
             + New Scan
           </button>
@@ -176,7 +186,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
       {!isLoading && hasError ? (
         <div
           role="alert"
-          className="bg-red-50 border border-red-200 text-red-800 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          className="bg-red-50 border border-red-200 text-red-900 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div className="space-y-1 text-sm">
             <p className="font-bold">Could not load scan history</p>
@@ -185,33 +195,44 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
           <button
             type="button"
             onClick={() => void handleRefresh()}
-            className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white text-xs font-semibold cursor-pointer shrink-0 self-start sm:self-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer shrink-0 self-start sm:self-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >
             Retry Connection
           </button>
         </div>
       ) : null}
 
-      {/* Search, Filters & Sort Controls */}
-      <div className="siftrix-card-3d p-5 md:p-6 rounded-2xl space-y-4">
+      {/* Refined Search, Filters & Sort Console */}
+      <div className="siftrix-card p-5 md:p-6 rounded-2xl space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
           {/* Search Input */}
-          <div className="lg:col-span-7">
+          <div className="min-w-0 lg:col-span-7 relative">
             <label htmlFor="scan-search" className="sr-only">
               Search by scanned URL or message content
             </label>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-siftrix-muted-dark"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <circle cx="9" cy="9" r="5.5" />
+              <path d="M13.5 13.5L17 17" strokeLinecap="round" />
+            </svg>
             <input
               id="scan-search"
               type="search"
               value={filters.searchQuery}
               onChange={(e) => updateFilters({ searchQuery: e.target.value })}
               placeholder="Search by scanned URL or message content..."
-              className="w-full px-4 py-2.5 text-sm border border-siftrix-lavender rounded-xl outline-none focus:border-siftrix-electric focus:ring-1 focus:ring-siftrix-electric bg-white/75 text-siftrix-navy placeholder:text-siftrix-royal/70"
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-siftrix-border rounded-xl outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold bg-siftrix-pearl text-siftrix-graphite placeholder:text-siftrix-muted"
             />
           </div>
 
           {/* Sort Controls */}
-          <div className="lg:col-span-5 flex flex-col sm:flex-row gap-2">
+          <div className="min-w-0 lg:col-span-5 flex flex-col sm:flex-row gap-2">
             <div className="flex-1">
               <label htmlFor="scan-sort-field" className="sr-only">
                 Sort scans by
@@ -223,7 +244,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                   setSortBy(e.target.value as ScanSortField)
                   setCurrentPage(1)
                 }}
-                className="w-full px-3 py-2.5 text-sm border border-siftrix-lavender rounded-xl bg-white/75 text-siftrix-navy outline-none focus:border-siftrix-electric focus:ring-1 focus:ring-siftrix-electric"
+                className="w-full px-3 py-2.5 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
               >
                 <option value="date">Sort by: Date</option>
                 <option value="risk_score">Sort by: Risk Score</option>
@@ -237,7 +258,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                 setCurrentPage(1)
               }}
               aria-label={`Sort order: ${sortDirection === 'desc' ? 'Descending' : 'Ascending'}. Click to toggle.`}
-              className="px-4 py-2.5 text-sm font-medium rounded-xl siftrix-btn-light-neutral cursor-pointer whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+              className="px-4 py-2.5 text-sm font-medium rounded-xl siftrix-btn-light-neutral cursor-pointer whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               {sortBy === 'date'
                 ? sortDirection === 'desc'
@@ -255,7 +276,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
           <div>
             <label
               htmlFor="verdict-filter"
-              className="block text-xs font-semibold text-siftrix-royal mb-1"
+              className="block text-xs font-semibold text-siftrix-graphite mb-1"
             >
               Verdict
             </label>
@@ -265,7 +286,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               onChange={(e) =>
                 updateFilters({ verdict: e.target.value as ScanVerdictFilter })
               }
-              className="w-full px-3 py-2 text-sm border border-siftrix-lavender rounded-xl bg-white/75 text-siftrix-navy outline-none focus:border-siftrix-electric focus:ring-1 focus:ring-siftrix-electric"
+              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
             >
               <option value="all">All Verdicts</option>
               <option value="safe">Safe</option>
@@ -277,7 +298,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
           <div>
             <label
               htmlFor="risk-filter"
-              className="block text-xs font-semibold text-siftrix-royal mb-1"
+              className="block text-xs font-semibold text-siftrix-graphite mb-1"
             >
               Risk Level
             </label>
@@ -287,7 +308,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               onChange={(e) =>
                 updateFilters({ riskLevel: e.target.value as ScanRiskFilter })
               }
-              className="w-full px-3 py-2 text-sm border border-siftrix-lavender rounded-xl bg-white/75 text-siftrix-navy outline-none focus:border-siftrix-electric focus:ring-1 focus:ring-siftrix-electric"
+              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
             >
               <option value="all">All Risk Levels</option>
               <option value="low">Low</option>
@@ -300,7 +321,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
           <div>
             <label
               htmlFor="target-filter"
-              className="block text-xs font-semibold text-siftrix-royal mb-1"
+              className="block text-xs font-semibold text-siftrix-graphite mb-1"
             >
               Target Type
             </label>
@@ -310,11 +331,12 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               onChange={(e) =>
                 updateFilters({ targetType: e.target.value as ScanTargetFilter })
               }
-              className="w-full px-3 py-2 text-sm border border-siftrix-lavender rounded-xl bg-white/75 text-siftrix-navy outline-none focus:border-siftrix-electric focus:ring-1 focus:ring-siftrix-electric"
+              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
             >
               <option value="all">All Targets</option>
               <option value="url">URL</option>
               <option value="message">Message</option>
+              <option value="email">Email</option>
             </select>
           </div>
 
@@ -323,7 +345,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               type="button"
               disabled={!filtersActive}
               onClick={handleClearFilters}
-              className="w-full px-4 py-2 text-sm font-medium rounded-xl siftrix-btn-light-neutral disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+              className="w-full px-4 py-2 text-sm font-medium rounded-xl siftrix-btn-light-neutral disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               Clear Filters
             </button>
@@ -332,7 +354,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
       </div>
 
       {/* Main Results Container */}
-      <div className="siftrix-card-3d rounded-2xl overflow-hidden">
+      <div className="siftrix-card rounded-2xl overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4 animate-pulse" aria-busy="true">
             {[1, 2, 3, 4].map((row) => (
@@ -341,65 +363,65 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                 className="p-4 rounded-xl siftrix-panel-inset space-y-2"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="h-4 w-2/3 bg-siftrix-lavender/60 rounded" />
-                  <div className="h-6 w-20 bg-siftrix-lavender/60 rounded-full" />
+                  <div className="h-4 w-2/3 bg-siftrix-sand rounded" />
+                  <div className="h-6 w-20 bg-siftrix-sand rounded-full" />
                 </div>
-                <div className="h-3 w-1/3 bg-siftrix-lavender/60 rounded" />
+                <div className="h-3 w-1/3 bg-siftrix-sand/70 rounded" />
               </div>
             ))}
           </div>
         ) : hasError ? (
           <div className="p-10 text-center space-y-3">
-            <p className="text-base font-semibold text-siftrix-navy">
+            <p className="text-base font-semibold text-siftrix-graphite">
               Scan history is currently unavailable
             </p>
-            <p className="text-sm text-siftrix-royal max-w-md mx-auto">
+            <p className="text-sm text-siftrix-muted-dark max-w-md mx-auto">
               Ensure the SIFTRIX FastAPI backend is running and click Retry Connection to load recorded scans from{' '}
-              <code className="font-mono text-xs bg-siftrix-royal/12 px-1.5 py-0.5 rounded">
-                GET /api/scans
+              <code className="font-mono text-xs bg-siftrix-pearl px-1.5 py-0.5 rounded border border-siftrix-border text-siftrix-graphite">
+                GET /api/history
               </code>
               .
             </p>
           </div>
         ) : scans.length === 0 ? (
           <div className="p-10 text-center space-y-3">
-            <p className="text-lg font-semibold text-siftrix-navy">
+            <p className="text-lg font-semibold text-siftrix-charcoal">
               No scans recorded yet
             </p>
-            <p className="text-sm text-siftrix-royal max-w-md mx-auto">
+            <p className="text-sm text-siftrix-muted-dark max-w-md mx-auto">
               You have not analyzed any URLs or messages yet. Start a new scan to build your threat audit log.
             </p>
             <button
               type="button"
               onClick={() => onNavigate('/', 'scan')}
-              className="inline-block siftrix-btn-primary px-5 py-2.5 rounded-lg text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-siftrix-electric"
+              className="inline-block siftrix-btn-gold px-5 py-2.5 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-siftrix-charcoal"
             >
               Run Your First Scan
             </button>
           </div>
         ) : sortedScans.length === 0 ? (
           <div className="p-10 text-center space-y-3">
-            <p className="text-lg font-semibold text-siftrix-navy">
+            <p className="text-lg font-semibold text-siftrix-charcoal">
               No matching scans found
             </p>
-            <p className="text-sm text-siftrix-royal max-w-md mx-auto">
+            <p className="text-sm text-siftrix-muted-dark max-w-md mx-auto">
               None of the {scans.length} recorded {scans.length === 1 ? 'scan matches' : 'scans match'} your current search query and active filters.
             </p>
             <button
               type="button"
               onClick={handleClearFilters}
-              className="inline-block px-5 py-2.5 rounded-lg border border-siftrix-royal text-siftrix-navy hover:bg-siftrix-royal hover:text-siftrix-soft text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+              className="inline-block px-5 py-2.5 rounded-xl siftrix-btn-secondary text-sm font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               Clear Filters
             </button>
           </div>
         ) : (
           <>
-            {/* Desktop Table */}
+            {/* Desktop Table (Charcoal Executive Header + Soft White Body) */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-siftrix-royal border-b border-siftrix-electric/35 text-xs font-bold uppercase tracking-wider text-siftrix-soft">
+                  <tr className="bg-siftrix-charcoal border-b border-siftrix-charcoal-border text-xs font-bold uppercase tracking-wider text-siftrix-pearl">
                     <th scope="col" className="px-4 lg:px-5 py-3.5">
                       Scanned Content
                     </th>
@@ -416,7 +438,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                       <button
                         type="button"
                         onClick={() => handleSortToggle('risk_score')}
-                        className="inline-flex items-center gap-1 uppercase font-bold text-siftrix-soft hover:text-siftrix-lavender cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric rounded"
+                        className="inline-flex items-center gap-1 uppercase font-bold text-siftrix-champagne hover:text-siftrix-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne rounded"
                       >
                         <span>Score</span>
                         <span aria-hidden="true">{sortIndicator('risk_score')}</span>
@@ -426,7 +448,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                       <button
                         type="button"
                         onClick={() => handleSortToggle('date')}
-                        className="inline-flex items-center gap-1 uppercase font-bold text-siftrix-soft hover:text-siftrix-lavender cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric rounded"
+                        className="inline-flex items-center gap-1 uppercase font-bold text-siftrix-champagne hover:text-siftrix-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne rounded"
                       >
                         <span>Date</span>
                         <span aria-hidden="true">{sortIndicator('date')}</span>
@@ -437,23 +459,24 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-siftrix-lavender/60 text-sm">
+                <tbody className="divide-y divide-siftrix-sand text-sm bg-white">
                   {paginated.items.map((scan) => {
                     const score = clampRiskScore(scan.overall_risk_score)
+                    const verdictStyle = getVerdictStyle(scan.verdict)
                     return (
                       <tr
                         key={scan.id}
-                        className="hover:bg-siftrix-lavender/25 transition-colors"
+                        className="hover:bg-siftrix-pearl/70 transition-colors"
                       >
                         <td className="px-4 lg:px-5 py-4 min-w-44 max-w-xs lg:max-w-sm">
                           <p
-                            className={`font-medium text-siftrix-navy line-clamp-2 ${
-                              scan.target_type === 'url' ? 'break-all' : 'break-words'
+                            className={`font-medium text-siftrix-charcoal line-clamp-2 ${
+                              scan.target_type === 'url' ? 'font-mono text-xs break-all' : 'break-words'
                             }`}
                           >
                             {scan.target_content || 'No target content'}
                           </p>
-                          <p className="text-[11px] font-mono text-siftrix-royal/80 mt-1">
+                          <p className="text-[11px] font-mono text-siftrix-muted-dark mt-1">
                             ID: {scan.id.slice(0, 8)}
                           </p>
                         </td>
@@ -466,18 +489,28 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                         <td className="px-3 lg:px-4 py-4 whitespace-nowrap">
                           <RiskLevelBadge riskLevel={scan.risk_level} withPrefix={false} />
                         </td>
-                        <td className="px-3 lg:px-4 py-4 whitespace-nowrap font-bold text-siftrix-navy">
-                          {score}
-                          <span className="text-xs font-normal text-siftrix-royal">/100</span>
+                        <td className="px-3 lg:px-4 py-4 whitespace-nowrap">
+                          <div className="w-24 space-y-1">
+                            <p className="font-bold text-siftrix-charcoal siftrix-tabular">
+                              {score}
+                              <span className="text-xs font-normal text-siftrix-muted-dark">/100</span>
+                            </p>
+                            <div className="h-1.5 w-full rounded-full bg-siftrix-sand overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${verdictStyle.bar}`}
+                                style={{ width: `${score}%` }}
+                              />
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-3 lg:px-4 py-4 text-xs text-siftrix-royal">
+                        <td className="px-3 lg:px-4 py-4 text-xs text-siftrix-muted-dark">
                           {formatTimestamp(scan.created_at)}
                         </td>
                         <td className="px-4 lg:px-5 py-4 text-right whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => handleViewDetails(scan.id)}
-                            className="px-3 py-1.5 rounded-lg border border-siftrix-royal text-siftrix-navy hover:bg-siftrix-royal hover:text-siftrix-soft text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+                            className="px-3.5 py-1.5 rounded-lg border border-siftrix-border bg-siftrix-pearl text-siftrix-charcoal hover:bg-siftrix-charcoal hover:text-siftrix-champagne hover:border-siftrix-gold/55 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                           >
                             View Details
                           </button>
@@ -490,7 +523,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
             </div>
 
             {/* Mobile & Tablet Card Stack */}
-            <div className="lg:hidden divide-y divide-siftrix-lavender/60">
+            <div className="lg:hidden divide-y divide-siftrix-sand bg-white">
               {paginated.items.map((scan) => {
                 const score = clampRiskScore(scan.overall_risk_score)
                 return (
@@ -501,22 +534,22 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                         <VerdictBadge verdict={scan.verdict} withPrefix={false} />
                         <RiskLevelBadge riskLevel={scan.risk_level} withPrefix={false} />
                       </div>
-                      <span className="text-xs font-bold text-siftrix-navy siftrix-panel-inset px-2.5 py-1 rounded-md">
+                      <span className="text-xs font-bold text-siftrix-champagne bg-siftrix-charcoal px-2.5 py-1 rounded-md border border-siftrix-charcoal-border siftrix-tabular">
                         Risk: {score}/100
                       </span>
                     </div>
 
                     <p
-                      className={`text-sm font-medium text-siftrix-navy line-clamp-3 ${
-                        scan.target_type === 'url' ? 'break-all' : 'break-words'
+                      className={`text-sm font-medium text-siftrix-charcoal line-clamp-3 ${
+                        scan.target_type === 'url' ? 'font-mono text-xs break-all' : 'break-words'
                       }`}
                     >
                       {scan.target_content || 'No target content'}
                     </p>
 
-                    <div className="flex items-center justify-between gap-2 text-xs text-siftrix-royal">
+                    <div className="flex items-center justify-between gap-2 text-xs text-siftrix-muted-dark">
                       <span>{formatTimestamp(scan.created_at)}</span>
-                      <span className="font-mono text-[11px] text-siftrix-royal/80">
+                      <span className="font-mono text-[11px] text-siftrix-muted-dark">
                         {scan.id.slice(0, 8)}
                       </span>
                     </div>
@@ -524,7 +557,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                     <button
                       type="button"
                       onClick={() => handleViewDetails(scan.id)}
-                      className="w-full py-2 px-4 rounded-lg border border-siftrix-royal text-siftrix-navy hover:bg-siftrix-royal hover:text-siftrix-soft text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+                      className="w-full py-2 px-4 rounded-lg border border-siftrix-border bg-siftrix-pearl text-siftrix-charcoal hover:bg-siftrix-charcoal hover:text-siftrix-champagne hover:border-siftrix-gold/55 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                     >
                       View Details
                     </button>
@@ -533,12 +566,12 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               })}
             </div>
 
-            {/* Pagination Footer */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 bg-siftrix-lavender/30 border-t border-siftrix-lavender text-xs text-siftrix-royal">
+            {/* Pagination Footer (Sand Taupe Anchor) */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 bg-siftrix-sand/45 border-t border-siftrix-border text-xs text-siftrix-muted-dark">
               <p>
-                Showing <span className="font-semibold text-siftrix-navy">{paginated.startIndex}</span>–
-                <span className="font-semibold text-siftrix-navy">{paginated.endIndex}</span> of{' '}
-                <span className="font-semibold text-siftrix-navy">{paginated.totalItems}</span>{' '}
+                Showing <span className="font-semibold text-siftrix-graphite">{paginated.startIndex}</span>–
+                <span className="font-semibold text-siftrix-graphite">{paginated.endIndex}</span> of{' '}
+                <span className="font-semibold text-siftrix-graphite">{paginated.totalItems}</span>{' '}
                 {filtersActive ? 'matching ' : ''}
                 {paginated.totalItems === 1 ? 'scan' : 'scans'}
               </p>
@@ -548,12 +581,12 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                   type="button"
                   disabled={paginated.currentPage <= 1}
                   onClick={() => setCurrentPage(paginated.currentPage - 1)}
-                  className="px-3 py-1.5 rounded-lg siftrix-btn-light-neutral disabled:opacity-50 disabled:cursor-not-allowed font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+                  className="px-3.5 py-2 rounded-lg siftrix-btn-secondary disabled:opacity-50 disabled:cursor-not-allowed font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                 >
                   Previous
                 </button>
 
-                <span className="px-2 font-semibold text-siftrix-navy">
+                <span className="px-2 font-semibold text-siftrix-graphite siftrix-tabular">
                   Page {paginated.currentPage} of {paginated.totalPages}
                 </span>
 
@@ -561,7 +594,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                   type="button"
                   disabled={paginated.currentPage >= paginated.totalPages}
                   onClick={() => setCurrentPage(paginated.currentPage + 1)}
-                  className="px-3 py-1.5 rounded-lg siftrix-btn-light-neutral disabled:opacity-50 disabled:cursor-not-allowed font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+                  className="px-3.5 py-2 rounded-lg siftrix-btn-secondary disabled:opacity-50 disabled:cursor-not-allowed font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                 >
                   Next
                 </button>

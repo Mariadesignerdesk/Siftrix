@@ -85,7 +85,14 @@ export function parseRoutePath(pathname: string): AppRoute {
   return { page: 'home' }
 }
 
-const LANDING_SECTION_IDS = new Set(['home', 'scan', 'features', 'about'])
+const LANDING_SECTION_IDS = new Set([
+  'home',
+  'scan',
+  'features',
+  'how-it-works',
+  'command-center',
+  'about',
+])
 
 /**
  * Extracts a known landing page section ID from a URL hash string.

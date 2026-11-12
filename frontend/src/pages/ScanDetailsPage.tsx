@@ -12,6 +12,7 @@ import {
   getVerdictStyle,
 } from '../utils/scanPresentation'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
+import RiskGaugeRing from '../components/RiskGaugeRing'
 import {
   RiskLevelBadge,
   TargetTypeBadge,
@@ -55,18 +56,23 @@ export function ScanDetailsContent({
   return (
     <section
       aria-label="Scan Details"
-      className="px-6 md:px-10 py-10 md:py-14 max-w-6xl mx-auto space-y-6"
+      className="px-5 sm:px-6 md:px-10 py-10 md:py-14 max-w-6xl mx-auto space-y-6 animate-siftrix-enter"
     >
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Strong Dark Inspection Header Banner */}
+      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-siftrix-champagne/80 to-transparent"
+        />
+
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-siftrix-lavender">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-siftrix-champagne">
             Scan Inspection
           </p>
-          <h2 className="text-3xl font-bold text-siftrix-soft mt-1">
+          <h2 className="text-3xl font-bold text-siftrix-white mt-1 tracking-tight">
             Scan Details
           </h2>
-          <p className="text-siftrix-lavender/90 text-sm md:text-base mt-1">
+          <p className="text-[#C8C1B6] text-sm md:text-base mt-1">
             Complete security analysis of the selected scan.
           </p>
         </div>
@@ -77,7 +83,7 @@ export function ScanDetailsContent({
             disabled={isLoading || !normalizedId}
             onClick={onRefresh}
             aria-label="Refresh scan details"
-            className="px-4 py-2 rounded-lg siftrix-btn-dark-secondary disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+            className="px-4 py-2 rounded-xl siftrix-btn-charcoal-outline disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
           >
             {isLoading ? 'Loading...' : 'Refresh'}
           </button>
@@ -85,7 +91,7 @@ export function ScanDetailsContent({
           <a
             href="/dashboard"
             onClick={(e) => handleSpaLinkClick(e, onNavigate, '/dashboard')}
-            className="px-4 py-2 rounded-lg siftrix-btn-dark-secondary text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+            className="px-4 py-2 rounded-xl siftrix-btn-charcoal-outline text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
           >
             Dashboard
           </a>
@@ -93,7 +99,7 @@ export function ScanDetailsContent({
           <a
             href="/scans"
             onClick={(e) => handleSpaLinkClick(e, onNavigate, '/scans')}
-            className="siftrix-btn-primary px-5 py-2 rounded-lg text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-navy focus-visible:ring-siftrix-electric"
+            className="siftrix-btn-gold px-5 py-2 rounded-xl text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-charcoal focus-visible:ring-siftrix-champagne"
           >
             Back to History
           </a>
@@ -110,17 +116,17 @@ export function ScanDetailsContent({
         >
           <span className="sr-only">Loading scan details...</span>
 
-          <div className="siftrix-card-3d p-6 md:p-8 rounded-2xl animate-pulse space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-siftrix-lavender/80">
+          <div className="siftrix-card p-6 md:p-8 rounded-2xl animate-pulse space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-siftrix-border">
               <div className="space-y-3">
-                <div className="h-5 w-32 bg-siftrix-lavender/60 rounded" />
+                <div className="h-5 w-32 bg-siftrix-sand rounded" />
                 <div className="flex flex-wrap gap-2">
-                  <div className="h-7 w-28 bg-siftrix-lavender/60 rounded-full" />
-                  <div className="h-7 w-28 bg-siftrix-lavender/60 rounded-full" />
-                  <div className="h-7 w-20 bg-siftrix-lavender/60 rounded-full" />
+                  <div className="h-7 w-28 bg-siftrix-sand rounded-full" />
+                  <div className="h-7 w-28 bg-siftrix-sand rounded-full" />
+                  <div className="h-7 w-20 bg-siftrix-sand rounded-full" />
                 </div>
               </div>
-              <div className="h-16 w-48 bg-siftrix-lavender/60 rounded-xl" />
+              <div className="h-16 w-48 bg-siftrix-sand rounded-xl" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -129,34 +135,34 @@ export function ScanDetailsContent({
                   key={idx}
                   className="p-4 rounded-xl siftrix-panel-inset space-y-2"
                 >
-                  <div className="h-3 w-20 bg-siftrix-lavender/60 rounded" />
-                  <div className="h-4 w-4/5 bg-siftrix-lavender/60 rounded" />
+                  <div className="h-3 w-20 bg-siftrix-sand rounded" />
+                  <div className="h-4 w-4/5 bg-siftrix-sand rounded" />
                 </div>
               ))}
             </div>
 
             <div className="p-4 rounded-xl siftrix-panel-inset space-y-2">
-              <div className="h-3 w-28 bg-siftrix-lavender/60 rounded" />
-              <div className="h-4 w-full bg-siftrix-lavender/60 rounded" />
-              <div className="h-4 w-2/3 bg-siftrix-lavender/60 rounded" />
+              <div className="h-3 w-28 bg-siftrix-sand rounded" />
+              <div className="h-4 w-full bg-siftrix-sand rounded" />
+              <div className="h-4 w-2/3 bg-siftrix-sand rounded" />
             </div>
           </div>
 
-          <div className="siftrix-card-3d p-6 md:p-8 rounded-2xl animate-pulse space-y-5">
-            <div className="h-6 w-64 bg-siftrix-lavender/60 rounded" />
+          <div className="siftrix-card p-6 md:p-8 rounded-2xl animate-pulse space-y-5">
+            <div className="h-6 w-64 bg-siftrix-sand rounded" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="h-28 bg-siftrix-lavender/60 rounded-xl" />
-              <div className="h-28 bg-siftrix-lavender/60 rounded-xl" />
+              <div className="h-28 bg-siftrix-sand rounded-xl" />
+              <div className="h-28 bg-siftrix-sand rounded-xl" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="h-24 bg-siftrix-lavender/60 rounded-xl" />
-              <div className="h-24 bg-siftrix-lavender/60 rounded-xl" />
+              <div className="h-24 bg-siftrix-sand rounded-xl" />
+              <div className="h-24 bg-siftrix-sand rounded-xl" />
             </div>
             <div className="space-y-3 pt-2">
-              <div className="h-5 w-36 bg-siftrix-lavender/60 rounded" />
-              <div className="h-20 bg-siftrix-lavender/60 rounded-xl" />
-              <div className="h-20 bg-siftrix-lavender/60 rounded-xl" />
-              <div className="h-20 bg-siftrix-lavender/60 rounded-xl" />
+              <div className="h-5 w-36 bg-siftrix-sand rounded" />
+              <div className="h-20 bg-siftrix-sand rounded-xl" />
+              <div className="h-20 bg-siftrix-sand rounded-xl" />
+              <div className="h-20 bg-siftrix-sand rounded-xl" />
             </div>
           </div>
         </div>
@@ -166,7 +172,7 @@ export function ScanDetailsContent({
       {viewState.status === 'error' ? (
         <div
           role="alert"
-          className="bg-siftrix-soft rounded-2xl shadow-[0_14px_36px_rgba(23,21,46,0.55)] border border-red-300 p-6 md:p-8 space-y-5"
+          className="siftrix-card rounded-2xl border-red-200 p-6 md:p-8 space-y-5"
         >
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-5 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -183,11 +189,11 @@ export function ScanDetailsContent({
                 {viewState.title}
               </h3>
             </div>
-            <p className="text-sm text-red-800">{viewState.message}</p>
+            <p className="text-sm text-red-700">{viewState.message}</p>
             {viewState.scanId ? (
               <p className="text-xs text-red-700">
                 Requested Scan ID:{' '}
-                <code className="font-mono bg-white/80 px-2 py-0.5 rounded border border-red-200 break-all">
+                <code className="font-mono bg-white px-2 py-0.5 rounded border border-red-200 text-red-900 break-all">
                   {viewState.scanId}
                 </code>
               </p>
@@ -198,7 +204,7 @@ export function ScanDetailsContent({
             <button
               type="button"
               onClick={onRetry}
-              className="px-5 py-2.5 rounded-lg bg-red-700 hover:bg-red-800 text-white text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700"
+              className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
             >
               Retry
             </button>
@@ -206,7 +212,7 @@ export function ScanDetailsContent({
             <a
               href="/scans"
               onClick={(e) => handleSpaLinkClick(e, onNavigate, '/scans')}
-              className="px-5 py-2.5 rounded-lg siftrix-btn-light-neutral text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+              className="px-5 py-2.5 rounded-lg siftrix-btn-light-neutral text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               Back to History
             </a>
@@ -214,7 +220,7 @@ export function ScanDetailsContent({
             <a
               href="/dashboard"
               onClick={(e) => handleSpaLinkClick(e, onNavigate, '/dashboard')}
-              className="px-5 py-2.5 rounded-lg siftrix-btn-light-neutral text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+              className="px-5 py-2.5 rounded-lg siftrix-btn-light-neutral text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               Dashboard
             </a>
@@ -227,21 +233,21 @@ export function ScanDetailsContent({
         <div
           role="status"
           aria-live="polite"
-          className="siftrix-card-3d rounded-2xl p-8 md:p-10 text-center space-y-4"
+          className="siftrix-card rounded-2xl p-8 md:p-10 text-center space-y-4"
         >
           <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
             Scan Not Found
           </span>
-          <h3 className="text-2xl font-bold text-siftrix-navy">
+          <h3 className="text-2xl font-bold text-siftrix-charcoal">
             This scan record is unavailable
           </h3>
-          <p className="text-sm text-siftrix-royal max-w-lg mx-auto">
+          <p className="text-sm text-siftrix-muted-dark max-w-lg mx-auto">
             {viewState.message}
           </p>
           {viewState.scanId ? (
-            <p className="text-xs text-siftrix-royal">
+            <p className="text-xs text-siftrix-muted-dark">
               Scan ID:{' '}
-              <code className="font-mono siftrix-panel-inset px-2 py-1 rounded text-siftrix-navy break-all">
+              <code className="font-mono siftrix-panel-inset px-2 py-1 rounded text-siftrix-graphite break-all">
                 {viewState.scanId}
               </code>
             </p>
@@ -251,7 +257,7 @@ export function ScanDetailsContent({
             <a
               href="/scans"
               onClick={(e) => handleSpaLinkClick(e, onNavigate, '/scans')}
-              className="siftrix-btn-primary px-5 py-2.5 rounded-lg text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-siftrix-electric"
+              className="siftrix-btn-charcoal px-5 py-2.5 rounded-xl text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-siftrix-gold"
             >
               Back to History
             </a>
@@ -259,7 +265,7 @@ export function ScanDetailsContent({
             <a
               href="/dashboard"
               onClick={(e) => handleSpaLinkClick(e, onNavigate, '/dashboard')}
-              className="px-5 py-2.5 rounded-lg border border-siftrix-royal text-siftrix-navy hover:bg-siftrix-royal hover:text-siftrix-soft text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+              className="px-5 py-2.5 rounded-xl siftrix-btn-secondary text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               Dashboard
             </a>
@@ -267,7 +273,7 @@ export function ScanDetailsContent({
             <button
               type="button"
               onClick={() => onNavigate('/', 'scan')}
-              className="px-5 py-2.5 rounded-lg siftrix-btn-light-neutral text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-electric"
+              className="px-5 py-2.5 rounded-xl siftrix-btn-light-neutral text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               Run New Scan
             </button>
@@ -281,8 +287,13 @@ export function ScanDetailsContent({
           {/* Scan Overview Card */}
           <article
             aria-label="Scan Overview"
-            className="siftrix-card-3d p-6 md:p-8 rounded-2xl space-y-6"
+            className="siftrix-card relative overflow-hidden p-6 md:p-8 rounded-2xl space-y-6"
           >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-siftrix-charcoal via-siftrix-gold to-siftrix-charcoal"
+            />
+
             {(() => {
               const { scan } = viewState
               const score = clampRiskScore(scan.overall_risk_score)
@@ -290,9 +301,9 @@ export function ScanDetailsContent({
 
               return (
                 <>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-siftrix-lavender/80">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-siftrix-border">
                     <div className="space-y-3">
-                      <h3 className="text-lg font-bold text-siftrix-navy">
+                      <h3 className="text-lg font-bold text-siftrix-charcoal">
                         Scan Overview
                       </h3>
                       <div className="flex flex-wrap items-center gap-2">
@@ -302,26 +313,15 @@ export function ScanDetailsContent({
                       </div>
                     </div>
 
-                    <div className="siftrix-panel-inset px-4 py-3 rounded-xl min-w-48">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-xs font-semibold text-siftrix-royal uppercase">
-                          Risk Score
-                        </span>
-                        <span className="text-2xl font-bold text-siftrix-navy">
-                          {score}
-                          <span className="text-sm font-normal text-siftrix-royal">
-                            /100
-                          </span>
-                        </span>
-                      </div>
-                      <div
-                        role="progressbar"
-                        aria-label="Overall risk score"
-                        aria-valuenow={score}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        className="w-full h-2 bg-siftrix-navy/15 rounded-full overflow-hidden mt-2"
-                      >
+                    <div className="flex flex-col items-stretch sm:items-end gap-2">
+                      <RiskGaugeRing
+                        score={score}
+                        verdict={scan.verdict}
+                        label="Risk Score"
+                        ariaLabel="Overall risk score"
+                        compact
+                      />
+                      <div className="w-full h-1.5 bg-siftrix-sand rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${verdictStyle.bar}`}
                           style={{ width: `${score}%` }}
@@ -332,42 +332,42 @@ export function ScanDetailsContent({
 
                   {/* Metadata Grid */}
                   <dl className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl siftrix-panel-inset space-y-1">
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-siftrix-royal">
+                    <div className="min-w-0 p-4 rounded-xl siftrix-panel-inset space-y-1">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink">
                         Scan ID
                       </dt>
-                      <dd className="font-mono text-xs text-siftrix-navy break-all">
+                      <dd className="font-mono text-xs text-siftrix-charcoal break-all">
                         {scan.id}
                       </dd>
                     </div>
 
-                    <div className="p-4 rounded-xl siftrix-panel-inset space-y-1">
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-siftrix-royal">
+                    <div className="min-w-0 p-4 rounded-xl siftrix-panel-inset space-y-1">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink">
                         Scan Date & Time
                       </dt>
-                      <dd className="text-sm font-medium text-siftrix-navy">
+                      <dd className="text-sm font-medium text-siftrix-charcoal">
                         {formatTimestamp(scan.created_at)}
                       </dd>
                     </div>
 
-                    <div className="p-4 rounded-xl siftrix-panel-inset space-y-1">
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-siftrix-royal">
+                    <div className="min-w-0 p-4 rounded-xl siftrix-panel-inset space-y-1">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink">
                         Last Updated
                       </dt>
-                      <dd className="text-sm font-medium text-siftrix-navy">
+                      <dd className="text-sm font-medium text-siftrix-charcoal">
                         {formatTimestamp(scan.updated_at)}
                       </dd>
                     </div>
                   </dl>
 
-                  {/* Full Scanned URL / Message */}
-                  <div className="p-4 rounded-xl siftrix-panel-inset space-y-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-siftrix-royal block">
+                  {/* Full Scanned URL / Message inside Obsidian Artifact Strip */}
+                  <div className="p-4 sm:p-5 rounded-xl bg-[#1B1B20] border border-siftrix-charcoal-border border-l-4 border-l-siftrix-gold space-y-1.5 text-siftrix-pearl">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-champagne block">
                       {getTargetContentHeading(scan.target_type)}
                     </span>
                     {scan.target_content ? (
                       <p
-                        className={`text-sm text-siftrix-navy leading-relaxed ${
+                        className={`text-sm text-[#EDE7DB] leading-relaxed ${
                           scan.target_type === 'url'
                             ? 'font-mono break-all'
                             : 'break-words whitespace-pre-wrap'
@@ -376,7 +376,7 @@ export function ScanDetailsContent({
                         {scan.target_content}
                       </p>
                     ) : (
-                      <p className="text-sm text-siftrix-royal/85 italic">
+                      <p className="text-sm text-[#ACA69E] italic">
                         No target content recorded for this scan.
                       </p>
                     )}
@@ -400,7 +400,7 @@ export function ScanDetailsContent({
 
 /**
  * Container component that loads real scan details for /scans/:scanId
- * from GET /api/scans/{scan_id} and manages retry and refresh cycles.
+ * from GET /api/history/{scan_id} and manages retry and refresh cycles.
  */
 export default function ScanDetailsPage({
   scanId,

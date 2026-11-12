@@ -15,6 +15,14 @@ import {
   type StorageLike,
 } from './userPreferences'
 import { resolveBackendHealthState } from './settingsDiagnostics'
+import {
+  DEFAULT_SOUND_PREFERENCE,
+  SOUND_PREFERENCE_STORAGE_KEY,
+  isValidSoundPreference,
+  loadSoundPreference,
+  playScanCompletionChime,
+  saveSoundPreference,
+} from './soundEffects'
 
 function createMemoryStorage(initial: Record<string, string> = {}): {
   storage: StorageLike
@@ -247,5 +255,21 @@ describe('userPreferences, backend diagnostics, and SettingsPage', () => {
     expect(disconnectedHtml).toContain('Disconnected / Unavailable')
     expect(disconnectedHtml).toContain('Connection refused')
     expect(disconnectedHtml).not.toContain('>Connected<')
+  })
+
+  it('defaults restrained sound feedback to off and handles persistence and SSR playback safely', () => {
+    const { storage, backing } = createMemoryStorage()
+    expect(loadSoundPreference(storage)).toBe(DEFAULT_SOUND_PREFERENCE)
+    expect(isValidSoundPreference('on')).toBe(true)
+    expect(isValidSoundPreference('off')).toBe(true)
+    expect(isValidSoundPreference('loud')).toBe(false)
+
+    expect(saveSoundPreference('on', storage)).toBe(true)
+    expect(backing.get(SOUND_PREFERENCE_STORAGE_KEY)).toBe('on')
+    expect(loadSoundPreference(storage)).toBe('on')
+
+    expect(() => playScanCompletionChime('safe', storage)).not.toThrow()
+    expect(loadSoundPreference(null)).toBe('off')
+    expect(saveSoundPreference('on', null)).toBe(false)
   })
 })

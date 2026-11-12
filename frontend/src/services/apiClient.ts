@@ -8,6 +8,7 @@ export interface ApiResponse<T> {
   error: string | null
   status: number
   ok: boolean
+  headers?: Headers
 }
 
 /**
@@ -87,9 +88,21 @@ export async function apiRequest<T>(
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT_MS)
 
-  const headers = {
+  const headers: Record<string, string> = {
     ...API_CONFIG.DEFAULT_HEADERS,
-    ...(options.headers || {}),
+  }
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value
+      })
+    } else if (Array.isArray(options.headers)) {
+      for (const [key, value] of options.headers) {
+        headers[key] = value
+      }
+    } else {
+      Object.assign(headers, options.headers)
+    }
   }
 
   try {
@@ -132,6 +145,7 @@ export async function apiRequest<T>(
         ),
         status: response.status,
         ok: false,
+        headers: response.headers,
       }
     }
 
@@ -141,6 +155,7 @@ export async function apiRequest<T>(
         error: 'The backend returned an invalid JSON response.',
         status: response.status,
         ok: false,
+        headers: response.headers,
       }
     }
 
@@ -149,6 +164,7 @@ export async function apiRequest<T>(
       error: null,
       status: response.status,
       ok: true,
+      headers: response.headers,
     }
   } catch (err: unknown) {
     clearTimeout(timeoutId)
