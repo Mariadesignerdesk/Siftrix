@@ -317,15 +317,144 @@ async def test_gemini_timeout_and_error_handling():
 
     # 4. Empty candidates
     mock_empty = httpx.Response(
-    status_code=200,
-    json={"candidates": []},
-    request=httpx.Request(
-        "POST",
-        "https://generativelanguage.googleapis.com/mock"
+        status_code=200,
+        json={"candidates": []},
+        request=httpx.Request(
+            "POST",
+            "https://generativelanguage.googleapis.com/mock"
+        )
     )
-)
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_post.return_value = mock_empty
         res_empty = await client.analyze_threat("prompt")
         assert res_empty["is_fallback"] is True
         assert res_empty["fallback_reason"] == "empty_response"
+
+
+# =====================================================================
+# Gemini Retry & Transient Error Tests
+# =====================================================================
+
+@pytest.mark.asyncio
+async def test_gemini_retry_success_on_503():
+    """Verify HTTP 503 triggers exactly one retry and returns success if retry passes."""
+    client = GeminiClient(api_key="valid_key", retry_delay=0.001)
+
+    mock_503 = httpx.Response(
+        status_code=503,
+        json={"error": {"message": "Service Unavailable"}},
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+    mock_200 = httpx.Response(
+        status_code=200,
+        json={"candidates": [{"content": {"parts": [{"text": '{"sentiment": "urgent", "summary": "Alert"}'}]}}]},
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = [mock_503, mock_200]
+        res = await client.analyze_threat("Test prompt")
+
+        assert mock_post.call_count == 2
+        assert res["is_fallback"] is False
+        assert res["provider"] == "gemini"
+        assert res["sentiment"] == "urgent"
+
+
+@pytest.mark.asyncio
+async def test_gemini_retry_success_on_timeout():
+    """Verify network timeout triggers exactly one retry and recovers on success."""
+    client = GeminiClient(api_key="valid_key", retry_delay=0.001)
+
+    mock_200 = httpx.Response(
+        status_code=200,
+        json={"candidates": [{"content": {"parts": [{"text": '{"sentiment": "safe", "summary": "All good"}'}]}}]},
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = [httpx.TimeoutException("Read timed out"), mock_200]
+        res = await client.analyze_threat("Test prompt")
+
+        assert mock_post.call_count == 2
+        assert res["is_fallback"] is False
+        assert res["provider"] == "gemini"
+        assert res["sentiment"] == "safe"
+
+
+@pytest.mark.asyncio
+async def test_gemini_retry_success_on_504():
+    """Verify HTTP 504 Gateway Timeout triggers exactly one retry and succeeds."""
+    client = GeminiClient(api_key="valid_key", retry_delay=0.001)
+
+    mock_504 = httpx.Response(
+        status_code=504,
+        json={"error": {"message": "Gateway Timeout"}},
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+    mock_200 = httpx.Response(
+        status_code=200,
+        json={"candidates": [{"content": {"parts": [{"text": '{"sentiment": "alarmist"}'}]}}]},
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = [mock_504, mock_200]
+        res = await client.analyze_threat("Test prompt")
+
+        assert mock_post.call_count == 2
+        assert res["is_fallback"] is False
+        assert res["provider"] == "gemini"
+
+
+@pytest.mark.asyncio
+async def test_gemini_retry_failure_preserves_fallback():
+    """Verify repeated transient errors exhaust maximum one retry and preserve heuristic fallback."""
+    client = GeminiClient(api_key="valid_key", retry_delay=0.001)
+
+    # 1. Consecutive 503s
+    mock_503 = httpx.Response(
+        status_code=503,
+        json={"error": {"message": "Service Unavailable"}},
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = [mock_503, mock_503]
+        res = await client.analyze_threat("Urgent: Bank account suspended immediately. Provide OTP.")
+
+        assert mock_post.call_count == 2
+        assert res["is_fallback"] is True
+        assert res["provider"] == "fallback"
+        assert res["fallback_reason"] == "http_503"
+        assert res["verdict"] == "malicious"
+
+    # 2. Consecutive Timeouts
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = [httpx.TimeoutException("Timeout 1"), httpx.TimeoutException("Timeout 2")]
+        res_timeout = await client.analyze_threat("Normal message")
+
+        assert mock_post.call_count == 2
+        assert res_timeout["is_fallback"] is True
+        assert res_timeout["provider"] == "fallback"
+        assert res_timeout["fallback_reason"] == "timeout"
+        assert res_timeout["verdict"] == "safe"
+
+
+@pytest.mark.asyncio
+async def test_gemini_non_retryable_errors_no_retry():
+    """Verify HTTP 429, 400, and 401 fail fast with zero retries."""
+    client = GeminiClient(api_key="valid_key", retry_delay=0.001)
+
+    for status_code, expected_reason in [(429, "rate_limited"), (400, "http_400"), (401, "http_401")]:
+        mock_err = httpx.Response(
+            status_code=status_code,
+            json={"error": {"message": f"Error {status_code}"}},
+            request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+        )
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_err
+            res = await client.analyze_threat("Test prompt")
+
+            assert mock_post.call_count == 1  # Exactly 1 call, NEVER retried
+            assert res["is_fallback"] is True
+            assert res["fallback_reason"] == expected_reason

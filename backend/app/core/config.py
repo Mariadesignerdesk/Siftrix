@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # External APIs (no secrets hardcoded)
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.8-flash"
-    GEMINI_TIMEOUT: float = 15.0
+    GEMINI_TIMEOUT: float = 30.0
 
     VIRUSTOTAL_API_KEY: str = ""
     VIRUSTOTAL_TIMEOUT: float = 10.0

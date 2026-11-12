@@ -314,14 +314,12 @@ def test_database_rollback_on_commit_failure(client):
 
 def test_cors_exposes_x_session_id_header(client):
     """Verify CORS middleware exposes X-Session-ID so browser frontend can read it."""
-    response = client.options(
+    response = client.post(
         "/api/scan/message",
-        headers={
-            "Origin": "http://localhost:5173",
-            "Access-Control-Request-Method": "POST",
-            "Access-Control-Request-Headers": "X-Session-ID,Content-Type",
-        },
+        json={"content": "Check CORS expose headers"},
+        headers={"Origin": "http://localhost:5173"},
     )
+    assert response.status_code == 200
     expose_header = response.headers.get("access-control-expose-headers") or response.headers.get("Access-Control-Expose-Headers")
     assert expose_header is not None
     assert "X-Session-ID" in expose_header
