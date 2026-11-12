@@ -354,6 +354,74 @@ async def test_security_advisor_contains_verified_pakistan_authorities():
     assert len(recs.ur) >= 2
 
 
+@pytest.mark.asyncio
+async def test_security_advisor_low_risk_scenario():
+    """Verify security advisor generates tailored low-risk bilingual guidance."""
+    advisor = SecurityAdvisorAgent()
+
+    finding, summary, recs = await advisor.advise(
+        risk_level="low",
+        verdict="safe",
+        overall_score=15.0,
+        target_content="Meeting schedule for tomorrow",
+    )
+
+    assert "No immediate threat" in finding.action_required
+    assert len(finding.dos) >= 2
+    assert len(finding.donts) >= 1
+    assert "phishing" in summary.en.lower()
+    assert "khatra" in summary.ur.lower()
+    assert any("2FA" in r or "two-factor" in r.lower() for r in recs.en + recs.ur)
+
+
+@pytest.mark.asyncio
+async def test_security_advisor_medium_risk_scenario():
+    """Verify security advisor generates medium-risk guidance with PTA reporting."""
+    advisor = SecurityAdvisorAgent()
+
+    finding, summary, recs = await advisor.advise(
+        risk_level="medium",
+        verdict="suspicious",
+        overall_score=45.0,
+        target_content="Suspicious parcel notification",
+    )
+
+    assert "Suspicious activity detected" in finding.action_required
+    assert any("9000" in do for do in finding.dos)
+    assert any("9000" in r for r in recs.en + recs.ur)
+    assert len(summary.en) > 10
+    assert len(summary.ur) > 10
+
+
+@pytest.mark.asyncio
+async def test_security_advisor_finding_aware_enrichment():
+    """Verify security advisor injects SBP banking emergency advice when credentials are targeted."""
+    advisor = SecurityAdvisorAgent()
+
+    msg_finding = MessageAgentFinding(
+        risk_score=75.0,
+        urgency_detected=True,
+        impersonation_detected=True,
+        credential_harvesting_detected=True,
+        sentiment="alarmist",
+        indicators=["Sensitive credential or personal identity data requested (+30)"],
+    )
+
+    finding, summary, recs = await advisor.advise(
+        risk_level="high",
+        verdict="malicious",
+        overall_score=75.0,
+        message_finding=msg_finding,
+        target_content="Provide OTP immediately to unblock bank account",
+    )
+
+    # Verified SBP helpline in recommendations for credential theft
+    assert any("021-111-727-273" in r for r in recs.en)
+    assert any("021-111-727-273" in r for r in recs.ur)
+    assert any("artificial pressure" in dont.lower() for dont in finding.donts)
+    assert any("verified websites" in do.lower() for do in finding.dos)
+
+
 # =====================================================================
 # 9. AI Orchestrator Compound Scoring & Integration Tests
 # =====================================================================

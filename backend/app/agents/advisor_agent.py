@@ -2,10 +2,9 @@
 import logging
 from typing import Dict, Any, List, Tuple
 
-from app.agents.base import BaseAgent, sanitize_and_quarantine
+from app.agents.base import BaseAgent
 from app.schemas.common import BilingualText, BilingualList
 from app.schemas.scan import AdvisorAgentFinding, MessageAgentFinding, URLAgentFinding
-from app.services.gemini import gemini_client
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ class SecurityAdvisorAgent(BaseAgent):
     ) -> Tuple[AdvisorAgentFinding, BilingualText, BilingualList]:
         """Synthesize findings into actionable dos/donts and localized bilingual guidance."""
 
-        # 1. Select Tiered Deterministic Advice
+        # 1. Base Tiered Deterministic Playbooks
         if risk_level == "low":
             action_required = "No immediate threat detected. Exercise routine cyber caution."
             dos_en = [
@@ -103,33 +102,21 @@ class SecurityAdvisorAgent(BaseAgent):
                 f"Spammer ki SIM block karwanay ke liye message {PTA_SMS_SHORTCODE} par PTA ko forward karein.",
             ]
 
-        # 2. Optional Gemini Enrichment for Context-Specific Bilingual Phrasing
-        if gemini_client.is_configured and target_content:
-            try:
-                quarantined = sanitize_and_quarantine(target_content[:500])
-                prompt = (
-                    f"You are a cyber security advisor in Pakistan.\n"
-                    f"Risk level: {risk_level}, Verdict: {verdict}, Risk score: {overall_score:.1f}.\n"
-                    f"{quarantined}\n\n"
-                    f"Provide tailored empathetic bilingual guidance in JSON format with fields:\n"
-                    f"- summary_en: string\n"
-                    f"- summary_ur: string (in Roman Urdu)\n"
-                    f"- recs_en: list of strings\n"
-                    f"- recs_ur: list of strings (in Roman Urdu)\n"
-                    f"Ensure you mention verified authorities: NCCIA ({NCCIA_HELPLINE}) and PTA ({PTA_SMS_SHORTCODE})."
-                )
-                gemini_res = await gemini_client.analyze_threat(prompt)
-                if not gemini_res.get("is_fallback"):
-                    if isinstance(gemini_res.get("summary_en"), str) and gemini_res["summary_en"].strip():
-                        summary_en = gemini_res["summary_en"].strip()
-                    if isinstance(gemini_res.get("summary_ur"), str) and gemini_res["summary_ur"].strip():
-                        summary_ur = gemini_res["summary_ur"].strip()
-                    if isinstance(gemini_res.get("recs_en"), list) and gemini_res["recs_en"]:
-                        recs_en = [str(r) for r in gemini_res["recs_en"] if str(r).strip()]
-                    if isinstance(gemini_res.get("recs_ur"), list) and gemini_res["recs_ur"]:
-                        recs_ur = [str(r) for r in gemini_res["recs_ur"] if str(r).strip()]
-            except Exception as e:
-                logger.warning(f"[{self.name}] Gemini bilingual enrichment failed (using deterministic templates): {e}")
+        # 2. Contextual Enrichment from Active Agent Findings
+        if message_finding:
+            if message_finding.credential_harvesting_detected:
+                recs_en.insert(0, f"Immediately contact your bank or call SBP helpline at {SBP_HELPLINE} to freeze accounts.")
+                recs_ur.insert(0, f"Foran apne bank ya State Bank helpline {SBP_HELPLINE} par rabta kar ke account freeze karwayen.")
+            if message_finding.urgency_detected and risk_level != "low":
+                donts_en.append("Do not act under artificial pressure or urgent deadlines.")
+            if message_finding.impersonation_detected and risk_level != "low":
+                dos_en.append("Verify communications directly through verified websites, not provided links.")
+
+        if url_finding:
+            if url_finding.suspicious_tld or any("shortener" in ind.lower() for ind in url_finding.indicators):
+                donts_en.append("Never open shortened or masked links from unsolicited messages.")
+            if url_finding.virustotal_malicious_count and url_finding.virustotal_malicious_count > 0:
+                dos_en.append("Clear browser cache and scan device with antivirus after visiting flagged URL.")
 
         advisor_finding = AdvisorAgentFinding(
             action_required=action_required,
