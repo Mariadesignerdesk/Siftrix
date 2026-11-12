@@ -118,7 +118,7 @@ export default function Scanner() {
   return (
     <section
       id="scan"
-      className="relative px-5 sm:px-6 md:px-10 py-16 md:py-20 bg-gradient-to-b from-siftrix-pearl via-[#F4EFE5] to-siftrix-beige border-b border-siftrix-border"
+      className="relative px-4 sm:px-6 md:px-10 py-14 md:py-20 bg-gradient-to-b from-siftrix-pearl via-[#F4EFE5] to-siftrix-beige border-b border-siftrix-border"
     >
       <div className="relative z-10 max-w-4xl mx-auto">
         <div className="text-center max-w-2xl mx-auto">
@@ -139,7 +139,7 @@ export default function Scanner() {
         </div>
 
         <div className="relative mt-9">
-          <div className="relative overflow-hidden siftrix-scanner-surface p-5 sm:p-7 md:p-8 rounded-2xl">
+          <div className="relative overflow-hidden siftrix-scanner-surface p-4 sm:p-7 md:p-8 rounded-2xl">
             {/* Refined Champagne-Gold Top Trim */}
             <div
               aria-hidden="true"

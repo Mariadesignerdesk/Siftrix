@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
@@ -8,13 +9,28 @@ import About from './components/About'
 import Footer from './components/Footer'
 import CinematicIntro from './components/CinematicIntro'
 import DashboardPage from './pages/DashboardPage'
+import LoginPage from './pages/LoginPage'
 import ScanDetailsPage from './pages/ScanDetailsPage'
 import ScanHistoryPage from './pages/ScanHistoryPage'
 import SettingsPage from './pages/SettingsPage'
+import SignupPage from './pages/SignupPage'
+import {
+  clearAuthPreviewSession,
+  loadAuthPreviewSession,
+  type AuthPreviewSession,
+} from './utils/authPreview'
 import { useAppRouter } from './utils/router'
 
 function App() {
   const { route, navigate } = useAppRouter()
+  const [authSession, setAuthSession] = useState<AuthPreviewSession | null>(
+    () => loadAuthPreviewSession()
+  )
+
+  const handleSignOut = () => {
+    clearAuthPreviewSession()
+    setAuthSession(null)
+  }
 
   return (
     <div
@@ -38,7 +54,12 @@ function App() {
       />
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <Navbar currentPage={route.page} onNavigate={navigate} />
+        <Navbar
+          currentPage={route.page}
+          onNavigate={navigate}
+          authSession={authSession}
+          onSignOut={handleSignOut}
+        />
         <main className="flex-1">
           {route.page === 'dashboard' ? (
             <DashboardPage onNavigate={navigate} />
@@ -51,7 +72,23 @@ function App() {
               onNavigate={navigate}
             />
           ) : route.page === 'settings' ? (
-            <SettingsPage onNavigate={navigate} />
+            <SettingsPage
+              onNavigate={navigate}
+              authSession={authSession}
+              onSignOut={handleSignOut}
+            />
+          ) : route.page === 'login' ? (
+            <LoginPage
+              authSession={authSession}
+              onAuthChange={setAuthSession}
+              onNavigate={navigate}
+            />
+          ) : route.page === 'signup' ? (
+            <SignupPage
+              authSession={authSession}
+              onAuthChange={setAuthSession}
+              onNavigate={navigate}
+            />
           ) : (
             <>
               <Hero />

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { checkBackendHealth } from '../services/api'
 import { API_CONFIG } from '../services/config'
+import {
+  clearAuthPreviewSession,
+  type AuthPreviewSession,
+} from '../utils/authPreview'
 import { formatTimestamp } from '../utils/scanPresentation'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
 import {
@@ -23,6 +27,8 @@ import {
 
 interface SettingsPageProps {
   onNavigate: NavigateFn
+  authSession?: AuthPreviewSession | null
+  onSignOut?: () => void
 }
 
 interface SettingsContentProps {
@@ -31,6 +37,8 @@ interface SettingsContentProps {
   preferenceNotice: { text: string; isWarning: boolean } | null
   isConfirmingReset: boolean
   diagnosticState: BackendDiagnosticState
+  authSession?: AuthPreviewSession | null
+  onSignOut?: () => void
   onSelectLanguage: (value: LanguageView) => void
   onToggleSound?: () => void
   onRequestReset: () => void
@@ -51,6 +59,8 @@ export function SettingsContent({
   preferenceNotice,
   isConfirmingReset,
   diagnosticState,
+  authSession = null,
+  onSignOut,
   onSelectLanguage,
   onToggleSound,
   onRequestReset,
@@ -69,10 +79,10 @@ export function SettingsContent({
   return (
     <section
       aria-label="Profile and Settings"
-      className="px-5 sm:px-6 md:px-10 py-10 md:py-14 max-w-7xl mx-auto space-y-6 animate-siftrix-enter"
+      className="px-4 sm:px-6 md:px-10 py-8 sm:py-10 md:py-14 max-w-7xl mx-auto space-y-6 animate-siftrix-enter"
     >
       {/* Strong Dark Settings Header */}
-      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-5 sm:p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-siftrix-champagne/80 to-transparent"
@@ -425,20 +435,64 @@ export function SettingsContent({
           {/* Account Profile Card (Sand Taupe Warm Contrast Panel) */}
           <article
             aria-label="Account Profile"
-            className="bg-siftrix-sand/75 border border-siftrix-border p-6 md:p-8 rounded-2xl space-y-3"
+            className="bg-siftrix-sand/75 border border-siftrix-border p-5 sm:p-6 md:p-8 rounded-2xl space-y-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-lg font-bold text-siftrix-charcoal">
                 Account Profile
               </h3>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-charcoal-border whitespace-nowrap shrink-0">
-                Not Configured
+                {authSession ? 'UI Preview' : 'Not Configured'}
               </span>
             </div>
 
-            <p className="text-sm text-[#494641] leading-relaxed">
-              Account authentication and user profile management are not currently configured. SIFTRIX scans and history operate without a signed-in account, and display preferences on this page are stored only in your local browser.
-            </p>
+            {authSession ? (
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-xl bg-siftrix-pearl border border-siftrix-border space-y-1">
+                  <p className="text-sm font-bold text-siftrix-charcoal">
+                    {authSession.name}
+                  </p>
+                  <p className="font-mono text-xs text-siftrix-muted-dark break-all">
+                    {authSession.email}
+                  </p>
+                </div>
+                <p className="text-xs sm:text-sm text-[#494641] leading-relaxed">
+                  Showing a frontend-only authentication preview session. Real backend user accounts and tokens are pending integration.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearAuthPreviewSession()
+                    onSignOut?.()
+                  }}
+                  className="px-4 py-2 rounded-xl border border-red-300 bg-red-50 text-red-800 hover:bg-red-100 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  Sign Out (Clear Preview)
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-[#494641] leading-relaxed">
+                  Account authentication and user profile management are not currently configured. SIFTRIX scans and history operate without a signed-in account, and display preferences on this page are stored only in your local browser.
+                </p>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <a
+                    href="/login"
+                    onClick={(e) => handleSpaLinkClick(e, onNavigate, '/login')}
+                    className="siftrix-btn-charcoal px-4 py-2 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                  >
+                    Sign In
+                  </a>
+                  <a
+                    href="/signup"
+                    onClick={(e) => handleSpaLinkClick(e, onNavigate, '/signup')}
+                    className="siftrix-btn-secondary px-4 py-2 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                  >
+                    Create Account
+                  </a>
+                </div>
+              </div>
+            )}
           </article>
         </div>
       </div>
@@ -450,7 +504,11 @@ export function SettingsContent({
  * Profile & Settings page component managing persisted display preferences,
  * genuine frontend configuration display, and live backend health checks.
  */
-export default function SettingsPage({ onNavigate }: SettingsPageProps) {
+export default function SettingsPage({
+  onNavigate,
+  authSession = null,
+  onSignOut,
+}: SettingsPageProps) {
   const [languagePreference, setLanguagePreference] = useState<LanguageView>(
     () => loadLanguagePreference()
   )
@@ -571,6 +629,8 @@ export default function SettingsPage({ onNavigate }: SettingsPageProps) {
       preferenceNotice={preferenceNotice}
       isConfirmingReset={isConfirmingReset}
       diagnosticState={diagnosticState}
+      authSession={authSession}
+      onSignOut={onSignOut}
       onSelectLanguage={handleSelectLanguage}
       onToggleSound={handleToggleSound}
       onRequestReset={() => setIsConfirmingReset(true)}

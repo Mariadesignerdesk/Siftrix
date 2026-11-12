@@ -4,7 +4,7 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative overflow-hidden bg-gradient-to-b from-siftrix-pearl via-siftrix-beige to-[#E8E0D2] border-b border-siftrix-border px-5 sm:px-6 md:px-10 py-14 sm:py-16 lg:py-20"
+      className="relative overflow-hidden bg-gradient-to-b from-siftrix-pearl via-siftrix-beige to-[#E8E0D2] border-b border-siftrix-border px-4 sm:px-6 md:px-10 py-10 sm:py-16 lg:py-20"
     >
       {/* Subtle Warm Studio Champagne Illumination */}
       <div
@@ -27,7 +27,7 @@ export default function Hero() {
             <span>AI-POWERED CYBERSECURITY</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl xl:text-[3.4rem] font-bold text-siftrix-charcoal leading-[1.1] tracking-[-0.03em]">
+          <h1 className="text-[1.95rem] sm:text-5xl xl:text-[3.4rem] font-bold text-siftrix-charcoal leading-[1.12] tracking-[-0.03em]">
             Stay One Step Ahead of{' '}
             <span className="inline-block font-editorial italic font-bold text-[1.1em] siftrix-gold-text-on-light pr-2 pb-1 underline decoration-siftrix-gold/70 decoration-2 underline-offset-8">
               Online Scams.
@@ -93,7 +93,7 @@ export default function Hero() {
               <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
               Message &amp; Email Lure Checks
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
+            <span className="inline-flex items-center justify-center text-center mx-auto gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
               EN + اردو Advisories
             </span>
@@ -101,7 +101,7 @@ export default function Hero() {
         </div>
 
         {/* Right Open Floating 3D Shield + 3 Orbiting Agent Glass Nodes */}
-        <div className="w-full lg:w-[32rem] xl:w-[36rem] lg:shrink-0 flex justify-center lg:justify-end">
+        <div className="w-full lg:w-[30rem] xl:w-[36rem] lg:shrink-0 flex justify-center lg:justify-end">
           <HeroShield3D />
         </div>
       </div>

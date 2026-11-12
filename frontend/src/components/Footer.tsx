@@ -29,6 +29,8 @@ const WORKSPACE_LINKS: ReadonlyArray<{
   { label: 'Command Preview', href: '/#command-center', path: '/', sectionId: 'command-center' },
   { label: 'Scan History', href: '/scans', path: '/scans' },
   { label: 'Profile & Settings', href: '/settings', path: '/settings' },
+  { label: 'Sign In', href: '/login', path: '/login' },
+  { label: 'Create Account', href: '/signup', path: '/signup' },
 ]
 
 export default function Footer({ onNavigate }: FooterProps) {

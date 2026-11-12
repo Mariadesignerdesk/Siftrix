@@ -61,7 +61,7 @@ export default function SampleReportPreview({
       />
 
       {/* Illustrative Static Classification Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-siftrix-border bg-siftrix-pearl px-5 sm:px-7 py-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-siftrix-border bg-siftrix-pearl px-4 sm:px-7 py-4">
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-800">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-500" />
@@ -81,7 +81,7 @@ export default function SampleReportPreview({
         </button>
       </div>
 
-      <div className="p-5 sm:p-7 space-y-6 bg-white">
+      <div className="p-4 sm:p-7 space-y-6 bg-white">
         {/* Executive Verdict + Risk Score Visualization */}
         <div className="flex flex-col lg:flex-row lg:items-stretch justify-between gap-5 pb-6 border-b border-siftrix-border">
           <div className="flex-1 space-y-4 min-w-0">
@@ -140,7 +140,7 @@ export default function SampleReportPreview({
             <div
               role="group"
               aria-label="Sample report language view"
-              className="inline-flex rounded-xl border border-siftrix-border bg-siftrix-pearl p-1 self-start"
+              className="inline-flex flex-wrap gap-1 rounded-xl border border-siftrix-border bg-siftrix-pearl p-1 self-start max-w-full"
             >
               {(
                 [

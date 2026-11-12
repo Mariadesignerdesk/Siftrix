@@ -235,10 +235,10 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   return (
     <section
       aria-label="Security Dashboard"
-      className="px-5 sm:px-6 md:px-10 py-10 md:py-14 max-w-7xl mx-auto space-y-8 animate-siftrix-enter"
+      className="px-4 sm:px-6 md:px-10 py-8 sm:py-10 md:py-14 max-w-7xl mx-auto space-y-8 animate-siftrix-enter"
     >
       {/* Strong Dark Command Center Header */}
-      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-siftrix-champagne/80 to-transparent"

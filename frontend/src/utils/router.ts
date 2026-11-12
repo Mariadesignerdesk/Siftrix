@@ -6,6 +6,8 @@ export type AppRoute =
   | { page: 'history' }
   | { page: 'scan-details'; scanId: string }
   | { page: 'settings' }
+  | { page: 'login' }
+  | { page: 'signup' }
 
 export type AppPath =
   | '/'
@@ -13,6 +15,8 @@ export type AppPath =
   | '/scans'
   | `/scans/${string}`
   | '/settings'
+  | '/login'
+  | '/signup'
 
 export type NavigateFn = (path: AppPath, sectionId?: string) => void
 
@@ -73,6 +77,14 @@ export function parseRoutePath(pathname: string): AppRoute {
 
   if (normalized === '/settings') {
     return { page: 'settings' }
+  }
+
+  if (normalized === '/login') {
+    return { page: 'login' }
+  }
+
+  if (normalized === '/signup') {
+    return { page: 'signup' }
   }
 
   if (normalized.startsWith('/scans/')) {

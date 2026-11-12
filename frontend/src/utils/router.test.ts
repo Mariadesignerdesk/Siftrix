@@ -16,6 +16,10 @@ describe('router and scan presentation utilities', () => {
     expect(parseRoutePath('/scans/')).toEqual({ page: 'history' })
     expect(parseRoutePath('/settings')).toEqual({ page: 'settings' })
     expect(parseRoutePath('/settings/')).toEqual({ page: 'settings' })
+    expect(parseRoutePath('/login')).toEqual({ page: 'login' })
+    expect(parseRoutePath('/login/')).toEqual({ page: 'login' })
+    expect(parseRoutePath('/signup')).toEqual({ page: 'signup' })
+    expect(parseRoutePath('/signup/')).toEqual({ page: 'signup' })
     expect(parseRoutePath('/scans/abc-123')).toEqual({
       page: 'scan-details',
       scanId: 'abc-123',

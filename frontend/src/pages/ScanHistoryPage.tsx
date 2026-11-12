@@ -128,10 +128,10 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
   return (
     <section
       aria-label="Scan History"
-      className="px-5 sm:px-6 md:px-10 py-10 md:py-14 max-w-7xl mx-auto space-y-6 animate-siftrix-enter"
+      className="px-4 sm:px-6 md:px-10 py-8 sm:py-10 md:py-14 max-w-7xl mx-auto space-y-6 animate-siftrix-enter"
     >
       {/* Strong Dark Audit Log Header */}
-      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-5 sm:p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-siftrix-champagne/80 to-transparent"
