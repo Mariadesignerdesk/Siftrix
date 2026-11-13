@@ -151,7 +151,7 @@ export default function Navbar({
   }
 
   const linkClassName = (isActive: boolean) =>
-    `rounded-lg px-2.5 xl:px-3.5 py-1.5 text-[13px] xl:text-sm font-medium transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+    `rounded-lg px-2 xl:px-2.5 2xl:px-3.5 py-1.5 text-xs xl:text-[13px] 2xl:text-sm font-medium transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
       isActive
         ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/45 shadow-2xs'
         : 'text-siftrix-muted-dark border border-transparent hover:text-siftrix-charcoal hover:bg-white/85 hover:border-siftrix-border'
@@ -174,23 +174,23 @@ export default function Navbar({
 
       <nav
         aria-label="Main Navigation"
-        className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-2.5 lg:py-3"
+        className="w-full max-w-[1440px] mx-auto flex items-center justify-between gap-1.5 sm:gap-2 lg:gap-2.5 xl:gap-3 px-3 sm:px-4 md:px-6 xl:px-8 py-2 lg:py-2.5"
       >
         {/* Brand Wordmark + Precision Gold Emblem */}
         <a
           href="/"
           onClick={(e) => handleLinkClick(e, '/')}
-          className="inline-flex items-center gap-2 sm:gap-2.5 shrink-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold rounded-xl px-1 py-0.5 transition-colors"
+          className="inline-flex items-center gap-2 shrink-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold rounded-xl px-1 py-0.5 transition-colors"
           aria-label="SIFTRIX Home"
         >
           <BrandMark className="h-8 w-8 sm:h-8.5 sm:w-8.5 shrink-0 shadow-2xs transition-transform duration-300 group-hover:scale-105" />
-          <div className="flex items-center gap-2.5">
-            <span className="text-lg sm:text-2xl font-bold tracking-tight text-siftrix-charcoal">
+          <div className="flex items-center gap-2">
+            <span className="text-lg sm:text-xl 2xl:text-2xl font-bold tracking-tight text-siftrix-charcoal">
               SIFTRIX
             </span>
-            <span className="hidden xl:inline-flex items-center rounded-full border border-siftrix-gold/45 bg-siftrix-white px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-siftrix-graphite shadow-2xs">
+            <span className="hidden 2xl:inline-flex items-center rounded-full border border-siftrix-gold/45 bg-siftrix-white px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-siftrix-graphite shadow-2xs">
               <span
-                className="mr-1.5 h-1.5 w-1.5 rounded-full bg-siftrix-gold"
+                className="mr-1 h-1.5 w-1.5 rounded-full bg-siftrix-gold"
                 aria-hidden="true"
               />
               AI Command
@@ -199,7 +199,7 @@ export default function Navbar({
         </a>
 
         {/* Desktop Center Navigation Links */}
-        <div className="hidden lg:flex items-center justify-center gap-1 xl:gap-1.5 rounded-xl border border-siftrix-border/80 bg-siftrix-beige/85 p-1">
+        <div className="hidden xl:flex items-center justify-center gap-1 2xl:gap-1.5 rounded-xl border border-siftrix-border/80 bg-siftrix-beige/85 p-1 shrink-0">
           {NAV_ITEMS.map((item) => {
             const active = item.isActive(currentPage)
             return (
@@ -218,7 +218,7 @@ export default function Navbar({
         </div>
 
         {/* Desktop Auth + Utilities + Primary Action */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0">
+        <div className="hidden xl:flex items-center gap-2 shrink-0">
           {/* Real-Time Notification Bell */}
           <NotificationBell onNavigate={onNavigate} />
 
@@ -228,7 +228,7 @@ export default function Navbar({
             onClick={handleToggleTheme}
             aria-label={`Switch theme (currently ${currentTheme})`}
             title={`Current theme: ${currentTheme}. Click to toggle.`}
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs text-sm"
+            className="h-9 w-9 xl:h-10 xl:w-10 rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs text-xs sm:text-sm"
           >
             {currentTheme === 'dark' ? '☀️' : '🌙'}
           </button>
@@ -238,7 +238,7 @@ export default function Navbar({
               <a
                 href="/settings"
                 onClick={(e) => handleLinkClick(e, '/settings')}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige px-2.5 py-1.5 text-xs font-semibold text-siftrix-charcoal max-w-[9rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige px-2 xl:px-2.5 py-1.5 text-xs font-semibold text-siftrix-charcoal max-w-[7.5rem] xl:max-w-[9rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                 title={`UI Preview: ${authSession.email}`}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold shrink-0" aria-hidden="true" />
@@ -247,7 +247,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={handleSignOutClick}
-                className="rounded-xl border border-siftrix-border bg-white px-3 py-1.5 text-[13px] xl:text-sm font-medium text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                className="rounded-xl border border-siftrix-border bg-white px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-medium text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
               >
                 Sign Out
               </button>
@@ -258,7 +258,11 @@ export default function Navbar({
                 href="/login"
                 onClick={(e) => handleLinkClick(e, '/login')}
                 aria-current={currentPage === 'login' ? 'page' : undefined}
-                className={linkClassName(currentPage === 'login')}
+                className={`rounded-xl px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                  currentPage === 'login'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
+                    : 'text-siftrix-muted-dark border border-siftrix-border/80 bg-white hover:text-siftrix-charcoal hover:border-siftrix-gold'
+                }`}
                 aria-label="Sign in to SIFTRIX"
               >
                 Sign In
@@ -267,9 +271,9 @@ export default function Navbar({
                 href="/signup"
                 onClick={(e) => handleLinkClick(e, '/signup')}
                 aria-current={currentPage === 'signup' ? 'page' : undefined}
-                className={`rounded-xl px-3 xl:px-3.5 py-1.5 text-[13px] xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                className={`rounded-xl px-2.5 xl:px-3.5 py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'signup'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
                     : 'siftrix-btn-secondary'
                 }`}
                 aria-label="Create a SIFTRIX account"
@@ -282,14 +286,14 @@ export default function Navbar({
           <button
             type="button"
             onClick={() => handleActionNavigate('/', 'scan')}
-            className="siftrix-btn-gold inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-pearl focus-visible:ring-siftrix-charcoal px-3.5 xl:px-4.5 py-2 rounded-xl text-[13px] xl:text-sm font-semibold cursor-pointer whitespace-nowrap"
+            className="hidden xl:inline-flex siftrix-btn-gold items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-pearl focus-visible:ring-siftrix-charcoal px-3 xl:px-4 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold cursor-pointer whitespace-nowrap"
             aria-label="Get started by scrolling to the threat analysis tool"
           >
             <span>Get Started</span>
             <svg
               aria-hidden="true"
               viewBox="0 0 20 20"
-              className="h-4 w-4 text-siftrix-charcoal"
+              className="h-3.5 w-3.5 xl:h-4 xl:w-4 text-siftrix-charcoal"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -303,24 +307,30 @@ export default function Navbar({
         </div>
 
         {/* Mobile & Tablet Compact Actions + Hamburger Menu Trigger */}
-        <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex xl:hidden items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
           {authSession ? (
-            <button
-              type="button"
-              onClick={handleSignOutClick}
-              className="rounded-xl border border-siftrix-border bg-white px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-siftrix-gold/45 bg-siftrix-beige px-2 py-1 text-xs font-semibold text-siftrix-charcoal max-w-[6.5rem] truncate">
+                <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold shrink-0" aria-hidden="true" />
+                <span className="truncate">{authSession.name}</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleSignOutClick}
+                className="rounded-xl border border-siftrix-border bg-white px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+              >
+                Sign Out
+              </button>
+            </div>
           ) : (
-            <>
+            <div className="flex items-center gap-1 sm:gap-1.5">
               <a
                 href="/login"
                 onClick={(e) => handleLinkClick(e, '/login')}
                 aria-current={currentPage === 'login' ? 'page' : undefined}
-                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                className={`rounded-xl px-2 sm:px-2.5 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'login'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
                     : 'border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold'
                 }`}
               >
@@ -330,21 +340,21 @@ export default function Navbar({
                 href="/signup"
                 onClick={(e) => handleLinkClick(e, '/signup')}
                 aria-current={currentPage === 'signup' ? 'page' : undefined}
-                className={`hidden sm:inline-flex rounded-xl px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                className={`hidden min-[360px]:inline-flex rounded-xl px-2 sm:px-2.5 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'signup'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
                     : 'siftrix-btn-secondary'
                 }`}
               >
                 Sign Up
               </a>
-            </>
+            </div>
           )}
 
           <button
             type="button"
             onClick={() => handleActionNavigate('/', 'scan')}
-            className="hidden sm:inline-flex siftrix-btn-gold items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-charcoal"
+            className="hidden md:inline-flex siftrix-btn-gold items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-charcoal"
           >
             <span>Get Started</span>
           </button>
@@ -369,7 +379,7 @@ export default function Navbar({
             aria-controls="siftrix-mobile-menu"
             aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-beige transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-beige transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
           >
             {isMobileMenuOpen ? (
               <svg
@@ -407,7 +417,7 @@ export default function Navbar({
       {isMobileMenuOpen ? (
         <div
           id="siftrix-mobile-menu"
-          className="lg:hidden border-t border-siftrix-border bg-siftrix-pearl/98 px-4 sm:px-6 py-4 shadow-[0_14px_30px_-14px_rgba(37,37,42,0.22)] max-h-[calc(100dvh-4.25rem)] overflow-y-auto"
+          className="xl:hidden border-t border-siftrix-border bg-siftrix-pearl/98 px-4 sm:px-6 py-4 shadow-[0_14px_30px_-14px_rgba(37,37,42,0.22)] max-h-[calc(100dvh-4.25rem)] overflow-y-auto"
         >
           <div className="max-w-7xl mx-auto space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

@@ -84,7 +84,7 @@ export default function Hero() {
           </div>
 
           {/* Preserved Factual Capability Badges */}
-          <div className="mt-8 flex flex-wrap items-center gap-2.5 text-xs font-medium text-siftrix-graphite">
+          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-2.5 text-xs font-medium text-siftrix-graphite">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
               URL &amp; SSRF Validation
@@ -93,7 +93,7 @@ export default function Hero() {
               <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
               Message &amp; Email Lure Checks
             </span>
-            <span className="inline-flex items-center justify-center text-center mx-auto gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-siftrix-border bg-siftrix-white/92 px-3.5 py-1.5 shadow-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
               EN + اردو Advisories
             </span>
