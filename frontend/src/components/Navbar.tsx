@@ -46,13 +46,6 @@ const NAV_ITEMS: ReadonlyArray<{
     isActive: (page) => page === 'history' || page === 'scan-details',
   },
   {
-    label: 'AI Advisor',
-    href: '/assistant',
-    path: '/assistant',
-    ariaLabel: 'Navigate to AI Cyber Advisor',
-    isActive: (page) => page === 'assistant',
-  },
-  {
     label: 'Leaderboard',
     href: '/leaderboard',
     path: '/leaderboard',

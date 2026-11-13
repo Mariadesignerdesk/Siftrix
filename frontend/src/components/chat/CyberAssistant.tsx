@@ -8,7 +8,6 @@ import {
   sendChatMessage,
   type ChatMessage,
 } from '../../services/chatService'
-import BrandMark from '../BrandMark'
 
 export default function CyberAssistant() {
   const [isOpen, setIsOpen] = useState(false)
@@ -85,20 +84,22 @@ export default function CyberAssistant() {
               setIsOpen(true)
               setIsMinimized(false)
             }}
-            aria-label="Open SIFTRIX AI Cybersecurity Advisor"
-            className="group relative flex items-center gap-2.5 rounded-full bg-siftrix-charcoal border border-siftrix-gold px-4 py-3 shadow-[0_12px_32px_rgba(25,25,30,0.45)] hover:scale-105 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
+            aria-label="Open AI Assistant"
+            title="Open AI Assistant"
+            className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-siftrix-charcoal border border-siftrix-gold text-siftrix-champagne shadow-[0_12px_32px_rgba(25,25,30,0.45)] hover:scale-105 hover:bg-[#202025] hover:text-white transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
           >
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-siftrix-champagne opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-siftrix-gold" />
-            </span>
-            <BrandMark className="h-6 w-6 shrink-0" />
-            <span className="text-xs font-bold text-siftrix-white tracking-wide">
-              AI Cyber Advisor
-            </span>
-            <span className="hidden sm:inline-block rounded-full bg-[#1B1B20] px-2 py-0.5 text-[10px] font-semibold text-siftrix-champagne border border-siftrix-gold/40">
-              Live
-            </span>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+            </svg>
           </button>
         ) : null}
       </div>
@@ -107,7 +108,7 @@ export default function CyberAssistant() {
       {isOpen ? (
         <div
           role="dialog"
-          aria-label="SIFTRIX AI Cyber Advisor"
+          aria-label="SIFTRIX AI Assistant"
           className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[26rem] md:w-[28rem] rounded-2xl border border-siftrix-gold/65 bg-siftrix-pearl shadow-[0_24px_54px_rgba(25,25,30,0.45)] flex flex-col overflow-hidden transition-all duration-300 animate-siftrix-enter ${
             isMinimized ? 'h-16' : 'h-[36rem] max-h-[calc(100dvh-2.5rem)]'
           }`}
@@ -115,18 +116,21 @@ export default function CyberAssistant() {
           {/* Header Bar */}
           <div className="flex items-center justify-between px-4 py-3 bg-siftrix-charcoal border-b border-siftrix-charcoal-border text-siftrix-white shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
-              <BrandMark className="h-6 w-6 shrink-0" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs sm:text-sm font-bold text-siftrix-white tracking-tight truncate">
-                    SIFTRIX Cyber Advisor
-                  </h3>
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
-                </div>
-                <p className="text-[10px] text-siftrix-champagne truncate">
-                  AI Threat Intelligence &amp; Containment
-                </p>
-              </div>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5 text-siftrix-champagne shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
+              <h3 className="text-sm font-bold text-siftrix-white tracking-tight truncate">
+                AI Assistant
+              </h3>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">

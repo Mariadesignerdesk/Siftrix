@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import BrandMark from '../components/BrandMark'
 import {
   clearChatHistory,
   createUserMessage,
@@ -123,7 +122,18 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
         <aside className="min-w-0 lg:col-span-4 space-y-4">
           <div className="siftrix-card p-5 rounded-2xl space-y-3">
             <div className="flex items-center gap-2">
-              <BrandMark className="h-6 w-6 shrink-0" />
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5 text-siftrix-gold shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
               <h2 className="text-sm font-bold text-siftrix-charcoal">
                 Suggested Security Prompts
               </h2>
