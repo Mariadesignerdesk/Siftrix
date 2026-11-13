@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { checkBackendHealth } from '../services/api'
 import { API_CONFIG } from '../services/config'
 import {
+  getStoredThemePreference,
+  setThemePreference,
+  type ThemeMode,
+} from '../services/themeService'
+import {
   clearAuthPreviewSession,
   type AuthPreviewSession,
 } from '../utils/authPreview'
@@ -34,6 +39,8 @@ interface SettingsPageProps {
 interface SettingsContentProps {
   languagePreference: LanguageView
   soundPreference?: SoundPreference
+  themeMode?: ThemeMode
+  onSelectTheme?: (mode: ThemeMode) => void
   preferenceNotice: { text: string; isWarning: boolean } | null
   isConfirmingReset: boolean
   diagnosticState: BackendDiagnosticState
@@ -56,6 +63,8 @@ interface SettingsContentProps {
 export function SettingsContent({
   languagePreference,
   soundPreference = 'off',
+  themeMode = 'light',
+  onSelectTheme,
   preferenceNotice,
   isConfirmingReset,
   diagnosticState,
@@ -200,6 +209,49 @@ export function SettingsContent({
                   Preferences are saved locally in this browser and persist across page refreshes.
                 </p>
               )}
+            </div>
+          </article>
+
+          {/* Visual Theme Mode Card */}
+          <article
+            aria-label="Visual Theme Mode"
+            className="siftrix-card p-6 md:p-8 rounded-2xl space-y-4"
+          >
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-siftrix-charcoal">
+                Visual Theme Mode
+              </h3>
+              <p className="text-sm text-siftrix-muted-dark">
+                Switch between the signature Luxury Champagne Gold palette, Obsidian Dark mode, or match your device system settings.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(
+                [
+                  { id: 'light', label: '☀️ Champagne Light', desc: 'Warm cream & champagne gold' },
+                  { id: 'dark', label: '🌙 Obsidian Dark', desc: 'High-contrast charcoal & gold' },
+                  { id: 'system', label: '💻 System Match', desc: 'Follows OS appearance' },
+                ] as const
+              ).map((mode) => {
+                const isActive = themeMode === mode.id
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => onSelectTheme?.(mode.id)}
+                    aria-pressed={isActive}
+                    className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                      isActive
+                        ? 'border-siftrix-gold bg-siftrix-pearl font-bold text-siftrix-charcoal shadow-xs'
+                        : 'border-siftrix-border bg-white text-siftrix-graphite hover:border-siftrix-gold/70'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">{mode.label}</p>
+                    <p className="text-xs text-siftrix-muted-dark mt-0.5">{mode.desc}</p>
+                  </button>
+                )
+              })}
             </div>
           </article>
 
@@ -515,6 +567,9 @@ export default function SettingsPage({
   const [soundPreference, setSoundPreference] = useState<SoundPreference>(
     () => loadSoundPreference()
   )
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() =>
+    getStoredThemePreference()
+  )
   const [preferenceNotice, setPreferenceNotice] = useState<{
     text: string
     isWarning: boolean
@@ -591,6 +646,15 @@ export default function SettingsPage({
     )
   }
 
+  const handleSelectTheme = (nextTheme: ThemeMode) => {
+    setThemeMode(nextTheme)
+    setThemePreference(nextTheme)
+    setPreferenceNotice({
+      text: `Applied visual theme: ${nextTheme === 'light' ? 'Champagne Light' : nextTheme === 'dark' ? 'Obsidian Dark' : 'System Match'}.`,
+      isWarning: false,
+    })
+  }
+
   const handleConfirmReset = () => {
     const { value, persisted } = resetLanguagePreference()
     setLanguagePreference(value)
@@ -626,6 +690,8 @@ export default function SettingsPage({
     <SettingsContent
       languagePreference={languagePreference}
       soundPreference={soundPreference}
+      themeMode={themeMode}
+      onSelectTheme={handleSelectTheme}
       preferenceNotice={preferenceNotice}
       isConfirmingReset={isConfirmingReset}
       diagnosticState={diagnosticState}

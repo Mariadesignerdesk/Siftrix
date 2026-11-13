@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchScanById } from '../services/api'
+import { getMockScanById } from '../services/scanHistoryService'
 import {
   getInitialScanDetailsState,
   normalizeScanId,
@@ -416,6 +417,13 @@ export default function ScanDetailsPage({
     const response = await fetchScanById(targetId)
     if (requestSeqRef.current !== seq) {
       return
+    }
+    if (!response.ok) {
+      const mockScan = getMockScanById(targetId)
+      if (mockScan) {
+        setViewState({ scanId: targetId, status: 'ready', scan: mockScan })
+        return
+      }
     }
     setViewState(resolveScanDetailsState(response, targetId))
   }, [])

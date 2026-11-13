@@ -23,6 +23,37 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+html.dark,
+[data-theme="dark"] {
+  --color-siftrix-beige: #111115;
+  --color-siftrix-pearl: #18181F;
+  --color-siftrix-sand: #23222B;
+  --color-siftrix-white: #1E1D25;
+  --color-siftrix-charcoal: #FAF6EF;
+  --color-siftrix-charcoal-soft: #EDE6DC;
+  --color-siftrix-obsidian: #0A0A0D;
+  --color-siftrix-charcoal-border: #4D4A57;
+  --color-siftrix-gold: #D8B56D;
+  --color-siftrix-champagne: #E8CC8E;
+  --color-siftrix-antique: #C5A15D;
+  --color-siftrix-antique-ink: #FAF6EF;
+  --color-siftrix-graphite: #EFE9DF;
+  --color-siftrix-muted: #A6A097;
+  --color-siftrix-muted-dark: #C9C2B7;
+  --color-siftrix-border: #383543;
+  color-scheme: dark;
+}
+
+html.dark .siftrix-scanner-surface,
+[data-theme="dark"] .siftrix-scanner-surface {
+  background: linear-gradient(180deg, #1D1C24 0%, #16151C 100%);
+  border: 1px solid rgba(216, 181, 109, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(216, 181, 109, 0.16),
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    0 28px 54px -20px rgba(0, 0, 0, 0.7);
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 6rem;

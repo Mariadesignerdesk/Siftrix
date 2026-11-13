@@ -26,7 +26,9 @@ const WORKSPACE_LINKS: ReadonlyArray<{
   sectionId?: string
 }> = [
   { label: 'Security Dashboard', href: '/dashboard', path: '/dashboard' },
-  { label: 'Command Preview', href: '/#command-center', path: '/', sectionId: 'command-center' },
+  { label: 'AI Cyber Advisor', href: '/assistant', path: '/assistant' },
+  { label: 'Threat Leaderboard', href: '/leaderboard', path: '/leaderboard' },
+  { label: 'Rewards & Badges', href: '/rewards', path: '/rewards' },
   { label: 'Scan History', href: '/scans', path: '/scans' },
   { label: 'Profile & Settings', href: '/settings', path: '/settings' },
   { label: 'Sign In', href: '/login', path: '/login' },

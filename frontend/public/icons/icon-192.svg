@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <defs>
+    <linearGradient id="sfx-pwa-gold" x1="24" y1="18" x2="168" y2="174" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F2DFAF" />
+      <stop offset="40%" stop-color="#D8B56D" />
+      <stop offset="72%" stop-color="#C5A15D" />
+      <stop offset="100%" stop-color="#A77B32" />
+    </linearGradient>
+    <linearGradient id="sfx-pwa-core" x1="48" y1="36" x2="144" y2="162" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#35343B" />
+      <stop offset="100%" stop-color="#1E1E23" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="#25252A" />
+  <rect x="6" y="6" width="180" height="180" rx="36" stroke="url(#sfx-pwa-gold)" stroke-opacity="0.75" stroke-width="4.5" />
+  <path
+    d="M96 28.5L153 52.5V94.5C153 130.2 128.7 156 96 166.5C63.3 156 39 130.2 39 94.5V52.5L96 28.5Z"
+    fill="url(#sfx-pwa-core)"
+    stroke="url(#sfx-pwa-gold)"
+    stroke-width="7.2"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M96 46.5L135 63V93.6C135 119.4 118.2 138 96 146.4C73.8 138 57 119.4 57 93.6V63L96 46.5Z"
+    fill="#25252A"
+    stroke="#C5A15D"
+    stroke-opacity="0.7"
+    stroke-width="3.6"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M75.6 97.8L89.7 111.9L118.2 81.3"
+    stroke="#F7F3EC"
+    stroke-width="9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

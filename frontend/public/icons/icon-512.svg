@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="sfx-pwa512-gold" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F2DFAF" />
+      <stop offset="40%" stop-color="#D8B56D" />
+      <stop offset="72%" stop-color="#C5A15D" />
+      <stop offset="100%" stop-color="#A77B32" />
+    </linearGradient>
+    <linearGradient id="sfx-pwa512-core" x1="128" y1="96" x2="384" y2="432" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#35343B" />
+      <stop offset="100%" stop-color="#1E1E23" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#25252A" />
+  <rect x="16" y="16" width="480" height="480" rx="96" stroke="url(#sfx-pwa512-gold)" stroke-opacity="0.75" stroke-width="12" />
+  <path
+    d="M256 76L408 140V252C408 347.2 343.2 416 256 444C168.8 416 104 347.2 104 252V140L256 76Z"
+    fill="url(#sfx-pwa512-core)"
+    stroke="url(#sfx-pwa512-gold)"
+    stroke-width="19.2"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M256 124L360 168V249.6C360 318.4 315.2 368 256 390.4C196.8 368 152 318.4 152 249.6V168L256 124Z"
+    fill="#25252A"
+    stroke="#C5A15D"
+    stroke-opacity="0.7"
+    stroke-width="9.6"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M201.6 260.8L239.2 298.4L315.2 216.8"
+    stroke="#F7F3EC"
+    stroke-width="24"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

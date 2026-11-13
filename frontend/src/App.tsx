@@ -14,6 +14,11 @@ import ScanDetailsPage from './pages/ScanDetailsPage'
 import ScanHistoryPage from './pages/ScanHistoryPage'
 import SettingsPage from './pages/SettingsPage'
 import SignupPage from './pages/SignupPage'
+import AssistantPage from './pages/AssistantPage'
+import LeaderboardPage from './pages/LeaderboardPage'
+import RewardsPage from './pages/RewardsPage'
+import CyberAssistant from './components/chat/CyberAssistant'
+import PwaInstallBanner from './components/pwa/PwaInstallBanner'
 import {
   clearAuthPreviewSession,
   loadAuthPreviewSession,
@@ -54,6 +59,7 @@ function App() {
       />
 
       <div className="relative z-10 flex min-h-screen flex-col">
+        <PwaInstallBanner />
         <Navbar
           currentPage={route.page}
           onNavigate={navigate}
@@ -89,6 +95,12 @@ function App() {
               onAuthChange={setAuthSession}
               onNavigate={navigate}
             />
+          ) : route.page === 'assistant' ? (
+            <AssistantPage onNavigate={navigate} />
+          ) : route.page === 'leaderboard' ? (
+            <LeaderboardPage onNavigate={navigate} />
+          ) : route.page === 'rewards' ? (
+            <RewardsPage onNavigate={navigate} />
           ) : (
             <>
               <Hero />
@@ -102,6 +114,9 @@ function App() {
         </main>
         <Footer onNavigate={navigate} />
       </div>
+
+      {/* Persistent Floating AI Cyber Assistant Launcher */}
+      <CyberAssistant />
     </div>
   )
 }

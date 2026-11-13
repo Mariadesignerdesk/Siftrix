@@ -4,7 +4,9 @@ import {
   type AuthPreviewSession,
 } from '../utils/authPreview'
 import type { AppPath, AppRoute, NavigateFn } from '../utils/router'
+import { getStoredThemePreference, toggleTheme } from '../services/themeService'
 import BrandMark from './BrandMark'
+import NotificationBell from './notifications/NotificationBell'
 
 interface NavbarProps {
   currentPage: AppRoute['page']
@@ -44,6 +46,27 @@ const NAV_ITEMS: ReadonlyArray<{
     isActive: (page) => page === 'history' || page === 'scan-details',
   },
   {
+    label: 'AI Advisor',
+    href: '/assistant',
+    path: '/assistant',
+    ariaLabel: 'Navigate to AI Cyber Advisor',
+    isActive: (page) => page === 'assistant',
+  },
+  {
+    label: 'Leaderboard',
+    href: '/leaderboard',
+    path: '/leaderboard',
+    ariaLabel: 'Navigate to Threat Hunter Leaderboard',
+    isActive: (page) => page === 'leaderboard',
+  },
+  {
+    label: 'Rewards',
+    href: '/rewards',
+    path: '/rewards',
+    ariaLabel: 'Navigate to Rewards and Badges Gallery',
+    isActive: (page) => page === 'rewards',
+  },
+  {
     label: 'Features',
     href: '/#features',
     path: '/',
@@ -75,6 +98,12 @@ export default function Navbar({
   onSignOut,
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [currentTheme, setCurrentTheme] = useState(() => getStoredThemePreference())
+
+  const handleToggleTheme = () => {
+    const next = toggleTheme()
+    setCurrentTheme(next)
+  }
 
   useEffect(() => {
     if (!isMobileMenuOpen) {
@@ -188,8 +217,22 @@ export default function Navbar({
           })}
         </div>
 
-        {/* Desktop Auth + Primary Action */}
+        {/* Desktop Auth + Utilities + Primary Action */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
+          {/* Real-Time Notification Bell */}
+          <NotificationBell onNavigate={onNavigate} />
+
+          {/* Theme Toggle (Dark / Light) */}
+          <button
+            type="button"
+            onClick={handleToggleTheme}
+            aria-label={`Switch theme (currently ${currentTheme})`}
+            title={`Current theme: ${currentTheme}. Click to toggle.`}
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs text-sm"
+          >
+            {currentTheme === 'dark' ? '☀️' : '🌙'}
+          </button>
+
           {authSession ? (
             <>
               <a
@@ -304,6 +347,20 @@ export default function Navbar({
             className="hidden sm:inline-flex siftrix-btn-gold items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-charcoal"
           >
             <span>Get Started</span>
+          </button>
+
+          {/* Mobile Notification Bell */}
+          <NotificationBell onNavigate={onNavigate} />
+
+          {/* Mobile Theme Toggle */}
+          <button
+            type="button"
+            onClick={handleToggleTheme}
+            aria-label={`Switch theme (currently ${currentTheme})`}
+            title={`Current theme: ${currentTheme}. Click to toggle.`}
+            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-colors cursor-pointer text-xs sm:text-sm"
+          >
+            {currentTheme === 'dark' ? '☀️' : '🌙'}
           </button>
 
           <button

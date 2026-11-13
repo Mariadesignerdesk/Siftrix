@@ -12,6 +12,7 @@ import {
 } from '../utils/userPreferences'
 import RiskGaugeRing from './RiskGaugeRing'
 import { RiskLevelBadge, TargetTypeBadge, VerdictBadge } from './ScanBadges'
+import PersonalizedRecommendationBox from './recommendations/PersonalizedRecommendationBox'
 
 interface ScanResultCardProps {
   result: ScanResponse
@@ -507,6 +508,12 @@ export default function ScanResultCard({
             </div>
           ) : null}
         </div>
+
+        {/* Personalized Interactive Cyber Defense Protocol */}
+        <PersonalizedRecommendationBox
+          riskLevel={result.risk_level}
+          targetType={result.target_type}
+        />
       </div>
 
       {/* Agent Findings */}
