@@ -60,9 +60,11 @@ def test_groq_default_settings():
     assert cfg.GROQ_API_KEY == ""
     assert cfg.GROQ_MODEL == "openai/gpt-oss-120b"
     assert cfg.GROQ_TIMEOUT == 30.0
+    assert cfg.GROQ_CHAT_MAX_TOKENS == 2048
     # Existing Gemini settings remain intact
     assert cfg.GEMINI_MODEL == "gemini-3.8-flash"
     assert cfg.GEMINI_TIMEOUT == 30.0
+    assert cfg.GEMINI_CHAT_MAX_TOKENS == 2048
 
 
 def test_groq_client_configurable_model_and_authorization_header():
@@ -71,10 +73,12 @@ def test_groq_client_configurable_model_and_authorization_header():
         api_key="  gsk_mock_test_key_123  ",
         model="openai/gpt-oss-120b",
         timeout=15.0,
+        chat_max_tokens=4096,
     )
     assert groq.is_configured is True
     assert groq.model == "openai/gpt-oss-120b"
     assert groq.timeout == 15.0
+    assert groq.chat_max_tokens == 4096
     assert groq.headers["Content-Type"] == "application/json"
     assert groq.headers["Authorization"] == "Bearer gsk_mock_test_key_123"
 
@@ -122,7 +126,7 @@ async def test_groq_successful_response_parsing():
         assert called_headers["Authorization"] == "Bearer gsk_mock_key"
         assert called_json["model"] == "openai/gpt-oss-120b"
         assert called_json["temperature"] == 0.4
-        assert called_json["max_completion_tokens"] == 700
+        assert called_json["max_completion_tokens"] == 2048
 
         # System instruction checks
         system_msg = called_json["messages"][0]
@@ -143,7 +147,73 @@ async def test_groq_successful_response_parsing():
             "provider": "groq",
             "model": "openai/gpt-oss-120b",
             "is_fallback": False,
+            "finish_reason": "stop",
+            "truncated": False,
         }
+
+
+@pytest.mark.asyncio
+async def test_groq_finish_reason_length_handling_warns_and_marks_truncated(caplog):
+    """Verify GroqClient marks response as truncated with finish_reason 'length' and logs warning."""
+    groq = GroqClient(api_key="gsk_mock_key", model="openai/gpt-oss-120b")
+    mock_payload = {
+        "id": "chatcmpl-mock-truncated",
+        "object": "chat.completion",
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "| **4. Multi-Factor Authentication (MFA) enable karein** | Password ke alawa ek extra verification step",
+                },
+                "finish_reason": "length",
+            }
+        ],
+    }
+    mock_resp = httpx.Response(
+        status_code=200,
+        json=mock_payload,
+        request=httpx.Request("POST", GROQ_CHAT_COMPLETIONS_URL),
+    )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        with caplog.at_level(logging.WARNING):
+            result = await groq.chat("Explain phishing in Roman Urdu")
+
+        assert mock_post.called
+        # Must NOT retry or make duplicate requests (cost/latency conservation)
+        assert mock_post.call_count == 1
+        # Must NOT be treated as fallback
+        assert result["is_fallback"] is False
+        # Must clearly expose truncation rather than silently treating as full success
+        assert result["finish_reason"] == "length"
+        assert result["truncated"] is True
+        assert "truncated" in caplog.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_groq_custom_chat_max_tokens_passed_in_payload():
+    """Verify custom chat_max_tokens passed to GroqClient constructor overrides default 2048."""
+    groq = GroqClient(api_key="gsk_mock_key", chat_max_tokens=3000)
+    mock_resp = httpx.Response(
+        status_code=200,
+        json={
+            "choices": [
+                {
+                    "message": {"role": "assistant", "content": "Security answer."},
+                    "finish_reason": "stop",
+                }
+            ]
+        },
+        request=httpx.Request("POST", GROQ_CHAT_COMPLETIONS_URL),
+    )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        await groq.chat("Hello")
+        called_json = mock_post.call_args[1]["json"]
+        assert called_json["max_completion_tokens"] == 3000
 
 
 @pytest.mark.asyncio

@@ -38,10 +38,12 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     GROQ_TIMEOUT: float = 30.0
+    GROQ_CHAT_MAX_TOKENS: int = 2048
 
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.8-flash"
     GEMINI_TIMEOUT: float = 30.0
+    GEMINI_CHAT_MAX_TOKENS: int = 2048
 
     VIRUSTOTAL_API_KEY: str = ""
     VIRUSTOTAL_TIMEOUT: float = 10.0

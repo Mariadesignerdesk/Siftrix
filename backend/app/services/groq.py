@@ -40,10 +40,16 @@ class GroqClient:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
         timeout: Optional[float] = None,
+        chat_max_tokens: Optional[int] = None,
     ):
         self.api_key = api_key if api_key is not None else settings.GROQ_API_KEY
         self.model = model or settings.GROQ_MODEL
         self.timeout = timeout if timeout is not None else settings.GROQ_TIMEOUT
+        self.chat_max_tokens = (
+            chat_max_tokens
+            if chat_max_tokens is not None
+            else settings.GROQ_CHAT_MAX_TOKENS
+        )
 
     @property
     def is_configured(self) -> bool:
@@ -67,6 +73,8 @@ class GroqClient:
             "provider": "groq",
             "model": self.model,
             "is_fallback": True,
+            "finish_reason": None,
+            "truncated": False,
         }
 
     async def chat(
@@ -109,7 +117,7 @@ class GroqClient:
             "model": self.model,
             "messages": messages,
             "temperature": 0.4,
-            "max_completion_tokens": 700,
+            "max_completion_tokens": self.chat_max_tokens,
         }
 
         try:
@@ -144,11 +152,20 @@ class GroqClient:
                 logger.error("Groq chat response content was empty.")
                 return fallback
 
+            finish_reason = first_choice.get("finish_reason")
+            is_truncated = finish_reason == "length"
+            if is_truncated:
+                logger.warning(
+                    "Groq chat response was truncated due to token limit (finish_reason='length')."
+                )
+
             return {
                 "content": answer,
                 "provider": "groq",
                 "model": self.model,
                 "is_fallback": False,
+                "finish_reason": finish_reason,
+                "truncated": is_truncated,
             }
 
         except httpx.TimeoutException as e:

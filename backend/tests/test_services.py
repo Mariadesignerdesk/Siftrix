@@ -516,3 +516,66 @@ async def test_gemini_chat_language_instructions_and_history_limit(language, exp
         assert len(called_json["contents"]) == 7
         assert called_json["contents"][0]["parts"][0]["text"] == "Message 3"
         assert called_json["contents"][-1]["parts"][0]["text"] == "Is this email safe?"
+        assert called_json["generationConfig"]["maxOutputTokens"] == 2048
+
+
+@pytest.mark.asyncio
+async def test_gemini_chat_custom_chat_max_tokens():
+    """Verify GeminiClient.chat respects custom chat_max_tokens override."""
+    client = GeminiClient(api_key="valid_gemini_key", chat_max_tokens=4096)
+    assert client.chat_max_tokens == 4096
+
+    mock_resp = httpx.Response(
+        status_code=200,
+        json={
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Custom token limit response."}]
+                    },
+                    "finishReason": "STOP",
+                }
+            ]
+        },
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        result = await client.chat("Test prompt")
+
+        assert result["content"] == "Custom token limit response."
+        assert result["is_fallback"] is False
+        called_json = mock_post.call_args[1]["json"]
+        assert called_json["generationConfig"]["maxOutputTokens"] == 4096
+
+
+@pytest.mark.asyncio
+async def test_gemini_chat_truncation_warning_on_max_tokens(caplog):
+    """Verify GeminiClient logs warning when finishReason is MAX_TOKENS."""
+    client = GeminiClient(api_key="valid_gemini_key")
+    mock_resp = httpx.Response(
+        status_code=200,
+        json={
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Partial guidance..."}]
+                    },
+                    "finishReason": "MAX_TOKENS",
+                }
+            ]
+        },
+        request=httpx.Request("POST", "https://generativelanguage.googleapis.com/mock"),
+    )
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        import logging
+        with caplog.at_level(logging.WARNING):
+            result = await client.chat("Explain phishing")
+
+        assert result["content"] == "Partial guidance..."
+        assert result["is_fallback"] is False
+        assert "truncated" in caplog.text.lower()
+        assert "max_tokens" in caplog.text.lower()

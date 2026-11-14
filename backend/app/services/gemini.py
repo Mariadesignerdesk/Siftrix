@@ -38,11 +38,17 @@ class GeminiClient:
         model: Optional[str] = None,
         timeout: Optional[float] = None,
         retry_delay: float = DEFAULT_RETRY_DELAY,
+        chat_max_tokens: Optional[int] = None,
     ):
         self.api_key = api_key if api_key is not None else settings.GEMINI_API_KEY
         self.model = model or settings.GEMINI_MODEL
         self.timeout = timeout if timeout is not None else settings.GEMINI_TIMEOUT
         self.retry_delay = retry_delay
+        self.chat_max_tokens = (
+            chat_max_tokens
+            if chat_max_tokens is not None
+            else settings.GEMINI_CHAT_MAX_TOKENS
+        )
 
     @property
     def is_configured(self) -> bool:
@@ -205,7 +211,7 @@ class GeminiClient:
             "contents": contents,
             "generationConfig": {
                 "temperature": 0.4,
-                "maxOutputTokens": 700,
+                "maxOutputTokens": self.chat_max_tokens,
             },
         }
 
@@ -220,13 +226,20 @@ class GeminiClient:
                 data = response.json()
 
             candidates = data.get("candidates", [])
-            parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+            candidate = candidates[0] if candidates and isinstance(candidates[0], dict) else {}
+            parts = candidate.get("content", {}).get("parts", []) if candidate else []
             answer = " ".join(
                 part.get("text", "") for part in parts if part.get("text")
             ).strip()
 
             if not answer:
                 return fallback
+
+            finish_reason = candidate.get("finishReason")
+            if finish_reason == "MAX_TOKENS":
+                logger.warning(
+                    "Gemini chat response was truncated due to token limit (finishReason='MAX_TOKENS')."
+                )
 
             return {
                 "content": answer,
