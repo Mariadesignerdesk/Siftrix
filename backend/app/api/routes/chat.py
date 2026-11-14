@@ -32,12 +32,14 @@ async def chat_with_assistant(
     result = await groq_client.chat(
         prompt=payload.prompt,
         history=history,
+        language=payload.language,
     )
 
     if result.get("is_fallback", False) or not result.get("content"):
         result = await gemini_client.chat(
             prompt=payload.prompt,
             history=history,
+            language=payload.language,
         )
 
     return {
@@ -50,7 +52,7 @@ async def chat_with_assistant(
             "How can I identify a phishing message?",
             "How do I protect my online accounts?",
         ],
-        "language": "en",
+        "language": payload.language,
         "provider": result.get("provider"),
         "is_fallback": result.get("is_fallback", False),
     }

@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+ChatLanguage = Literal["en", "ur", "ur-Latn"]
+
 
 class ChatHistoryMessage(BaseModel):
     """A single previous user or assistant message."""
@@ -32,6 +34,7 @@ class ChatRequest(BaseModel):
         default_factory=list,
         max_length=6,
     )
+    language: ChatLanguage = Field(default="en")
 
     @field_validator("prompt")
     @classmethod
