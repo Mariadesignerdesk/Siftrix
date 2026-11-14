@@ -10,6 +10,7 @@ from app.core.auth import get_optional_current_user, resolve_owner_id_for_scan
 from app.models.user import User
 from app.schemas.chat import ChatRequest
 from app.services.gemini import gemini_client
+from app.services.groq import groq_client
 
 router = APIRouter(prefix="/api", tags=["Chat"])
 
@@ -26,10 +27,18 @@ async def chat_with_assistant(
     if current_user is None:
         response.headers["X-Session-ID"] = str(owner_id)
 
-    result = await gemini_client.chat(
+    history = [message.model_dump() for message in payload.history]
+
+    result = await groq_client.chat(
         prompt=payload.prompt,
-        history=[message.model_dump() for message in payload.history],
+        history=history,
     )
+
+    if result.get("is_fallback", False) or not result.get("content"):
+        result = await gemini_client.chat(
+            prompt=payload.prompt,
+            history=history,
+        )
 
     return {
         "id": str(uuid.uuid4()),
