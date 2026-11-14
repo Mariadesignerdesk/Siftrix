@@ -46,7 +46,7 @@ export default function About() {
             Intelligence. Protection. Confidence.
           </p>
 
-          <p className="text-[#46423D] text-base sm:text-lg leading-relaxed max-w-2xl">
+          <p className="text-[#46423D] dark:text-[#C9C2B7] text-base sm:text-lg leading-relaxed max-w-2xl">
             SIFTRIX is an AI-powered cybersecurity platform designed to help
             individuals and businesses identify suspicious messages, phishing
             attempts, and potential online threats. Our mission is to make digital

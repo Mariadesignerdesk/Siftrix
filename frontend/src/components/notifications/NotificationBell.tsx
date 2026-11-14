@@ -99,7 +99,7 @@ export default function NotificationBell({ onNavigate }: NotificationBellProps) 
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
         aria-label={`Security alerts and notifications (${unreadCount} unread)`}
-        className="relative inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs"
+        className="relative inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs"
       >
         <svg
           aria-hidden="true"
@@ -127,7 +127,7 @@ export default function NotificationBell({ onNavigate }: NotificationBellProps) 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-siftrix-gold/40 bg-siftrix-pearl shadow-2xl z-50 overflow-hidden animate-siftrix-enter">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-siftrix-border/80 bg-siftrix-charcoal px-4 py-3 text-siftrix-beige">
+          <div className="flex items-center justify-between border-b border-siftrix-border/80 bg-[#25252A] px-4 py-3 text-siftrix-pearl">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-siftrix-gold animate-pulse" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-siftrix-champagne">
@@ -172,8 +172,8 @@ export default function NotificationBell({ onNavigate }: NotificationBellProps) 
                   onClick={() => handleNotificationClick(notif)}
                   className={`flex items-start gap-3 p-3.5 transition-colors cursor-pointer ${
                     notif.read
-                      ? 'bg-transparent hover:bg-siftrix-beige/60 text-siftrix-muted-dark'
-                      : 'bg-white/80 hover:bg-white text-siftrix-graphite font-medium'
+                      ? 'bg-transparent hover:bg-siftrix-sand/30 text-siftrix-muted-dark'
+                      : 'bg-siftrix-white/80 hover:bg-siftrix-white text-siftrix-graphite font-medium'
                   }`}
                 >
                   {getTypeIcon(notif.type)}

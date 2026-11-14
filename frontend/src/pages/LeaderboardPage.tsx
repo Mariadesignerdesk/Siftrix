@@ -26,13 +26,13 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
         )
       case 'Silver Warden':
         return (
-          <span className="rounded-full bg-slate-300/30 border border-slate-400 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-700">
+          <span className="rounded-full bg-slate-300/30 dark:bg-slate-800/40 border border-slate-400 dark:border-slate-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
             🥈 Silver Warden
           </span>
         )
       case 'Bronze Guardian':
         return (
-          <span className="rounded-full bg-amber-700/15 border border-amber-700/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+          <span className="rounded-full bg-amber-700/15 border border-amber-700/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
             🥉 Bronze Guardian
           </span>
         )
@@ -64,7 +64,7 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
               Global Cyber Defense Network
             </p>
           </div>
-          <h2 className="text-3xl font-bold text-siftrix-white mt-1 tracking-tight">
+          <h2 className="text-3xl font-bold text-siftrix-white dark:text-[#FAF6EF] mt-1 tracking-tight">
             Threat Hunter Leaderboard
           </h2>
           <p className="text-[#C8C1B6] text-sm md:text-base mt-1">
@@ -98,12 +98,12 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end max-w-4xl mx-auto">
           {/* 2nd Place */}
-          <div className="order-2 md:order-1 siftrix-card p-5 rounded-2xl text-center space-y-3 border-2 border-slate-300 shadow-lg transform md:-translate-y-2">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 border-2 border-slate-400 text-2xl shadow-inner">
+          <div className="order-2 md:order-1 siftrix-card p-5 rounded-2xl text-center space-y-3 border-2 border-slate-300 dark:border-slate-600 shadow-lg transform md:-translate-y-2">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-400 dark:border-slate-600 text-2xl shadow-inner">
               🥈
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Rank #2
               </span>
               <h4 className="text-base font-bold text-siftrix-charcoal">
@@ -120,7 +120,7 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
           </div>
 
           {/* 1st Place (Center Podium) */}
-          <div className="order-1 md:order-2 siftrix-card p-6 rounded-2xl text-center space-y-3.5 border-2 border-siftrix-gold shadow-2xl bg-gradient-to-b from-white via-siftrix-pearl to-amber-50/40 transform md:-translate-y-6">
+          <div className="order-1 md:order-2 siftrix-card p-6 rounded-2xl text-center space-y-3.5 border-2 border-siftrix-gold shadow-2xl bg-gradient-to-b from-white via-siftrix-pearl to-amber-50/40 dark:from-siftrix-white dark:via-siftrix-pearl dark:to-amber-950/20 transform md:-translate-y-6">
             <div className="mx-auto flex h-18 w-18 items-center justify-center rounded-full bg-gradient-to-tr from-amber-200 to-amber-400 border-3 border-siftrix-gold text-3xl shadow-amber-300/50 shadow-lg">
               👑
             </div>
@@ -133,8 +133,8 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
               </h4>
               <p className="text-xs text-siftrix-muted-dark">{top3[1]?.title}</p>
             </div>
-            <div className="rounded-xl bg-siftrix-charcoal p-3 border border-siftrix-gold/40 text-siftrix-champagne">
-              <span className="text-2xl font-extrabold text-siftrix-white">
+            <div className="rounded-xl bg-[#1B1B20] p-3 border border-siftrix-gold/40 text-siftrix-champagne">
+              <span className="text-2xl font-extrabold text-white">
                 {top3[1]?.xp.toLocaleString()} XP
               </span>
               <p className="text-[11px] text-siftrix-champagne/80 font-medium">
@@ -144,12 +144,12 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
           </div>
 
           {/* 3rd Place */}
-          <div className="order-3 md:order-3 siftrix-card p-5 rounded-2xl text-center space-y-3 border-2 border-amber-700/30 shadow-lg transform md:-translate-y-1">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 border-2 border-amber-700/50 text-2xl shadow-inner">
+          <div className="order-3 md:order-3 siftrix-card p-5 rounded-2xl text-center space-y-3 border-2 border-amber-700/30 dark:border-amber-700/50 shadow-lg transform md:-translate-y-1">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-700/50 text-2xl shadow-inner">
               🥉
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
                 Rank #3
               </span>
               <h4 className="text-base font-bold text-siftrix-charcoal">
@@ -210,7 +210,7 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
                     key={entry.rank}
                     className={`transition-colors ${
                       isUser
-                        ? 'bg-amber-50/70 font-semibold border-l-4 border-l-siftrix-gold'
+                        ? 'bg-amber-50/70 dark:bg-amber-950/30 font-semibold border-l-4 border-l-siftrix-gold'
                         : 'hover:bg-siftrix-pearl/50'
                     }`}
                   >
@@ -218,11 +218,11 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
                       <span
                         className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${
                           entry.rank === 1
-                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700/60'
                             : entry.rank === 2
-                              ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                              ? 'bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600'
                               : entry.rank === 3
-                                ? 'bg-amber-800/10 text-amber-900 border border-amber-800/30'
+                                ? 'bg-amber-800/10 text-amber-900 border border-amber-800/30 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-700/50'
                                 : 'text-siftrix-muted-dark'
                         }`}
                       >

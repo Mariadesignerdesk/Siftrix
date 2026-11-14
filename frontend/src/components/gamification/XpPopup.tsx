@@ -32,7 +32,7 @@ export default function XpPopup({
       aria-live="polite"
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-92 max-w-[92vw] animate-siftrix-enter"
     >
-      <div className="relative overflow-hidden rounded-2xl border-2 border-siftrix-gold bg-siftrix-charcoal p-5 text-siftrix-beige shadow-2xl">
+      <div className="relative overflow-hidden rounded-2xl border-2 border-siftrix-gold bg-siftrix-charcoal dark:bg-[#17161D] p-5 text-siftrix-beige dark:text-[#EFE9DF] shadow-2xl">
         {/* Specular Top Shimmer */}
         <div
           aria-hidden="true"
@@ -48,7 +48,7 @@ export default function XpPopup({
               <p className="text-[11px] font-bold uppercase tracking-wider text-siftrix-champagne">
                 {leveledUp ? 'Level Up Achieved!' : 'Threat Telemetry Analyzed'}
               </p>
-              <h4 className="text-lg font-bold text-siftrix-white">
+              <h4 className="text-lg font-bold text-siftrix-white dark:text-[#FAF6EF]">
                 +{xpEarned} XP Earned
               </h4>
             </div>

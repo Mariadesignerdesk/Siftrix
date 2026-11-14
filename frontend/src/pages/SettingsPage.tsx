@@ -101,7 +101,7 @@ export function SettingsContent({
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-siftrix-champagne">
             Preferences & Diagnostics
           </p>
-          <h2 className="text-3xl font-bold text-siftrix-white mt-1 tracking-tight">
+          <h2 className="text-3xl font-bold text-siftrix-white dark:text-[#FAF6EF] mt-1 tracking-tight">
             Profile & Settings
           </h2>
           <p className="text-[#C8C1B6] text-sm md:text-base mt-1">
@@ -198,8 +198,8 @@ export function SettingsContent({
                   role="status"
                   className={`text-xs font-medium px-3 py-2 rounded-lg border ${
                     preferenceNotice.isWarning
-                      ? 'bg-amber-50 text-amber-900 border-amber-200'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800/60'
+                      : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                   }`}
                 >
                   {preferenceNotice.text}
@@ -244,7 +244,7 @@ export function SettingsContent({
                     className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                       isActive
                         ? 'border-siftrix-gold bg-siftrix-pearl font-bold text-siftrix-charcoal shadow-xs'
-                        : 'border-siftrix-border bg-white text-siftrix-graphite hover:border-siftrix-gold/70'
+                        : 'border-siftrix-border bg-siftrix-white text-siftrix-graphite hover:border-siftrix-gold/70'
                     }`}
                   >
                     <p className="text-sm font-semibold">{mode.label}</p>
@@ -313,7 +313,7 @@ export function SettingsContent({
               <div
                 role="region"
                 aria-label="Confirm preference reset"
-                className="p-4 rounded-xl bg-[#FAF4E8] border border-siftrix-gold/65 space-y-3"
+                className="p-4 rounded-xl bg-[#FAF4E8] dark:bg-siftrix-sand border border-siftrix-gold/65 dark:border-siftrix-gold/50 space-y-3"
               >
                 <p className="text-sm font-medium text-siftrix-charcoal">
                   Reset display language preference back to {defaultOptionLabel}?
@@ -351,7 +351,7 @@ export function SettingsContent({
           >
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="text-lg font-bold text-siftrix-white">
+                <h3 className="text-lg font-bold text-siftrix-white dark:text-[#FAF6EF]">
                   Backend Diagnostics
                 </h3>
                 <p className="text-xs text-[#C8C1B6] mt-0.5 break-words">
@@ -367,7 +367,7 @@ export function SettingsContent({
                     ? 'bg-emerald-950/75 text-emerald-300 border-emerald-500/45'
                     : diagnosticState.status === 'disconnected'
                       ? 'bg-red-950/75 text-red-300 border-red-500/45'
-                      : 'bg-siftrix-charcoal-soft text-siftrix-beige border-[#494750]'
+                      : 'bg-[#2E2D33] text-[#EDE6DC] border-[#494750]'
                 }`}
               >
                 <span
@@ -493,7 +493,7 @@ export function SettingsContent({
               <h3 className="text-lg font-bold text-siftrix-charcoal">
                 Account Profile
               </h3>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-charcoal-border whitespace-nowrap shrink-0">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-charcoal-border whitespace-nowrap shrink-0 dark:bg-siftrix-sand dark:border-siftrix-gold/40">
                 {authSession ? 'UI Preview' : 'Not Configured'}
               </span>
             </div>
@@ -508,7 +508,7 @@ export function SettingsContent({
                     {authSession.email}
                   </p>
                 </div>
-                <p className="text-xs sm:text-sm text-[#494641] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#494641] dark:text-siftrix-muted-dark leading-relaxed">
                   Showing a frontend-only authentication preview session. Real backend user accounts and tokens are pending integration.
                 </p>
                 <button
@@ -517,14 +517,14 @@ export function SettingsContent({
                     clearAuthPreviewSession()
                     onSignOut?.()
                   }}
-                  className="px-4 py-2 rounded-xl border border-red-300 bg-red-50 text-red-800 hover:bg-red-100 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  className="px-4 py-2 rounded-xl border border-red-300 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   Sign Out (Clear Preview)
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-sm text-[#494641] leading-relaxed">
+                <p className="text-sm text-[#494641] dark:text-siftrix-muted-dark leading-relaxed">
                   Account authentication and user profile management are not currently configured. SIFTRIX scans and history operate without a signed-in account, and display preferences on this page are stored only in your local browser.
                 </p>
                 <div className="flex flex-wrap items-center gap-2.5">

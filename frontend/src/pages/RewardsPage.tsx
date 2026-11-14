@@ -49,7 +49,7 @@ export default function RewardsPage({ onNavigate }: RewardsPageProps) {
               Threat Hunting Recognition
             </p>
           </div>
-          <h2 className="text-3xl font-bold text-siftrix-white mt-1 tracking-tight">
+          <h2 className="text-3xl font-bold text-siftrix-white dark:text-[#FAF6EF] mt-1 tracking-tight">
             Operative Rewards & Badges
           </h2>
           <p className="text-[#C8C1B6] text-sm md:text-base mt-1">
@@ -61,9 +61,24 @@ export default function RewardsPage({ onNavigate }: RewardsPageProps) {
           <button
             type="button"
             onClick={() => onNavigate('/leaderboard')}
-            className="siftrix-btn-charcoal-outline px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold cursor-pointer"
+            className="siftrix-btn-charcoal-outline inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold cursor-pointer"
           >
-            📊 View Leaderboard
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="h-4 w-4 shrink-0 text-siftrix-champagne"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 17h14" />
+              <path d="M6 17V11" />
+              <path d="M10 17V7" />
+              <path d="M14 17V4" />
+            </svg>
+            <span>View Leaderboard</span>
           </button>
           <button
             type="button"
@@ -139,8 +154,20 @@ export default function RewardsPage({ onNavigate }: RewardsPageProps) {
               <span className="text-[11px] font-bold uppercase tracking-wider text-siftrix-gold">
                 Consistency Patrol
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                🔥 {profile.dailyStreak}-Day Streak
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+                <span>{profile.dailyStreak}-Day Streak</span>
               </span>
             </div>
             <h3 className="text-xl font-bold text-siftrix-charcoal">
@@ -158,21 +185,72 @@ export default function RewardsPage({ onNavigate }: RewardsPageProps) {
                 key={day.dayName}
                 className={`flex flex-col items-center justify-center rounded-xl p-2 text-center border transition-all ${
                   day.active
-                    ? 'bg-amber-100/70 border-amber-400 text-amber-900 shadow-xs'
+                    ? 'bg-amber-100/70 border-amber-400 text-amber-900 shadow-xs dark:bg-amber-950/40 dark:border-amber-600/60 dark:text-amber-200'
                     : day.isToday
                       ? 'bg-siftrix-pearl border-siftrix-gold text-siftrix-charcoal ring-2 ring-siftrix-gold/40'
-                      : 'bg-white border-siftrix-border text-siftrix-muted'
+                      : 'bg-siftrix-white border-siftrix-border text-siftrix-muted'
                 }`}
               >
                 <span className="text-[10px] font-bold uppercase">{day.dayName}</span>
                 <span className="text-sm font-bold mt-0.5">{day.dayNumber}</span>
-                <span className="text-xs mt-1">{day.active ? '🔥' : day.isToday ? '⏳' : '○'}</span>
+                <span className="text-xs mt-1.5 flex items-center justify-center h-4 w-4">
+                  {day.active ? (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                    </svg>
+                  ) : day.isToday ? (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 20 20"
+                      className="h-3.5 w-3.5 text-siftrix-gold animate-pulse shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 3h10" />
+                      <path d="M5 17h10" />
+                      <path d="M6 3v3.5a4.5 4.5 0 0 0 2 3.5 4.5 4.5 0 0 0-2 3.5V17" />
+                      <path d="M14 3v3.5a4.5 4.5 0 0 1-2 3.5 4.5 4.5 0 0 1 2 3.5V17" />
+                    </svg>
+                  ) : (
+                    <span
+                      className="h-2 w-2 rounded-full border-2 border-siftrix-border dark:border-siftrix-charcoal-border shrink-0"
+                      aria-hidden="true"
+                    />
+                  )}
+                </span>
               </div>
             ))}
           </div>
 
-          <div className="rounded-xl bg-siftrix-pearl p-3 border border-siftrix-border text-xs text-siftrix-muted-dark flex items-center gap-2">
-            <span className="text-base font-bold text-siftrix-gold">🎁</span>
+          <div className="rounded-xl bg-siftrix-pearl p-3 border border-siftrix-border text-xs text-siftrix-muted-dark flex items-center gap-2.5">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="h-4.5 w-4.5 shrink-0 text-siftrix-gold"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="8" width="14" height="9" rx="1.5" />
+              <path d="M10 8v9" />
+              <path d="M2 5.5h16v2.5H2z" />
+              <path d="M10 5.5c-1.5 0-3-1-3-2.25s1-2.25 2.5-1 3 2.5 3 3.25" />
+              <path d="M10 5.5c1.5 0 3-1 3-2.25s-1-2.25-2.5-1-3 2.5-3 3.25" />
+            </svg>
             <span>Next Milestone: 7-Day Unbroken Aegis (+1,000 XP)</span>
           </div>
         </div>
@@ -199,8 +277,8 @@ export default function RewardsPage({ onNavigate }: RewardsPageProps) {
                 onClick={() => setFilterCategory(cat)}
                 className={`rounded-xl px-3 py-1 text-xs font-semibold capitalize transition-all cursor-pointer ${
                   filterCategory === cat
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/40'
-                    : 'bg-white text-siftrix-graphite border border-siftrix-border hover:border-siftrix-gold'
+                    ? 'bg-siftrix-charcoal text-siftrix-pearl border border-siftrix-gold/45 shadow-xs dark:bg-siftrix-sand dark:text-siftrix-champagne dark:border-siftrix-gold'
+                    : 'bg-siftrix-white text-siftrix-graphite border border-siftrix-border hover:border-siftrix-gold hover:text-siftrix-charcoal'
                 }`}
               >
                 {cat}

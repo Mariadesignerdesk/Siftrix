@@ -62,7 +62,7 @@ export default function PwaInstallBanner() {
     <div
       role="banner"
       aria-label="Install SIFTRIX Progressive Web App"
-      className="sticky top-0 z-40 bg-gradient-to-r from-siftrix-charcoal via-[#2D2C34] to-siftrix-charcoal border-b border-siftrix-gold/50 px-4 py-2.5 text-siftrix-beige shadow-lg animate-siftrix-enter"
+      className="sticky top-0 z-40 bg-gradient-to-r from-[#17161D] via-[#24232B] to-[#17161D] border-b border-siftrix-gold/50 px-4 py-2.5 text-[#EFE9DF] shadow-lg animate-siftrix-enter"
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3">

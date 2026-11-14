@@ -192,7 +192,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       value: stats.safe,
       subtext: `${getPercent(stats.safe, stats.total)}% of total scans`,
       surface: 'light' as const,
-      accentClass: 'text-emerald-700',
+      accentClass: 'text-emerald-700 dark:text-emerald-400',
       dotClass: 'bg-emerald-600',
     },
     {
@@ -200,7 +200,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       value: stats.suspicious,
       subtext: `${getPercent(stats.suspicious, stats.total)}% of total scans`,
       surface: 'light' as const,
-      accentClass: 'text-amber-700',
+      accentClass: 'text-amber-700 dark:text-amber-400',
       dotClass: 'bg-amber-500',
     },
     {
@@ -219,7 +219,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   > = {
     checking: {
       label: 'Checking API...',
-      badgeClass: 'bg-siftrix-charcoal-soft text-siftrix-beige border-[#494750]',
+      badgeClass: 'bg-[#2E2D33] text-[#EDE6DC] border-[#494750]',
       dotClass: 'bg-[#ACA69E] animate-pulse',
     },
     online: {
@@ -252,7 +252,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-siftrix-champagne">
             AI Cybersecurity Command Center
           </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-siftrix-white mt-1.5 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-bold text-siftrix-white dark:text-[#FAF6EF] mt-1.5 tracking-tight">
             Security Dashboard
           </h2>
           <p className="text-[#C8C1B6] text-sm md:text-base mt-1.5 max-w-2xl">
@@ -306,13 +306,13 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           Math.round((gamificationProfile.currentLevelXp / gamificationProfile.nextLevelXp) * 100)
         )
         return (
-          <div className="rounded-2xl border border-siftrix-gold/40 bg-gradient-to-r from-siftrix-pearl via-white to-siftrix-sand/30 p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="rounded-2xl border border-siftrix-gold/40 bg-[#E8D5B5] dark:bg-gradient-to-r dark:from-siftrix-pearl dark:via-[#1D1C24] dark:to-siftrix-pearl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="space-y-1.5 flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-siftrix-gold/20 border border-siftrix-gold/50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-siftrix-antique-ink">
                   Level {gamificationProfile.level} Operative
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
                   🔥 {gamificationProfile.dailyStreak}-Day Streak
                 </span>
                 <span className="text-xs text-siftrix-muted-dark">
@@ -364,11 +364,11 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       {!isLoading && hasError ? (
         <div
           role="alert"
-          className="bg-red-50 border border-red-200 text-red-900 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-900 dark:text-red-200 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div className="space-y-1 text-sm">
             <p className="font-bold">Could not load backend scan data</p>
-            <p className="text-red-700">{errorMessage}</p>
+            <p className="text-red-700 dark:text-red-300">{errorMessage}</p>
           </div>
           <button
             type="button"
@@ -465,7 +465,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           <div className="min-w-0 lg:col-span-7 siftrix-card-charcoal rounded-2xl p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-siftrix-charcoal-border">
               <div>
-                <h3 className="text-base font-bold text-siftrix-white">
+                <h3 className="text-base font-bold text-siftrix-white dark:text-[#FAF6EF]">
                   Recent Risk Trajectory
                 </h3>
                 <p className="text-xs text-[#BFB8AC]">
@@ -709,7 +709,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                         <VerdictBadge verdict={scan.verdict} withPrefix={false} />
                         <RiskLevelBadge riskLevel={scan.risk_level} withPrefix={false} />
                       </div>
-                      <span className="text-xs font-bold text-siftrix-champagne bg-siftrix-charcoal px-2.5 py-1 rounded-md border border-siftrix-charcoal-border siftrix-tabular">
+                      <span className="text-xs font-bold text-siftrix-champagne bg-siftrix-charcoal dark:bg-siftrix-sand px-2.5 py-1 rounded-md border border-siftrix-charcoal-border dark:border-siftrix-gold/40 siftrix-tabular">
                         Risk: {score}/100
                       </span>
                     </div>
@@ -723,7 +723,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                     </p>
 
                     {summaryPreview ? (
-                      <p className="text-xs text-[#494641] line-clamp-2">{summaryPreview}</p>
+                      <p className="text-xs text-[#494641] dark:text-siftrix-muted-dark line-clamp-2">{summaryPreview}</p>
                     ) : null}
 
                     <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-siftrix-muted-dark pt-1 border-t border-siftrix-border/70">
@@ -762,7 +762,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-siftrix-champagne" aria-hidden="true" />
               Quick Action
             </span>
-            <h3 className="text-lg font-bold text-siftrix-white">
+            <h3 className="text-lg font-bold text-siftrix-white dark:text-[#FAF6EF]">
               Analyze New Content
             </h3>
             <p className="text-sm text-[#C8C1B6] leading-relaxed">

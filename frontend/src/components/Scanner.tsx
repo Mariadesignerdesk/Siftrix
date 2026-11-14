@@ -171,7 +171,7 @@ export default function Scanner() {
         </div>
 
         <div className="relative mt-9">
-          <div className="relative overflow-hidden siftrix-scanner-surface p-4 sm:p-7 md:p-8 rounded-2xl">
+          <div className="relative overflow-hidden siftrix-scanner-surface bg-[#E8D5B5] dark:bg-transparent p-4 sm:p-7 md:p-8 rounded-2xl">
             {/* Refined Champagne-Gold Top Trim */}
             <div
               aria-hidden="true"
@@ -213,8 +213,8 @@ export default function Scanner() {
                         }}
                         className={`rounded-lg px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                           isActive
-                            ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/45 shadow-2xs'
-                            : 'text-siftrix-muted-dark hover:text-siftrix-charcoal hover:bg-white/90'
+                            ? 'bg-siftrix-charcoal text-siftrix-pearl border border-siftrix-gold/45 shadow-2xs dark:bg-siftrix-sand dark:text-siftrix-champagne dark:border-siftrix-gold'
+                            : 'text-siftrix-muted-dark hover:text-siftrix-charcoal hover:bg-siftrix-white/90'
                         }`}
                       >
                         {option.label}
@@ -236,7 +236,7 @@ export default function Scanner() {
                   onClick={() => setIsConfigOpen((prev) => !prev)}
                   className={`siftrix-command-pill inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                     isConfigOpen || hasCustomConfig
-                      ? 'border-siftrix-gold bg-[#FAF4E7] text-siftrix-charcoal'
+                      ? 'border-siftrix-gold bg-[#FAF4E7] text-siftrix-charcoal dark:bg-siftrix-sand dark:text-siftrix-champagne'
                       : ''
                   }`}
                 >
@@ -282,7 +282,7 @@ export default function Scanner() {
                   onClick={() => setShowSamplePreview((prev) => !prev)}
                   className={`siftrix-command-pill inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                     showSamplePreview
-                      ? 'border-siftrix-gold bg-[#FAF4E7] text-siftrix-charcoal'
+                      ? 'border-siftrix-gold bg-[#FAF4E7] dark:bg-siftrix-sand text-siftrix-charcoal dark:text-siftrix-champagne'
                       : ''
                   }`}
                 >
@@ -335,7 +335,7 @@ export default function Scanner() {
                       disabled={isAnalyzing}
                       value={channel}
                       onChange={(e) => setChannel(e.target.value as ScanChannel)}
-                      className="w-full rounded-lg border border-siftrix-border bg-white px-3 py-2 text-xs sm:text-sm text-siftrix-graphite outline-none focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+                      className="w-full rounded-lg border border-siftrix-border bg-siftrix-white px-3 py-2 text-xs sm:text-sm text-siftrix-graphite outline-none focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
                     >
                       {SCAN_CHANNEL_OPTIONS.map((item) => (
                         <option key={item.value} value={item.value}>
@@ -361,7 +361,7 @@ export default function Scanner() {
                       value={senderHint}
                       onChange={(e) => setSenderHint(e.target.value)}
                       placeholder="e.g., support@domain.xyz or +92..."
-                      className="w-full rounded-lg border border-siftrix-border bg-white px-3 py-2 text-xs sm:text-sm text-siftrix-graphite placeholder:text-siftrix-muted outline-none focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+                      className="w-full rounded-lg border border-siftrix-border bg-siftrix-white px-3 py-2 text-xs sm:text-sm text-siftrix-graphite placeholder:text-siftrix-muted outline-none focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
                     />
                   </div>
 
@@ -373,7 +373,7 @@ export default function Scanner() {
                     <div
                       role="group"
                       aria-label="Report language preference"
-                      className="grid grid-cols-3 gap-1 rounded-lg border border-siftrix-border bg-white p-1"
+                      className="grid grid-cols-3 gap-1 rounded-lg border border-siftrix-border bg-siftrix-pearl p-1"
                     >
                       {LANGUAGE_PREFERENCE_OPTIONS.map((opt) => {
                         const isSelected = languageView === opt.value
@@ -391,7 +391,7 @@ export default function Scanner() {
                             onClick={() => setLanguageView(opt.value)}
                             className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                               isSelected
-                                ? 'bg-siftrix-charcoal text-siftrix-champagne'
+                                ? 'bg-siftrix-charcoal text-siftrix-champagne dark:bg-siftrix-sand'
                                 : 'text-siftrix-muted-dark hover:text-siftrix-graphite hover:bg-siftrix-pearl'
                             }`}
                           >
@@ -418,7 +418,7 @@ export default function Scanner() {
                       disabled={isAnalyzing}
                       aria-label={sample.ariaLabel}
                       onClick={() => applySample(sample)}
-                      className="px-2.5 py-1 rounded-lg bg-[#1B1B20] text-siftrix-pearl border border-siftrix-charcoal-border hover:border-siftrix-champagne/80 hover:text-siftrix-champagne disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer text-xs font-medium"
+                      className="px-2.5 py-1 rounded-lg bg-[#1B1B20] text-siftrix-pearl dark:text-[#FAF6EF] border border-siftrix-charcoal-border hover:border-siftrix-champagne/80 hover:text-siftrix-champagne disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer text-xs font-medium"
                     >
                       {sample.label}
                     </button>
@@ -438,7 +438,7 @@ export default function Scanner() {
 
                 <div aria-live="polite" aria-atomic="true">
                   {detected ? (
-                    <span className="font-semibold px-2.5 py-1 rounded-lg bg-[#1B1B20] text-siftrix-pearl border border-siftrix-gold/50 inline-block text-xs">
+                    <span className="font-semibold px-2.5 py-1 rounded-lg bg-[#1B1B20] text-siftrix-pearl dark:text-[#FAF6EF] border border-siftrix-gold/50 inline-block text-xs">
                       {scanMode === 'auto' ? 'Detected Target: ' : 'Selected Target: '}
                       <span className="text-siftrix-champagne">
                         {detected.displayLabel}
@@ -529,10 +529,10 @@ export default function Scanner() {
                         key={stage.id}
                         className={`rounded-xl border p-3 ${
                           isDispatched
-                            ? 'border-emerald-200 bg-emerald-50'
+                            ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40'
                             : isOrchestrating
-                            ? 'border-siftrix-champagne bg-siftrix-charcoal text-siftrix-white shadow-xs'
-                            : 'border-siftrix-border bg-white/90'
+                            ? 'border-siftrix-champagne bg-siftrix-charcoal text-siftrix-white shadow-xs dark:bg-siftrix-sand dark:text-siftrix-champagne'
+                            : 'border-siftrix-border bg-siftrix-white/90'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2 mb-1">
@@ -546,7 +546,7 @@ export default function Scanner() {
                           <span
                             className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${
                               isDispatched
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
                                 : isOrchestrating
                                 ? 'bg-siftrix-champagne text-siftrix-charcoal animate-siftrix-pulse-slow'
                                 : 'bg-siftrix-sand text-siftrix-graphite border border-siftrix-border'
@@ -588,7 +588,7 @@ export default function Scanner() {
                 aria-live="polite"
                 className={`relative z-10 mt-4 text-sm font-medium rounded-xl px-4 py-3 text-left ${
                   isError
-                    ? 'bg-red-50 border border-red-200 text-red-800'
+                    ? 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-800 dark:text-red-300'
                     : 'bg-siftrix-pearl border border-siftrix-border text-siftrix-graphite'
                 }`}
               >

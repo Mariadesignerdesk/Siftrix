@@ -79,7 +79,7 @@ export default function HowItWorks({ onNavigate }: HowItWorksProps) {
               >
                 <div>
                   <div className="flex items-center justify-between gap-3 mb-6">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-siftrix-charcoal text-siftrix-champagne font-mono text-sm font-bold border border-siftrix-gold/55 shadow-sm">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-siftrix-charcoal dark:bg-siftrix-sand text-siftrix-champagne font-mono text-sm font-bold border border-siftrix-gold/55 shadow-sm">
                       {item.step}
                     </span>
 

@@ -144,7 +144,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
       <span
         className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
           value
-            ? 'bg-white text-siftrix-graphite border border-siftrix-border'
+            ? 'bg-siftrix-white text-siftrix-graphite border border-siftrix-border'
             : 'bg-siftrix-sand/70 text-siftrix-muted-dark border border-siftrix-border'
         }`}
       >
@@ -158,7 +158,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
   }
 
   if (typeof value === 'string') {
-    return <span className="text-[#46433E] break-words">{value || '—'}</span>
+    return <span className="text-siftrix-graphite break-words">{value || '—'}</span>
   }
 
   if (Array.isArray(value)) {
@@ -172,7 +172,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
 
     if (allPrimitives) {
       return (
-        <ul className="list-disc list-inside space-y-1 text-[#46433E]">
+        <ul className="list-disc list-inside space-y-1 text-siftrix-graphite">
           {value.map((item, idx) => (
             <li key={idx} className="break-words">
               {String(item)}
@@ -184,7 +184,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
 
     if (depth >= 2) {
       return (
-        <pre className="text-xs bg-white text-siftrix-graphite p-2 rounded border border-siftrix-border overflow-x-auto">
+        <pre className="text-xs bg-siftrix-white text-siftrix-graphite p-2 rounded border border-siftrix-border overflow-x-auto">
           {JSON.stringify(value, null, 2)}
         </pre>
       )
@@ -193,7 +193,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
     return (
       <div className="space-y-2 mt-1">
         {value.map((item, idx) => (
-          <div key={idx} className="bg-white p-2.5 rounded-lg border border-siftrix-border text-xs">
+          <div key={idx} className="bg-siftrix-white p-2.5 rounded-lg border border-siftrix-border text-xs">
             {renderValue(item, depth + 1)}
           </div>
         ))}
@@ -209,7 +209,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
 
     if (depth >= 2) {
       return (
-        <pre className="text-xs bg-white text-siftrix-graphite p-2 rounded border border-siftrix-border overflow-x-auto">
+        <pre className="text-xs bg-siftrix-white text-siftrix-graphite p-2 rounded border border-siftrix-border overflow-x-auto">
           {JSON.stringify(value, null, 2)}
         </pre>
       )
@@ -231,7 +231,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
     )
   }
 
-  return <span className="text-[#46433E]">{String(value)}</span>
+  return <span className="text-siftrix-graphite">{String(value)}</span>
 }
 
 export default function ScanResultCard({
@@ -365,10 +365,10 @@ export default function ScanResultCard({
       {incompleteNotices.length > 0 ? (
         <div
           role="status"
-          className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-xl text-xs space-y-1"
+          className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 px-4 py-3 rounded-xl text-xs space-y-1"
         >
           <p className="font-semibold">Partial Analysis Notice</p>
-          <ul className="list-disc list-inside space-y-0.5 text-amber-800">
+          <ul className="list-disc list-inside space-y-0.5 text-amber-800 dark:text-amber-300">
             {incompleteNotices.map((notice, index) => (
               <li key={index}>{notice}</li>
             ))}
@@ -401,7 +401,7 @@ export default function ScanResultCard({
                 aria-pressed={languageView === option.id}
                 className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   languageView === option.id
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne shadow-2xs'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne shadow-2xs dark:bg-siftrix-sand'
                     : 'text-siftrix-muted-dark hover:text-siftrix-graphite'
                 }`}
               >
@@ -469,7 +469,7 @@ export default function ScanResultCard({
                 <ul className="space-y-2 text-sm text-siftrix-graphite">
                   {enRecommendations.map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <span className="text-emerald-700 font-bold mt-0.5 shrink-0">✓</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
                       <span className="break-words min-w-0 flex-1">{item}</span>
                     </li>
                   ))}
@@ -495,7 +495,7 @@ export default function ScanResultCard({
                 <ul className="space-y-2 text-sm sm:text-[15px] text-siftrix-graphite leading-loose">
                   {urRecommendations.map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <span className="text-emerald-700 font-bold mt-0.5 shrink-0">✓</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
                       <span className="break-words min-w-0 flex-1">{item}</span>
                     </li>
                   ))}
@@ -525,9 +525,9 @@ export default function ScanResultCard({
             const status = getAgentStatus(panel.data)
             const statusBadgeClass =
               status.tone === 'ok'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60'
                 : status.tone === 'warn'
-                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60'
                   : 'bg-siftrix-sand text-siftrix-graphite border-siftrix-border'
             const hasExtraFields =
               isPlainRecord(panel.data) &&
@@ -554,7 +554,7 @@ export default function ScanResultCard({
                 {status.tone !== 'ok' && status.detail ? (
                   <p
                     className={`text-xs italic ${
-                      status.tone === 'warn' ? 'text-amber-800' : 'text-siftrix-muted-dark'
+                      status.tone === 'warn' ? 'text-amber-800 dark:text-amber-300' : 'text-siftrix-muted-dark'
                     }`}
                   >
                     {status.detail}
@@ -562,7 +562,7 @@ export default function ScanResultCard({
                 ) : null}
 
                 {status.tone === 'ok' || hasExtraFields ? (
-                  <div className="text-xs text-[#46433E]">{renderValue(panel.data)}</div>
+                  <div className="text-xs text-siftrix-graphite">{renderValue(panel.data)}</div>
                 ) : null}
               </div>
             )

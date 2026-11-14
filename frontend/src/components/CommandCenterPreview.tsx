@@ -55,7 +55,7 @@ export default function CommandCenterPreview({
     <section
       id="command-center"
       aria-label="Command Center Preview"
-      className="relative overflow-hidden bg-siftrix-charcoal text-siftrix-pearl px-5 sm:px-6 md:px-10 py-18 md:py-22 border-b border-siftrix-charcoal-border"
+      className="relative overflow-hidden bg-siftrix-charcoal dark:bg-[#141419] text-siftrix-pearl dark:text-[#EFE9DF] px-5 sm:px-6 md:px-10 py-18 md:py-22 border-b border-siftrix-charcoal-border"
     >
       <div
         aria-hidden="true"
@@ -74,7 +74,7 @@ export default function CommandCenterPreview({
               Command Center Preview
             </span>
 
-            <h2 className="text-3xl sm:text-4xl font-bold text-siftrix-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight">
               Visibility Across{' '}
               <span className="font-editorial italic font-bold siftrix-gold-text pr-1">
                 Every Verdict

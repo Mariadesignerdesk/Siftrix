@@ -63,7 +63,7 @@ export default function SampleReportPreview({
       {/* Illustrative Static Classification Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-siftrix-border bg-siftrix-pearl px-4 sm:px-7 py-4">
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-800">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em]">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-500" />
             <span>Illustrative Sample Report · Static Example</span>
           </span>
@@ -81,7 +81,7 @@ export default function SampleReportPreview({
         </button>
       </div>
 
-      <div className="p-4 sm:p-7 space-y-6 bg-white">
+      <div className="p-4 sm:p-7 space-y-6 bg-siftrix-white text-siftrix-graphite">
         {/* Executive Verdict + Risk Score Visualization */}
         <div className="flex flex-col lg:flex-row lg:items-stretch justify-between gap-5 pb-6 border-b border-siftrix-border">
           <div className="flex-1 space-y-4 min-w-0">
@@ -156,7 +156,7 @@ export default function SampleReportPreview({
                   onClick={() => onLanguageViewChange(option.id)}
                   className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                     languageView === option.id
-                      ? 'bg-siftrix-charcoal text-siftrix-champagne shadow-2xs'
+                      ? 'bg-siftrix-charcoal text-siftrix-champagne shadow-2xs dark:bg-siftrix-sand'
                       : 'text-siftrix-muted-dark hover:text-siftrix-graphite'
                   }`}
                 >
@@ -216,18 +216,18 @@ export default function SampleReportPreview({
                   <p className="text-[11px] text-siftrix-muted-dark">URLSecurityAgent</p>
                 </div>
                 {urlScore !== null ? (
-                  <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-700 siftrix-tabular">
+                  <span className="rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/60 px-2.5 py-0.5 text-[11px] font-semibold siftrix-tabular">
                     Score {urlScore}/100
                   </span>
                 ) : null}
               </div>
 
               {extractedUrls.length > 0 ? (
-                <div className="rounded-lg border border-red-200/80 bg-red-50/70 p-2.5">
+                <div className="rounded-lg border border-red-200/80 bg-red-50/70 dark:bg-red-950/30 dark:border-red-800/50 p-2.5">
                   <span className="block text-[10px] font-semibold uppercase tracking-wider text-siftrix-muted-dark mb-1">
                     Extracted Link
                   </span>
-                  <p className="font-mono text-[11px] text-red-700 break-all">
+                  <p className="font-mono text-[11px] text-red-700 dark:text-red-300 break-all">
                     {extractedUrls[0]}
                   </p>
                 </div>
@@ -254,13 +254,13 @@ export default function SampleReportPreview({
                   <p className="text-[11px] text-siftrix-muted-dark">MessageAnalysisAgent</p>
                 </div>
                 {msgScore !== null ? (
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 siftrix-tabular">
+                  <span className="rounded-full border border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60 px-2.5 py-0.5 text-[11px] font-semibold siftrix-tabular">
                     Score {msgScore}/100
                   </span>
                 ) : null}
               </div>
 
-              <div className="rounded-lg border border-siftrix-border bg-white p-2.5">
+              <div className="rounded-lg border border-siftrix-border bg-siftrix-pearl p-2.5">
                 <span className="block text-[10px] font-semibold uppercase tracking-wider text-siftrix-muted-dark mb-1">
                   Social Engineering Signals
                 </span>
@@ -289,7 +289,7 @@ export default function SampleReportPreview({
                   <p className="text-xs font-bold text-siftrix-charcoal">Security Advisor</p>
                   <p className="text-[11px] text-siftrix-muted-dark">SecurityAdvisorAgent</p>
                 </div>
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 px-2.5 py-0.5 text-[11px] font-semibold">
                   Action Plan
                 </span>
               </div>
@@ -299,7 +299,7 @@ export default function SampleReportPreview({
                   <ul className="space-y-1.5 text-xs text-siftrix-graphite">
                     {enRecs.map((rec, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold shrink-0">✓</span>
                         <span>{rec}</span>
                       </li>
                     ))}
@@ -314,7 +314,7 @@ export default function SampleReportPreview({
                   >
                     {urRecs.map((rec, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold shrink-0">✓</span>
                         <span>{rec}</span>
                       </li>
                     ))}

@@ -4,7 +4,7 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative overflow-hidden bg-gradient-to-b from-siftrix-pearl via-siftrix-beige to-[#E8E0D2] border-b border-siftrix-border px-4 sm:px-6 md:px-10 py-10 sm:py-16 lg:py-20"
+      className="relative overflow-hidden bg-gradient-to-b from-siftrix-pearl via-siftrix-beige to-[#E8E0D2] dark:to-[#16151C] border-b border-siftrix-border px-4 sm:px-6 md:px-10 py-10 sm:py-16 lg:py-20"
     >
       {/* Subtle Warm Studio Champagne Illumination */}
       <div

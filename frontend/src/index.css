@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --color-siftrix-beige: #F0EBE2;
   --color-siftrix-pearl: #F7F3EC;
@@ -42,6 +44,12 @@ html.dark,
   --color-siftrix-muted-dark: #C9C2B7;
   --color-siftrix-border: #383543;
   color-scheme: dark;
+}
+
+html.dark select option,
+[data-theme="dark"] select option {
+  background-color: #1E1D25;
+  color: #FAF6EF;
 }
 
 html.dark .siftrix-scanner-surface,
@@ -193,6 +201,15 @@ html {
     -webkit-text-fill-color: transparent;
   }
 
+  html.dark .siftrix-gold-text-on-light,
+  [data-theme="dark"] .siftrix-gold-text-on-light {
+    color: #D8B56D;
+    background: linear-gradient(125deg, #F6E6BC 0%, #D8B56D 38%, #C5A15D 68%, #F0D99E 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
   /* Elevated Soft White / Pearl architectural card on Warm Beige or Sand surfaces */
   .siftrix-card {
     background-color: var(--color-siftrix-white);
@@ -239,6 +256,41 @@ html {
       0 26px 48px -22px rgba(18, 18, 22, 0.45);
   }
 
+  html.dark .siftrix-card-charcoal,
+  [data-theme="dark"] .siftrix-card-charcoal {
+    background:
+      radial-gradient(ellipse 85% 55% at 50% 0%, rgba(216, 181, 109, 0.12), transparent 65%),
+      #17161D;
+    color: #FAF6EF;
+    border-color: rgba(216, 181, 109, 0.32);
+    box-shadow:
+      inset 0 1px 0 rgba(216, 181, 109, 0.14),
+      0 2px 8px rgba(0, 0, 0, 0.35),
+      0 26px 48px -22px rgba(0, 0, 0, 0.65);
+  }
+
+  html.dark .siftrix-card-charcoal .text-siftrix-white,
+  [data-theme="dark"] .siftrix-card-charcoal .text-siftrix-white {
+    color: #FAF6EF;
+  }
+
+  html.dark .siftrix-card-charcoal .text-siftrix-charcoal,
+  [data-theme="dark"] .siftrix-card-charcoal .text-siftrix-charcoal {
+    color: #FAF6EF;
+  }
+
+  html.dark .siftrix-card-charcoal .text-siftrix-beige,
+  [data-theme="dark"] .siftrix-card-charcoal .text-siftrix-beige {
+    color: #F0EBE2;
+  }
+
+  html.dark .siftrix-card-pearl,
+  [data-theme="dark"] .siftrix-card-pearl {
+    box-shadow:
+      inset 0 1px 0 rgba(216, 181, 109, 0.1),
+      0 14px 32px -20px rgba(0, 0, 0, 0.45);
+  }
+
   /* Compact Charcoal Glass card floating on light studio backgrounds */
   .siftrix-glass-charcoal {
     background: linear-gradient(155deg, rgba(44, 43, 50, 0.92) 0%, rgba(30, 30, 35, 0.94) 100%);
@@ -266,13 +318,21 @@ html {
     box-shadow: inset 0 1px 0 rgba(216, 181, 109, 0.1);
   }
 
-  /* Luxury Pearl & White Console Frame */
+  html.dark .siftrix-panel-charcoal-inset,
+  [data-theme="dark"] .siftrix-panel-charcoal-inset {
+    background: linear-gradient(180deg, rgba(34, 33, 40, 0.95) 0%, rgba(24, 24, 30, 0.98) 100%);
+    color: #FAF6EF;
+    border-color: rgba(216, 181, 109, 0.26);
+  }
+
+  /* Luxury Champagne-Beige Console Frame */
   .siftrix-scanner-surface {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FBF8F3 100%);
+    background-color: #E8D5B5;
+    background: #E8D5B5;
     color: var(--color-siftrix-graphite);
-    border: 1px solid rgba(197, 161, 93, 0.42);
+    border: 1px solid rgba(197, 161, 93, 0.5);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
       0 4px 12px rgba(48, 46, 43, 0.05),
       0 28px 54px -24px rgba(37, 37, 42, 0.22);
   }
@@ -343,6 +403,12 @@ html {
     color: var(--color-siftrix-pearl);
     border: 1px solid rgba(197, 161, 93, 0.35);
     transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+
+  html.dark .siftrix-btn-charcoal-outline,
+  [data-theme="dark"] .siftrix-btn-charcoal-outline {
+    background-color: #25242C;
+    color: #FAF6EF;
   }
 
   .siftrix-btn-charcoal-outline:hover:not(:disabled) {

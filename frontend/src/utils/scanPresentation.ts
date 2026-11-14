@@ -5,27 +5,27 @@ export const VERDICT_STYLES: Record<
   { badge: string; bar: string; label: string }
 > = {
   safe: {
-    badge: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    badge: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60',
     bar: 'bg-emerald-600',
     label: 'Safe',
   },
   suspicious: {
-    badge: 'bg-amber-50 text-amber-800 border-amber-200',
+    badge: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60',
     bar: 'bg-amber-500',
     label: 'Suspicious',
   },
   malicious: {
-    badge: 'bg-red-50 text-red-700 border-red-200',
+    badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800/60',
     bar: 'bg-red-600',
     label: 'Malicious',
   },
 }
 
 export const RISK_LEVEL_STYLES: Record<ScanRiskLevel, string> = {
-  low: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-  medium: 'bg-amber-50 text-amber-800 border-amber-200',
-  high: 'bg-red-50 text-red-700 border-red-200',
-  critical: 'bg-red-100 text-red-900 border-red-300',
+  low: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60',
+  medium: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60',
+  high: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800/60',
+  critical: 'bg-red-100 text-red-900 border-red-300 dark:bg-red-950/70 dark:text-red-200 dark:border-red-700/70',
 }
 
 export function formatFieldLabel(key: string): string {

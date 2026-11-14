@@ -103,7 +103,7 @@ export default function Features() {
   return (
     <section
       id="features"
-      className="relative overflow-hidden px-5 sm:px-6 md:px-10 py-18 md:py-22 bg-siftrix-charcoal text-siftrix-pearl border-b border-siftrix-charcoal-border"
+      className="relative overflow-hidden px-5 sm:px-6 md:px-10 py-18 md:py-22 bg-siftrix-charcoal dark:bg-[#141419] text-siftrix-pearl dark:text-[#EFE9DF] border-b border-siftrix-charcoal-border"
     >
       {/* Subtle Technical Grid & Warm Champagne Horizon */}
       <div
@@ -127,7 +127,7 @@ export default function Features() {
               AI Capabilities
             </span>
 
-            <h2 className="text-3xl sm:text-4xl font-bold text-siftrix-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight">
               Why Choose{' '}
               <span className="font-editorial italic font-bold siftrix-gold-text pr-1">
                 SIFTRIX?
@@ -170,7 +170,7 @@ export default function Features() {
                   {card.tag}
                 </p>
 
-                <h3 className="text-xl font-bold text-siftrix-white tracking-tight">
+                <h3 className="text-xl font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight">
                   {card.title}
                 </h3>
 

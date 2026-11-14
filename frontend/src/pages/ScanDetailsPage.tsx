@@ -173,11 +173,11 @@ export function ScanDetailsContent({
       {viewState.status === 'error' ? (
         <div
           role="alert"
-          className="siftrix-card rounded-2xl border-red-200 p-6 md:p-8 space-y-5"
+          className="siftrix-card rounded-2xl border-red-200 dark:border-red-800/60 p-6 md:p-8 space-y-5"
         >
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-5 space-y-2">
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl p-4 md:p-5 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-700">
                 {viewState.statusCode === 0
                   ? 'Connection Error'
                   : viewState.statusCode === 408
@@ -186,15 +186,15 @@ export function ScanDetailsContent({
                       ? `HTTP ${viewState.statusCode}`
                       : 'API Error'}
               </span>
-              <h3 className="text-base font-bold text-red-900">
+              <h3 className="text-base font-bold text-red-900 dark:text-red-200">
                 {viewState.title}
               </h3>
             </div>
-            <p className="text-sm text-red-700">{viewState.message}</p>
+            <p className="text-sm text-red-700 dark:text-red-300">{viewState.message}</p>
             {viewState.scanId ? (
-              <p className="text-xs text-red-700">
+              <p className="text-xs text-red-700 dark:text-red-300">
                 Requested Scan ID:{' '}
-                <code className="font-mono bg-white px-2 py-0.5 rounded border border-red-200 text-red-900 break-all">
+                <code className="font-mono bg-siftrix-pearl dark:bg-siftrix-sand px-2 py-0.5 rounded border border-red-200 dark:border-red-800 text-red-900 dark:text-red-300 break-all">
                   {viewState.scanId}
                 </code>
               </p>
@@ -236,7 +236,7 @@ export function ScanDetailsContent({
           aria-live="polite"
           className="siftrix-card rounded-2xl p-8 md:p-10 text-center space-y-4"
         >
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
             Scan Not Found
           </span>
           <h3 className="text-2xl font-bold text-siftrix-charcoal">

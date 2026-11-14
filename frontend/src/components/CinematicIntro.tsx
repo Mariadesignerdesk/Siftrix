@@ -69,7 +69,7 @@ export default function CinematicIntro({ isHomeRoute }: CinematicIntroProps) {
       role="dialog"
       aria-modal="true"
       aria-label="SIFTRIX Brand Reveal"
-      className={`fixed inset-0 z-50 overflow-y-auto py-8 flex flex-col items-center justify-center bg-siftrix-charcoal px-6 text-center transition-opacity duration-450 ease-out ${
+      className={`fixed inset-0 z-50 overflow-y-auto py-8 flex flex-col items-center justify-center bg-siftrix-charcoal dark:bg-[#101014] px-6 text-center transition-opacity duration-450 ease-out ${
         phase === 'fading' ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >

@@ -53,7 +53,7 @@ export default function PersonalizedRecommendationBox({
 
   return (
     <div
-      className={`rounded-2xl border border-siftrix-gold/35 bg-siftrix-charcoal p-5 sm:p-6 text-siftrix-beige shadow-xl space-y-5 ${className}`}
+      className={`rounded-2xl border border-siftrix-gold/35 bg-siftrix-charcoal dark:bg-[#16151C] p-5 sm:p-6 text-siftrix-beige dark:text-[#EFE9DF] shadow-xl space-y-5 ${className}`}
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-siftrix-charcoal-border/70 pb-4">
@@ -64,7 +64,7 @@ export default function PersonalizedRecommendationBox({
               Personalized Cyber Defense Protocol
             </p>
           </div>
-          <h3 className="text-xl font-bold text-siftrix-white mt-1">
+          <h3 className="text-xl font-bold text-siftrix-white dark:text-[#FAF6EF] mt-1">
             {plan.title}
           </h3>
           <p className="text-xs text-[#C8C1B6] mt-0.5">
@@ -112,7 +112,7 @@ export default function PersonalizedRecommendationBox({
                 className={`flex items-start gap-3 rounded-xl border p-3.5 transition-all cursor-pointer ${
                   isDone
                     ? 'border-emerald-500/40 bg-emerald-950/20 text-[#A3D9B1]'
-                    : 'border-siftrix-charcoal-border bg-[#1E1D24] text-siftrix-beige hover:border-siftrix-gold/50'
+                    : 'border-siftrix-charcoal-border bg-[#1E1D24] text-[#EFE9DF] hover:border-siftrix-gold/50'
                 }`}
               >
                 <input
@@ -125,7 +125,7 @@ export default function PersonalizedRecommendationBox({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span
                       className={`text-sm font-semibold ${
-                        isDone ? 'line-through text-emerald-300' : 'text-siftrix-white'
+                        isDone ? 'line-through text-emerald-300' : 'text-siftrix-white dark:text-[#FAF6EF]'
                       }`}
                     >
                       {item.title}

@@ -114,7 +114,7 @@ export default function CyberAssistant() {
           }`}
         >
           {/* Header Bar */}
-          <div className="flex items-center justify-between px-4 py-3 bg-siftrix-charcoal border-b border-siftrix-charcoal-border text-siftrix-white shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 bg-siftrix-charcoal dark:bg-[#141419] border-b border-siftrix-charcoal-border text-white dark:text-[#FAF6EF] shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               <svg
                 aria-hidden="true"
@@ -128,7 +128,7 @@ export default function CyberAssistant() {
               >
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
-              <h3 className="text-sm font-bold text-siftrix-white tracking-tight truncate">
+              <h3 className="text-sm font-bold text-white dark:text-[#FAF6EF] tracking-tight truncate">
                 AI Assistant
               </h3>
             </div>
@@ -139,7 +139,7 @@ export default function CyberAssistant() {
                 onClick={handleClear}
                 title="Clear chat history"
                 aria-label="Clear chat history"
-                className="p-1.5 rounded-lg text-siftrix-pearl hover:text-red-300 hover:bg-[#1B1B20] transition-colors cursor-pointer text-xs"
+                className="p-1.5 rounded-lg text-white/90 dark:text-[#FAF6EF] hover:text-red-300 dark:hover:text-red-300 hover:bg-white/10 dark:hover:bg-white/10 active:text-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer text-xs"
               >
                 Clear
               </button>
@@ -148,7 +148,7 @@ export default function CyberAssistant() {
                 onClick={() => setIsMinimized((prev) => !prev)}
                 title={isMinimized ? 'Expand chat' : 'Minimize chat'}
                 aria-label={isMinimized ? 'Expand chat' : 'Minimize chat'}
-                className="p-1.5 rounded-lg text-siftrix-pearl hover:text-siftrix-champagne hover:bg-[#1B1B20] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-white/90 dark:text-[#FAF6EF] hover:text-siftrix-champagne dark:hover:text-siftrix-champagne hover:bg-white/10 dark:hover:bg-white/10 active:text-siftrix-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer"
               >
                 {isMinimized ? '▲' : '▼'}
               </button>
@@ -157,7 +157,7 @@ export default function CyberAssistant() {
                 onClick={() => setIsOpen(false)}
                 title="Close chat"
                 aria-label="Close chat"
-                className="p-1.5 rounded-lg text-siftrix-pearl hover:text-white hover:bg-[#1B1B20] transition-colors cursor-pointer font-bold"
+                className="p-1.5 rounded-lg text-white/90 dark:text-[#FAF6EF] hover:text-white hover:bg-white/10 dark:hover:bg-white/10 active:text-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer font-bold"
               >
                 ✕
               </button>
@@ -180,8 +180,8 @@ export default function CyberAssistant() {
                       <div
                         className={`max-w-[88%] rounded-2xl p-3.5 space-y-1.5 shadow-2xs leading-relaxed ${
                           isUser
-                            ? 'bg-siftrix-charcoal text-siftrix-pearl rounded-tr-xs'
-                            : 'bg-white border border-siftrix-border text-siftrix-charcoal rounded-tl-xs'
+                            ? 'bg-siftrix-charcoal text-siftrix-pearl rounded-tr-xs dark:bg-siftrix-sand dark:text-siftrix-champagne'
+                            : 'bg-white dark:bg-siftrix-white border border-siftrix-border text-siftrix-charcoal rounded-tl-xs'
                         }`}
                       >
                         <div
@@ -220,7 +220,7 @@ export default function CyberAssistant() {
                               key={prompt}
                               type="button"
                               onClick={() => void handleSend(prompt)}
-                              className="text-[11px] font-medium text-siftrix-graphite bg-white hover:bg-siftrix-pearl border border-siftrix-gold/50 rounded-full px-2.5 py-1 text-left transition-colors cursor-pointer shadow-2xs"
+                              className="text-[11px] font-medium text-siftrix-graphite bg-white dark:bg-siftrix-white hover:bg-siftrix-pearl dark:hover:bg-siftrix-sand border border-siftrix-gold/50 rounded-full px-2.5 py-1 text-left transition-colors cursor-pointer shadow-2xs"
                             >
                               💡 {prompt}
                             </button>
@@ -233,7 +233,7 @@ export default function CyberAssistant() {
 
                 {/* Animated Typing Indicator */}
                 {isTyping ? (
-                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-white border border-siftrix-border text-siftrix-charcoal w-fit rounded-tl-xs">
+                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-white dark:bg-siftrix-white border border-siftrix-border text-siftrix-charcoal w-fit rounded-tl-xs">
                     <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold animate-bounce" />
                     <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold animate-bounce [animation-delay:0.2s]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold animate-bounce [animation-delay:0.4s]" />
@@ -255,7 +255,7 @@ export default function CyberAssistant() {
                       type="button"
                       disabled={isTyping}
                       onClick={() => void handleSend(q)}
-                      className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-siftrix-border hover:border-siftrix-gold text-[11px] text-siftrix-graphite cursor-pointer transition-colors shrink-0"
+                      className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white dark:bg-siftrix-white border border-siftrix-border hover:border-siftrix-gold dark:hover:bg-siftrix-sand text-[11px] text-siftrix-graphite cursor-pointer transition-colors shrink-0"
                     >
                       {q}
                     </button>
@@ -266,7 +266,7 @@ export default function CyberAssistant() {
               {/* Chat Input Bar */}
               <form
                 onSubmit={handleSubmit}
-                className="p-3 bg-white border-t border-siftrix-border flex items-center gap-2 shrink-0"
+                className="p-3 bg-white dark:bg-siftrix-pearl border-t border-siftrix-border flex items-center gap-2 shrink-0"
               >
                 <input
                   ref={inputRef}
@@ -276,7 +276,7 @@ export default function CyberAssistant() {
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about suspicious links, smishing, or SSRF..."
-                  className="flex-1 rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2 text-xs sm:text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+                  className="flex-1 rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2 text-xs sm:text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white dark:focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
                 />
                 <button
                   type="submit"

@@ -113,7 +113,7 @@ export default function SignupPage({
             type="button"
             onClick={handleFillDemo}
             disabled={isLoading}
-            className="self-start sm:self-auto px-2.5 py-1 rounded-lg border border-siftrix-gold/50 bg-[#FAF4E7] text-xs font-semibold text-siftrix-charcoal hover:bg-siftrix-gold/20 transition-colors cursor-pointer"
+            className="self-start sm:self-auto px-2.5 py-1 rounded-lg border border-siftrix-gold/50 bg-[#FAF4E7] dark:bg-siftrix-sand dark:text-siftrix-champagne text-xs font-semibold text-siftrix-charcoal hover:bg-siftrix-gold/20 transition-colors cursor-pointer"
           >
             ⚡ Demo Data
           </button>
@@ -138,7 +138,7 @@ export default function SignupPage({
                 if (errorMessage) setErrorMessage('')
               }}
               placeholder="e.g. Maimoona Ibrahimi"
-              className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+              className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
             />
           </div>
 
@@ -156,7 +156,7 @@ export default function SignupPage({
               value={organization}
               onChange={(e) => setOrganization(e.target.value)}
               placeholder="e.g. Cyber Security SOC"
-              className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+              className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
             />
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function SignupPage({
               if (errorMessage) setErrorMessage('')
             }}
             placeholder="analyst@domain.com"
-            className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+            className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
           />
         </div>
 
@@ -203,7 +203,7 @@ export default function SignupPage({
                   if (errorMessage) setErrorMessage('')
                 }}
                 placeholder="Min. 8 chars"
-                className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl pl-3.5 pr-14 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+                className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl pl-3.5 pr-14 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
               />
               <button
                 type="button"
@@ -235,7 +235,7 @@ export default function SignupPage({
                 if (errorMessage) setErrorMessage('')
               }}
               placeholder="Re-enter password"
-              className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
+              className="w-full rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
             />
           </div>
         </div>
@@ -259,7 +259,7 @@ export default function SignupPage({
               ))}
             </div>
             {passwordStrength.feedback.length > 0 ? (
-              <p className="text-[11px] text-amber-800">
+              <p className="text-[11px] text-amber-800 dark:text-amber-300">
                 Tip: {passwordStrength.feedback.join(' · ')}
               </p>
             ) : null}
@@ -282,7 +282,7 @@ export default function SignupPage({
         {errorMessage ? (
           <div
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-red-800"
+            className="rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-red-800 dark:text-red-200"
           >
             {errorMessage}
           </div>
@@ -291,7 +291,7 @@ export default function SignupPage({
         {successMessage ? (
           <div
             role="status"
-            className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-emerald-800 flex items-center gap-2"
+            className="rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2"
           >
             <span className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
             <span>{successMessage}</span>

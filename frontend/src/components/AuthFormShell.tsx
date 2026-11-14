@@ -114,7 +114,7 @@ export default function AuthFormShell({
         <div className="min-w-0 lg:col-span-7 siftrix-card rounded-2xl p-5 sm:p-7 md:p-8 flex flex-col justify-center">
           {authSession ? (
             <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/55 bg-[#FAF4E7] px-3 py-1 text-xs font-semibold text-siftrix-charcoal">
+              <div className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/55 bg-[#FAF4E7] dark:bg-siftrix-sand dark:text-siftrix-champagne px-3 py-1 text-xs font-semibold text-siftrix-charcoal">
                 <span className="h-2 w-2 rounded-full bg-siftrix-gold" aria-hidden="true" />
                 <span>UI Preview Session Active</span>
               </div>
@@ -157,7 +157,7 @@ export default function AuthFormShell({
                 <button
                   type="button"
                   onClick={handlePreviewSignOut}
-                  className="py-2.5 px-4 rounded-xl border border-red-300 bg-red-50 text-red-800 hover:bg-red-100 text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  className="py-2.5 px-4 rounded-xl border border-red-300 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   Sign Out (Clear Preview)
                 </button>

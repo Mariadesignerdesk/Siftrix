@@ -48,7 +48,7 @@ export default function Footer({ onNavigate }: FooterProps) {
   return (
     <footer
       role="contentinfo"
-      className="relative bg-siftrix-charcoal border-t border-siftrix-charcoal-border text-siftrix-beige px-5 sm:px-6 md:px-10 pt-14 pb-10"
+      className="relative bg-siftrix-charcoal dark:bg-[#0E0E12] border-t border-siftrix-charcoal-border text-siftrix-beige dark:text-[#EFE9DF] px-5 sm:px-6 md:px-10 pt-14 pb-10"
     >
       <div
         aria-hidden="true"
@@ -62,7 +62,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             <div className="inline-flex items-center gap-3">
               <BrandMark className="h-9 w-9 shrink-0" />
               <div>
-                <h2 className="text-xl font-bold text-siftrix-white tracking-tight">
+                <h2 className="text-xl font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight">
                   SIFTRIX
                 </h2>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-siftrix-champagne">

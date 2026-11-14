@@ -146,7 +146,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-siftrix-champagne">
             Threat Audit Log
           </p>
-          <h2 className="text-3xl font-bold text-siftrix-white mt-1 tracking-tight">
+          <h2 className="text-3xl font-bold text-siftrix-white dark:text-[#FAF6EF] mt-1 tracking-tight">
             Scan History
           </h2>
           <p className="text-[#C8C1B6] text-sm md:text-base mt-1">
@@ -215,11 +215,11 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
       ) : !isLoading && hasError ? (
         <div
           role="alert"
-          className="bg-red-50 border border-red-200 text-red-900 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-900 dark:text-red-200 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div className="space-y-1 text-sm">
             <p className="font-bold">Could not load scan history</p>
-            <p className="text-red-700">{errorMessage}</p>
+            <p className="text-red-700 dark:text-red-300">{errorMessage}</p>
           </div>
           <button
             type="button"
@@ -256,7 +256,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               value={filters.searchQuery}
               onChange={(e) => updateFilters({ searchQuery: e.target.value })}
               placeholder="Search by scanned URL or message content..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm border border-siftrix-border rounded-xl outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold bg-siftrix-pearl text-siftrix-graphite placeholder:text-siftrix-muted"
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-siftrix-border rounded-xl outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold bg-siftrix-pearl text-siftrix-graphite placeholder:text-siftrix-muted"
             />
           </div>
 
@@ -273,7 +273,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                   setSortBy(e.target.value as ScanSortField)
                   setCurrentPage(1)
                 }}
-                className="w-full px-3 py-2.5 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
+                className="w-full px-3 py-2.5 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
               >
                 <option value="date">Sort by: Date</option>
                 <option value="risk_score">Sort by: Risk Score</option>
@@ -315,7 +315,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               onChange={(e) =>
                 updateFilters({ verdict: e.target.value as ScanVerdictFilter })
               }
-              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
+              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
             >
               <option value="all">All Verdicts</option>
               <option value="safe">Safe</option>
@@ -337,7 +337,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               onChange={(e) =>
                 updateFilters({ riskLevel: e.target.value as ScanRiskFilter })
               }
-              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
+              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
             >
               <option value="all">All Risk Levels</option>
               <option value="low">Low</option>
@@ -360,7 +360,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
               onChange={(e) =>
                 updateFilters({ targetType: e.target.value as ScanTargetFilter })
               }
-              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
+              className="w-full px-3 py-2 text-sm border border-siftrix-border rounded-xl bg-siftrix-pearl text-siftrix-graphite outline-none focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold"
             >
               <option value="all">All Targets</option>
               <option value="url">URL</option>
@@ -450,7 +450,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-siftrix-charcoal border-b border-siftrix-charcoal-border text-xs font-bold uppercase tracking-wider text-siftrix-pearl">
+                  <tr className="bg-siftrix-charcoal dark:bg-siftrix-sand border-b border-siftrix-charcoal-border dark:border-siftrix-gold/40 text-xs font-bold uppercase tracking-wider text-siftrix-pearl dark:text-siftrix-champagne">
                     <th scope="col" className="px-4 lg:px-5 py-3.5">
                       Scanned Content
                     </th>
@@ -488,7 +488,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-siftrix-sand text-sm bg-white">
+                <tbody className="divide-y divide-siftrix-sand text-sm bg-siftrix-white">
                   {paginated.items.map((scan) => {
                     const score = clampRiskScore(scan.overall_risk_score)
                     const verdictStyle = getVerdictStyle(scan.verdict)
@@ -539,7 +539,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                           <button
                             type="button"
                             onClick={() => handleViewDetails(scan.id)}
-                            className="px-3.5 py-1.5 rounded-lg border border-siftrix-border bg-siftrix-pearl text-siftrix-charcoal hover:bg-siftrix-charcoal hover:text-siftrix-champagne hover:border-siftrix-gold/55 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                            className="px-3.5 py-1.5 rounded-lg border border-siftrix-border bg-siftrix-pearl text-siftrix-charcoal hover:bg-siftrix-charcoal hover:text-siftrix-champagne dark:hover:bg-siftrix-sand hover:border-siftrix-gold/55 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                           >
                             View Details
                           </button>
@@ -552,7 +552,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
             </div>
 
             {/* Mobile & Tablet Card Stack */}
-            <div className="lg:hidden divide-y divide-siftrix-sand bg-white">
+            <div className="lg:hidden divide-y divide-siftrix-sand bg-siftrix-white">
               {paginated.items.map((scan) => {
                 const score = clampRiskScore(scan.overall_risk_score)
                 return (
@@ -563,7 +563,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                         <VerdictBadge verdict={scan.verdict} withPrefix={false} />
                         <RiskLevelBadge riskLevel={scan.risk_level} withPrefix={false} />
                       </div>
-                      <span className="text-xs font-bold text-siftrix-champagne bg-siftrix-charcoal px-2.5 py-1 rounded-md border border-siftrix-charcoal-border siftrix-tabular">
+                      <span className="text-xs font-bold text-siftrix-champagne bg-siftrix-charcoal dark:bg-siftrix-sand px-2.5 py-1 rounded-md border border-siftrix-charcoal-border dark:border-siftrix-gold/40 siftrix-tabular">
                         Risk: {score}/100
                       </span>
                     </div>
@@ -586,7 +586,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
                     <button
                       type="button"
                       onClick={() => handleViewDetails(scan.id)}
-                      className="w-full py-2 px-4 rounded-lg border border-siftrix-border bg-siftrix-pearl text-siftrix-charcoal hover:bg-siftrix-charcoal hover:text-siftrix-champagne hover:border-siftrix-gold/55 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                      className="w-full py-2 px-4 rounded-lg border border-siftrix-border bg-siftrix-pearl text-siftrix-charcoal hover:bg-siftrix-charcoal hover:text-siftrix-champagne dark:hover:bg-siftrix-sand hover:border-siftrix-gold/55 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                     >
                       View Details
                     </button>

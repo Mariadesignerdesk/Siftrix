@@ -146,15 +146,15 @@ export default function Navbar({
   const linkClassName = (isActive: boolean) =>
     `rounded-lg px-2 xl:px-2.5 2xl:px-3.5 py-1.5 text-xs xl:text-[13px] 2xl:text-sm font-medium transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
       isActive
-        ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/45 shadow-2xs'
-        : 'text-siftrix-muted-dark border border-transparent hover:text-siftrix-charcoal hover:bg-white/85 hover:border-siftrix-border'
+        ? 'bg-siftrix-charcoal text-siftrix-pearl border border-siftrix-gold/45 shadow-2xs dark:bg-siftrix-sand dark:text-siftrix-champagne dark:border-siftrix-gold'
+        : 'text-siftrix-muted-dark border border-transparent hover:text-siftrix-charcoal hover:bg-siftrix-white/85 hover:border-siftrix-border'
     }`
 
   const mobileLinkClassName = (isActive: boolean) =>
     `flex items-center justify-between rounded-xl px-4 py-2.5 min-h-[44px] text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
       isActive
-        ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/45 shadow-2xs'
-        : 'bg-white/85 text-siftrix-graphite border border-siftrix-border hover:border-siftrix-gold/65 hover:text-siftrix-charcoal'
+        ? 'bg-siftrix-charcoal text-siftrix-pearl border border-siftrix-gold/45 shadow-2xs dark:bg-siftrix-sand dark:text-siftrix-champagne dark:border-siftrix-gold'
+        : 'bg-siftrix-white/85 text-siftrix-graphite border border-siftrix-border hover:border-siftrix-gold/65 hover:text-siftrix-charcoal'
     }`
 
   return (
@@ -221,7 +221,7 @@ export default function Navbar({
             onClick={handleToggleTheme}
             aria-label={`Switch theme (currently ${currentTheme})`}
             title={`Current theme: ${currentTheme}. Click to toggle.`}
-            className="h-9 w-9 xl:h-10 xl:w-10 rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs text-xs sm:text-sm"
+            className="h-9 w-9 xl:h-10 xl:w-10 rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs text-xs sm:text-sm"
           >
             {currentTheme === 'dark' ? '☀️' : '🌙'}
           </button>
@@ -240,7 +240,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={handleSignOutClick}
-                className="rounded-xl border border-siftrix-border bg-white px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-medium text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                className="rounded-xl border border-siftrix-border bg-siftrix-white px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-medium text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
               >
                 Sign Out
               </button>
@@ -253,8 +253,8 @@ export default function Navbar({
                 aria-current={currentPage === 'login' ? 'page' : undefined}
                 className={`rounded-xl px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'login'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
-                    : 'text-siftrix-muted-dark border border-siftrix-border/80 bg-white hover:text-siftrix-charcoal hover:border-siftrix-gold'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
+                    : 'text-siftrix-muted-dark border border-siftrix-border/80 bg-siftrix-white hover:text-siftrix-charcoal hover:border-siftrix-gold'
                 }`}
                 aria-label="Sign in to SIFTRIX"
               >
@@ -266,7 +266,7 @@ export default function Navbar({
                 aria-current={currentPage === 'signup' ? 'page' : undefined}
                 className={`rounded-xl px-2.5 xl:px-3.5 py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'signup'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
                     : 'siftrix-btn-secondary'
                 }`}
                 aria-label="Create a SIFTRIX account"
@@ -310,7 +310,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={handleSignOutClick}
-                className="rounded-xl border border-siftrix-border bg-white px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                className="rounded-xl border border-siftrix-border bg-siftrix-white px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
               >
                 Sign Out
               </button>
@@ -323,8 +323,8 @@ export default function Navbar({
                 aria-current={currentPage === 'login' ? 'page' : undefined}
                 className={`rounded-xl px-2 sm:px-2.5 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'login'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
-                    : 'border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
+                    : 'border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold'
                 }`}
               >
                 Sign In
@@ -335,7 +335,7 @@ export default function Navbar({
                 aria-current={currentPage === 'signup' ? 'page' : undefined}
                 className={`hidden min-[360px]:inline-flex rounded-xl px-2 sm:px-2.5 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'signup'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
                     : 'siftrix-btn-secondary'
                 }`}
               >
@@ -361,7 +361,7 @@ export default function Navbar({
             onClick={handleToggleTheme}
             aria-label={`Switch theme (currently ${currentTheme})`}
             title={`Current theme: ${currentTheme}. Click to toggle.`}
-            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-colors cursor-pointer text-xs sm:text-sm"
+            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-colors cursor-pointer text-xs sm:text-sm"
           >
             {currentTheme === 'dark' ? '☀️' : '🌙'}
           </button>
@@ -372,7 +372,7 @@ export default function Navbar({
             aria-controls="siftrix-mobile-menu"
             aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-beige transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-beige transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
           >
             {isMobileMenuOpen ? (
               <svg
@@ -454,7 +454,7 @@ export default function Navbar({
                   <button
                     type="button"
                     onClick={handleSignOutClick}
-                    className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-800 hover:bg-red-100 cursor-pointer shrink-0 self-start sm:self-center"
+                    className="rounded-xl border border-red-300 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 px-3.5 py-2 text-xs font-semibold text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 cursor-pointer shrink-0 self-start sm:self-center"
                   >
                     Sign Out
                   </button>
