@@ -1,0 +1,25 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python coverage and test artifacts
+.coverage
+.coverage.*
+htmlcov/
+
+# Environment files (preserve template)
+.env
+.env.*
+!.env.example
+
+# Common OS-generated files
+.DS_Store
+Thumbs.db

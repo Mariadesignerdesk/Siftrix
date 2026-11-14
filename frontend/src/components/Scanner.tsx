@@ -6,7 +6,6 @@ import {
 } from '../services/api'
 import { addXp, type UserGamificationProfile } from '../services/gamificationService'
 import { addNotification } from '../services/notificationService'
-import { REALISTIC_MOCK_SCANS } from '../services/scanHistoryService'
 import XpPopup from './gamification/XpPopup'
 import {
   detectScannerTargetType,
@@ -103,27 +102,23 @@ export default function Scanner() {
     try {
       const response = await submitScan(prepared.request)
 
-      let finalResult: ScanResponse | null = null
-
       if (!response.ok) {
-        // Fall back to realistic simulated scan so evaluation always succeeds
-        const sampleMatch =
-          REALISTIC_MOCK_SCANS.find((s) => s.target_type === prepared.request.target_type) ||
-          REALISTIC_MOCK_SCANS[0]
-        finalResult = {
-          ...sampleMatch,
-          id: `sfx_scan_${Date.now()}`,
-          target_content: prepared.request.content,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-      } else if (!isValidScanResponse(response.data)) {
+        setIsError(true)
+        setMessage(
+          response.error || 'Scan submission failed. Please ensure the backend server is reachable.'
+        )
+        setScanResult(null)
+        return
+      }
+
+      if (!isValidScanResponse(response.data)) {
         setIsError(true)
         setMessage('Received an incomplete or unexpected response from the backend server.')
+        setScanResult(null)
         return
-      } else {
-        finalResult = response.data
       }
+
+      const finalResult = response.data
 
       setScanResult(finalResult)
       playScanCompletionChime(finalResult.verdict)

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchScans, type ScanResponse } from '../services/api'
-import { getMockScanHistory } from '../services/scanHistoryService'
 import { isMissingSessionUnauthorized } from '../utils/session'
 import {
   DEFAULT_SCAN_FILTERS,
@@ -39,22 +38,17 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
   const applyScanResponse = useCallback(
     (response: Awaited<ReturnType<typeof fetchScans>>) => {
       if (!response.ok || !response.data) {
-        // When backend is offline or uninitialized, activate realistic mock logs so evaluator can audit
-        const mockData = getMockScanHistory()
-        setScans(mockData)
-        setIsUsingMockData(true)
         if (isMissingSessionUnauthorized(response.status)) {
+          setScans([])
+          setIsUsingMockData(false)
           setErrorMessage('')
         } else {
+          setScans([])
+          setIsUsingMockData(false)
           setErrorMessage(
-            'Live backend unreachable. Displaying 20 realistic audit log entries for testing & evaluation.'
+            response.error || 'Live backend unreachable. Ensure the SIFTRIX FastAPI backend is running.'
           )
         }
-      } else if (response.data.length === 0) {
-        const mockData = getMockScanHistory()
-        setScans(mockData)
-        setIsUsingMockData(true)
-        setErrorMessage('')
       } else {
         setScans(response.data)
         setIsUsingMockData(false)
