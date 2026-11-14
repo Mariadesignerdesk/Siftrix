@@ -21,6 +21,13 @@ from app.schemas.history import (
     ScanHistoryListResponse,
     ScanDetailResponse,
 )
+from app.schemas.auth import (
+    UserRegisterRequest,
+    UserLoginRequest,
+    UserResponse,
+    TokenResponse,
+    TokenPayload,
+)
 
 __all__ = [
     "TargetType",
@@ -39,4 +46,9 @@ __all__ = [
     "ScanHistoryItem",
     "ScanHistoryListResponse",
     "ScanDetailResponse",
+    "UserRegisterRequest",
+    "UserLoginRequest",
+    "UserResponse",
+    "TokenResponse",
+    "TokenPayload",
 ]

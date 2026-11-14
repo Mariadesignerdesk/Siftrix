@@ -103,6 +103,41 @@ class SecurityAdvisorAgent(BaseAgent):
             ]
 
         # 2. Contextual Enrichment from Active Agent Findings
+        detected_indicators: List[str] = []
+        if message_finding and message_finding.indicators:
+            for ind in message_finding.indicators:
+                clean_ind = ind.split(" (+")[0].strip()
+                if clean_ind and clean_ind not in detected_indicators:
+                    detected_indicators.append(clean_ind)
+        if url_finding and url_finding.indicators:
+            for ind in url_finding.indicators:
+                clean_ind = ind.split(" (+")[0].strip()
+                if clean_ind and clean_ind not in detected_indicators:
+                    detected_indicators.append(clean_ind)
+
+        has_findings = bool(detected_indicators) or (overall_score > 0.0 and risk_level != "low")
+
+        # Ensure summary reflects actual findings and NEVER claims "no phishing indicators" when findings exist
+        if has_findings:
+            if detected_indicators:
+                indicators_summary = "; ".join(detected_indicators[:3])
+                if risk_level in ("high", "critical"):
+                    summary_en = f"High-risk threat detected: {indicators_summary}. Immediate containment and reporting required."
+                    summary_ur = f"Khatarnaak phishing attack detected: {indicators_summary}. Foran reporting aur containment zaroori hai."
+                else:
+                    summary_en = f"Suspicious activity detected: {indicators_summary}. Exercise high caution."
+                    summary_ur = f"Mashkook awamil paye gaye hain: {indicators_summary}. Is paighaam par amal karne se pehle tasdeeq zaroori hai."
+            else:
+                if risk_level in ("high", "critical"):
+                    summary_en = "High-risk threat detected. Strong evidence of credential harvesting, financial scamming, or malicious targeting."
+                    summary_ur = "Khatarnaak phishing attack detected. Yeh paighaam aap ki raqam ya password churanay ke liye bheja gaya hai."
+                else:
+                    summary_en = "Suspicious indicators detected. The content exhibits potential social engineering or deceptive patterns."
+                    summary_ur = "Mashkook khatraat paye gaye hain. Yeh paighaam farzi ya dhokay baazi par mabni ho sakta hai."
+        elif risk_level == "low":
+            summary_en = "The scanned content does not exhibit known phishing indicators or malicious signatures."
+            summary_ur = "Is scan kiye gaye content mein kisi fraud ya phishing ka wazeh khatra nazar nahi aaya."
+
         if message_finding:
             if message_finding.credential_harvesting_detected:
                 recs_en.insert(0, f"Immediately contact your bank or call SBP helpline at {SBP_HELPLINE} to freeze accounts.")

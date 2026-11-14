@@ -43,7 +43,7 @@ class BilingualList(BaseModel):
 
 # --- Risk Score Threshold Constants & Helpers ---
 
-SAFE_MAX_SCORE = 29.9
+SAFE_MAX_SCORE = 0.0
 SUSPICIOUS_MAX_SCORE = 69.9
 HIGH_RISK_MAX_SCORE = 89.9
 
@@ -62,7 +62,7 @@ def calculate_risk_level(score: float) -> RiskLevel:
     """Determine risk severity level based on score thresholds."""
     if score <= SAFE_MAX_SCORE:
         return RiskLevel.LOW
-    elif score <= SUSPICIOUS_MAX_SCORE:
+    elif score <= 59.9:
         return RiskLevel.MEDIUM
     elif score <= HIGH_RISK_MAX_SCORE:
         return RiskLevel.HIGH

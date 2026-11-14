@@ -8,7 +8,14 @@ from app.agents.base import detect_prompt_injection
 from app.agents.message_agent import message_agent
 from app.agents.url_agent import url_agent
 from app.agents.advisor_agent import security_advisor
-from app.schemas.common import TargetType, Verdict, RiskLevel
+from app.schemas.common import (
+    TargetType,
+    Verdict,
+    RiskLevel,
+    SAFE_MAX_SCORE,
+    SUSPICIOUS_MAX_SCORE,
+    HIGH_RISK_MAX_SCORE,
+)
 from app.schemas.scan import (
     ScanResponse,
     StructuredAgentFindings,
@@ -20,22 +27,25 @@ logger = logging.getLogger(__name__)
 
 
 def classify_risk(score: float) -> tuple[RiskLevel, Verdict]:
-    """Map deterministic score to RiskLevel and Verdict using the approved Build Guide boundaries.
+    """Map deterministic score to RiskLevel and Verdict.
 
     Boundaries:
-      0.0  - 29.9: LOW    / SAFE
-      30.0 - 59.9: MEDIUM / SUSPICIOUS
-      60.0 - 69.9: HIGH   / SUSPICIOUS
-      70.0 - 100.0: HIGH  / MALICIOUS
+      0.0:          LOW    / SAFE
+      0.1 - 59.9:   MEDIUM / SUSPICIOUS
+      60.0 - 69.9:  HIGH   / SUSPICIOUS
+      70.0 - 89.9:  HIGH   / MALICIOUS
+      90.0 - 100.0: CRITICAL / MALICIOUS
     """
-    if score <= 29.9:
+    if score <= SAFE_MAX_SCORE:
         return RiskLevel.LOW, Verdict.SAFE
     elif score <= 59.9:
         return RiskLevel.MEDIUM, Verdict.SUSPICIOUS
-    elif score <= 69.9:
+    elif score <= SUSPICIOUS_MAX_SCORE:
         return RiskLevel.HIGH, Verdict.SUSPICIOUS
-    else:
+    elif score <= HIGH_RISK_MAX_SCORE:
         return RiskLevel.HIGH, Verdict.MALICIOUS
+    else:
+        return RiskLevel.CRITICAL, Verdict.MALICIOUS
 
 
 class AIOrchestrator:

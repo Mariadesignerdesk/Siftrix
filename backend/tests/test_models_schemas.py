@@ -108,13 +108,17 @@ def test_cloud_metadata_ip_rejected():
 def test_risk_score_calculation_thresholds():
     """Verify calculated verdicts and risk levels across defined thresholds."""
     assert calculate_verdict(0.0) == Verdict.SAFE
-    assert calculate_verdict(29.9) == Verdict.SAFE
+    assert calculate_verdict(10.0) == Verdict.SUSPICIOUS
+    assert calculate_verdict(20.0) == Verdict.SUSPICIOUS
+    assert calculate_verdict(29.9) == Verdict.SUSPICIOUS
     assert calculate_verdict(30.0) == Verdict.SUSPICIOUS
     assert calculate_verdict(69.9) == Verdict.SUSPICIOUS
     assert calculate_verdict(70.0) == Verdict.MALICIOUS
     assert calculate_verdict(100.0) == Verdict.MALICIOUS
 
-    assert calculate_risk_level(15.0) == RiskLevel.LOW
+    assert calculate_risk_level(0.0) == RiskLevel.LOW
+    assert calculate_risk_level(15.0) == RiskLevel.MEDIUM
+    assert calculate_risk_level(20.0) == RiskLevel.MEDIUM
     assert calculate_risk_level(45.0) == RiskLevel.MEDIUM
     assert calculate_risk_level(75.0) == RiskLevel.HIGH
     assert calculate_risk_level(95.0) == RiskLevel.CRITICAL
@@ -133,17 +137,21 @@ def test_scan_response_score_boundary_validation():
         "updated_at": now,
     }
 
-    # Safe score (10.0) with Safe verdict -> OK
-    res = ScanResponse(**base_data, overall_risk_score=10.0, verdict=Verdict.SAFE, risk_level=RiskLevel.LOW)
-    assert res.overall_risk_score == 10.0
+    # Safe score (0.0) with Safe verdict -> OK
+    res = ScanResponse(**base_data, overall_risk_score=0.0, verdict=Verdict.SAFE, risk_level=RiskLevel.LOW)
+    assert res.overall_risk_score == 0.0
+
+    # Inconsistent: Score 20.0 with Safe verdict -> Must raise ValueError
+    with pytest.raises(ValueError):
+        ScanResponse(**base_data, overall_risk_score=20.0, verdict=Verdict.SAFE, risk_level=RiskLevel.MEDIUM)
 
     # Inconsistent: Score 85.0 with Safe verdict -> Must raise ValueError
     with pytest.raises(ValueError):
         ScanResponse(**base_data, overall_risk_score=85.0, verdict=Verdict.SAFE, risk_level=RiskLevel.HIGH)
 
-    # Inconsistent: Score 15.0 with Malicious verdict -> Must raise ValueError
+    # Inconsistent: Score 0.0 with Malicious verdict -> Must raise ValueError
     with pytest.raises(ValueError):
-        ScanResponse(**base_data, overall_risk_score=15.0, verdict=Verdict.MALICIOUS, risk_level=RiskLevel.LOW)
+        ScanResponse(**base_data, overall_risk_score=0.0, verdict=Verdict.MALICIOUS, risk_level=RiskLevel.LOW)
 
     # Out of range scores (<0 or >100) -> Must raise ValidationError
     with pytest.raises(ValidationError):
@@ -192,7 +200,7 @@ def test_history_preview_generation():
         id=uuid.uuid4(),
         target_type="message",
         target_content="Short alert message",
-        overall_risk_score=15.0,
+        overall_risk_score=0.0,
         verdict="safe",
         risk_level="low",
         created_at=now,

@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List, Union
-from pydantic import field_validator
+from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Resolve project directories dynamically to ensure .env is found from root or backend
@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Project metadata
     PROJECT_NAME: str = "Siftrix API"
     PROJECT_VERSION: str = "0.1.0"
+    ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
     # CORS settings (configurable for local Vite and production deployment)
@@ -40,6 +41,50 @@ class Settings(BaseSettings):
 
     VIRUSTOTAL_API_KEY: str = ""
     VIRUSTOTAL_TIMEOUT: float = 10.0
+
+    # Authentication & JWT Security
+    # In production (Railway), JWT_SECRET_KEY must be configured via environment variables.
+    # A distinct development-only fallback is used locally when no environment variable is set.
+    JWT_SECRET_KEY: str = "siftrix-development-only-jwt-secret-do-not-use-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days (10,080 minutes)
+
+    @field_validator("JWT_SECRET_KEY", mode="before")
+    @classmethod
+    def validate_jwt_secret_key(cls, v: Union[str, None], info: ValidationInfo) -> str:
+        """Ensure JWT secret key is valid and prohibit default fallback in production.
+
+        In production (Railway or ENVIRONMENT=production), a strong custom JWT_SECRET_KEY
+        of at least 32 characters must be configured via environment variables.
+        """
+        import os
+
+        dev_default = "siftrix-development-only-jwt-secret-do-not-use-in-production"
+        railway_env = os.getenv("RAILWAY_ENVIRONMENT", "").strip()
+        env_val = ""
+        if info is not None and hasattr(info, "data") and "ENVIRONMENT" in info.data:
+            env_val = str(info.data.get("ENVIRONMENT") or "").strip().lower()
+        if not env_val:
+            env_val = os.getenv("ENVIRONMENT", "").strip().lower()
+
+        is_production = bool(
+            railway_env
+            or env_val in ("prod", "production")
+        )
+        val = v.strip() if isinstance(v, str) and v.strip() else None
+
+        if is_production:
+            if not val or val == dev_default:
+                raise ValueError(
+                    "A secure, non-default JWT_SECRET_KEY environment variable is strictly required in production."
+                )
+            if len(val) < 32:
+                raise ValueError(
+                    "Production JWT_SECRET_KEY must be at least 32 characters long."
+                )
+            return val
+
+        return val or dev_default
 
     @field_validator("DEBUG", mode="before")
     @classmethod

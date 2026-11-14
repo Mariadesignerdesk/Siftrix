@@ -276,12 +276,14 @@ async def test_prompt_injection_combined_with_phishing_scoring():
 # =====================================================================
 
 def test_risk_classification_boundaries():
-    """Verify exact approved boundary mapping for 0-29.9, 30-59.9, 60-69.9, 70-100."""
-    # 0.0 - 29.9: LOW / SAFE
+    """Verify exact approved boundary mapping for 0.0, 0.1-59.9, 60-69.9, 70-89.9, 90-100."""
+    # 0.0: LOW / SAFE
     assert classify_risk(0.0) == (RiskLevel.LOW, Verdict.SAFE)
-    assert classify_risk(29.9) == (RiskLevel.LOW, Verdict.SAFE)
 
-    # 30.0 - 59.9: MEDIUM / SUSPICIOUS
+    # 0.1 - 59.9: MEDIUM / SUSPICIOUS
+    assert classify_risk(10.0) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
+    assert classify_risk(20.0) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
+    assert classify_risk(29.9) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
     assert classify_risk(30.0) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
     assert classify_risk(59.9) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
 
@@ -289,11 +291,13 @@ def test_risk_classification_boundaries():
     assert classify_risk(60.0) == (RiskLevel.HIGH, Verdict.SUSPICIOUS)
     assert classify_risk(69.9) == (RiskLevel.HIGH, Verdict.SUSPICIOUS)
 
-    # 70.0 - 100.0: HIGH / MALICIOUS
+    # 70.0 - 89.9: HIGH / MALICIOUS
     assert classify_risk(70.0) == (RiskLevel.HIGH, Verdict.MALICIOUS)
     assert classify_risk(89.9) == (RiskLevel.HIGH, Verdict.MALICIOUS)
-    assert classify_risk(90.0) == (RiskLevel.HIGH, Verdict.MALICIOUS)
-    assert classify_risk(100.0) == (RiskLevel.HIGH, Verdict.MALICIOUS)
+
+    # 90.0 - 100.0: CRITICAL / MALICIOUS
+    assert classify_risk(90.0) == (RiskLevel.CRITICAL, Verdict.MALICIOUS)
+    assert classify_risk(100.0) == (RiskLevel.CRITICAL, Verdict.MALICIOUS)
 
 
 def test_scan_response_boundary_validation_compliance():
@@ -301,7 +305,7 @@ def test_scan_response_boundary_validation_compliance():
     from datetime import datetime, timezone
 
     now = datetime.now(timezone.utc)
-    test_scores = [0.0, 29.9, 30.0, 59.9, 60.0, 69.9, 70.0, 89.9, 90.0, 100.0]
+    test_scores = [0.0, 10.0, 20.0, 29.9, 30.0, 59.9, 60.0, 69.9, 70.0, 89.9, 90.0, 100.0]
 
     for score in test_scores:
         risk_lvl, vrd = classify_risk(score)
@@ -362,7 +366,7 @@ async def test_security_advisor_low_risk_scenario():
     finding, summary, recs = await advisor.advise(
         risk_level="low",
         verdict="safe",
-        overall_score=15.0,
+        overall_score=0.0,
         target_content="Meeting schedule for tomorrow",
     )
 
@@ -457,3 +461,50 @@ async def test_orchestrator_compound_scan_max_score():
         assert resp.verdict == Verdict.SUSPICIOUS
         assert resp.agent_findings.url_intelligence is not None
         assert resp.agent_findings.message_intelligence is not None
+
+
+# =====================================================================
+# 10. Scoring & Indicator Threshold Integrity Tests (Investigation Cases)
+# =====================================================================
+
+@pytest.mark.asyncio
+async def test_prize_lure_message_is_suspicious_not_safe():
+    """Verify that a message with a prize/lottery lure (score 20) is classified as SUSPICIOUS/MEDIUM, not SAFE."""
+    orchestrator = AIOrchestrator()
+    response = await orchestrator.scan(
+        content="Congratulations! You have won 1,000,000 PKR in Jeeto Pakistan lucky draw! Call now to claim.",
+        target_type=TargetType.MESSAGE,
+    )
+    assert response.overall_risk_score == 20.0
+    assert response.verdict == Verdict.SUSPICIOUS
+    assert response.risk_level == RiskLevel.MEDIUM
+    assert "Unrealistic prize, lottery, or unsolicited financial grant lure" in response.summary.en
+    assert "no known phishing indicators" not in response.summary.en.lower()
+
+
+@pytest.mark.asyncio
+async def test_clean_message_is_safe_low_risk():
+    """Verify that clean message with no threat indicators is classified as SAFE/LOW."""
+    orchestrator = AIOrchestrator()
+    response = await orchestrator.scan(
+        content="Hey, are we still meeting for lunch tomorrow at 1 PM?",
+        target_type=TargetType.MESSAGE,
+    )
+    assert response.overall_risk_score == 0.0
+    assert response.verdict == Verdict.SAFE
+    assert response.risk_level == RiskLevel.LOW
+    assert "does not exhibit known phishing indicators" in response.summary.en
+
+
+@pytest.mark.asyncio
+async def test_bank_suspension_and_otp_message_scoring():
+    """Verify that bank account suspension + OTP theft scores 45 (15 urgency + 30 credential) and is SUSPICIOUS/MEDIUM."""
+    orchestrator = AIOrchestrator()
+    response = await orchestrator.scan(
+        content="Your bank account will be suspended immediately within 24 hours. Please send your OTP to unblock.",
+        target_type=TargetType.MESSAGE,
+    )
+    assert response.overall_risk_score == 45.0
+    assert response.verdict == Verdict.SUSPICIOUS
+    assert response.risk_level == RiskLevel.MEDIUM
+    assert "Sensitive credential" in response.summary.en

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.api.routes.health import router as health_router
+from app.api.routes.auth import router as auth_router
 from app.api.routes.scans import router as scans_router
 from app.api.routes.history import router as history_router
 
@@ -17,8 +18,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan context managing database table provisioning.
 
+    - Production deployments (e.g. Railway): Execute 'alembic upgrade head' prior to
+      deploying code that depends on new tables (such as 'users'). This provisions missing
+      tables safely while preserving all pre-existing scan records.
     - Development: verifies/creates database tables if PostgreSQL is available.
-    - Production: database schema changes should be applied via Alembic migrations ('alembic upgrade head').
     """
     try:
         Base.metadata.create_all(bind=engine)
@@ -26,7 +29,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(
             f"Database initialization deferred (PostgreSQL offline or lazy mode): {e}. "
-            "In production, execute 'alembic upgrade head' to apply migrations."
+            "In production, execute 'alembic upgrade head' to apply schema migrations."
         )
     yield
 
@@ -49,6 +52,7 @@ app.add_middleware(
 
 # Register routes
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(scans_router)
 app.include_router(history_router)
 
