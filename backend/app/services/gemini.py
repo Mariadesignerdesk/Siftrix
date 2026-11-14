@@ -221,7 +221,11 @@ class GeminiClient:
             }
 
         except Exception as e:
-            logger.error(f"Gemini chat request failed: {e}")
+            logger.exception(
+                "Gemini chat request failed (%s): %s",
+                type(e).__name__,
+                str(e) or repr(e),
+            )
             return fallback
         
     def _heuristic_fallback(self, prompt: str, reason: str = "fallback") -> Dict[str, Any]:
