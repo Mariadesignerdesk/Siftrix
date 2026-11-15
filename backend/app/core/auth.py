@@ -106,14 +106,21 @@ def get_optional_current_user(
     return get_current_user(credentials=credentials, db=db)
 
 
+def _is_registered_user_id(db: Session, candidate_id: uuid.UUID) -> bool:
+    """Check whether the given UUID belongs to a registered User account."""
+    return db.query(User).filter(User.id == candidate_id).first() is not None
+
+
 def resolve_owner_id_for_scan(
     current_user: Optional[User] = Depends(get_optional_current_user),
     x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+    db: Session = Depends(get_db),
 ) -> uuid.UUID:
     """Resolve owner UUID for scan submissions.
 
     - Priority 1: Authenticated user via Bearer token (returns user.id).
     - Priority 2: Guest with X-Session-ID (validates canonical UUIDv4, HTTP 400 if invalid).
+      If the UUID belongs to a registered user, generates a fresh UUIDv4 instead.
     - Priority 3: Anonymous without header (generates new cryptographically secure UUIDv4).
     """
     if current_user is not None:
@@ -121,24 +128,32 @@ def resolve_owner_id_for_scan(
 
     if x_session_id is not None:
         try:
-            return validate_uuid4(x_session_id)
+            guest_id = validate_uuid4(x_session_id)
         except (ValueError, AttributeError):
             logger.warning("Rejected scan request with malformed or non-v4 X-Session-ID header")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid X-Session-ID header: must be a valid canonical UUIDv4",
             )
+        if _is_registered_user_id(db, guest_id):
+            logger.warning(
+                "Guest scan attempted to use registered user UUID as X-Session-ID; generating fresh UUID"
+            )
+            return uuid.uuid4()
+        return guest_id
     return uuid.uuid4()
 
 
 def require_owner_id_for_history(
     current_user: Optional[User] = Depends(get_optional_current_user),
     x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+    db: Session = Depends(get_db),
 ) -> uuid.UUID:
     """Require and enforce owner UUID for history retrieval and deletion operations.
 
     - Priority 1: Authenticated user via Bearer token (returns user.id).
     - Priority 2: Guest with X-Session-ID (validates canonical UUIDv4, HTTP 400 if invalid).
+      Rejects with HTTP 401 if the UUID belongs to a registered user account.
     - Raises HTTP 401 Unauthorized if neither authentication nor X-Session-ID is present.
     """
     if current_user is not None:
@@ -150,13 +165,23 @@ def require_owner_id_for_history(
             detail="Authentication or X-Session-ID header required to access scan history",
         )
     try:
-        return validate_uuid4(x_session_id)
+        guest_id = validate_uuid4(x_session_id)
     except (ValueError, AttributeError):
         logger.warning("Rejected history request with malformed or non-v4 X-Session-ID header")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid X-Session-ID header: must be a valid canonical UUIDv4",
         )
+
+    if _is_registered_user_id(db, guest_id):
+        logger.warning("Rejected unauthenticated history request using registered user UUID")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to access registered user scan history",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return guest_id
 
 
 def migrate_guest_scans(
@@ -166,9 +191,18 @@ def migrate_guest_scans(
 ) -> int:
     """Associate existing guest scans with a registered user account within the current transaction.
 
+    Never migrates scans from a session ID that belongs to a registered user.
     Returns the number of migrated scan records.
     """
     if guest_session_id == user_id:
+        return 0
+
+    if _is_registered_user_id(db, guest_session_id):
+        logger.warning(
+            "Refused to migrate scans from registered user UUID %s to user %s",
+            guest_session_id,
+            user_id,
+        )
         return 0
 
     count = (

@@ -429,3 +429,202 @@ def test_production_rejects_default_jwt_secret():
             os.environ["RAILWAY_ENVIRONMENT"] = old_env
         else:
             os.environ.pop("RAILWAY_ENVIRONMENT", None)
+
+
+# =====================================================================
+# 7. Session Ownership & Impersonation Prevention Security Tests
+# =====================================================================
+
+def test_guest_cannot_read_or_delete_registered_user_history_via_x_session_id(client):
+    """Prove an unauthenticated guest cannot access or delete a registered user's scan history using their UUID."""
+    # 1. Register user and perform an authenticated scan
+    reg_resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": "protected_owner@siftrix.com",
+            "password": "Password123!",
+            "full_name": "Protected Owner",
+        },
+    )
+    assert reg_resp.status_code == 201
+    user_id_str = reg_resp.json()["user"]["id"]
+    token = reg_resp.json()["access_token"]
+
+    scan_resp = client.post(
+        "/api/scan/message",
+        json={"content": "Confidential user scan content", "sender": "+923001112222"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert scan_resp.status_code == 200
+    scan_id = scan_resp.json()["id"]
+
+    # 2. Unauthenticated request supplying the registered user's UUID in X-Session-ID must be rejected with 401
+    list_Spoof = client.get("/api/history", headers={"X-Session-ID": user_id_str})
+    assert list_Spoof.status_code == 401
+
+    detail_spoof = client.get(f"/api/history/{scan_id}", headers={"X-Session-ID": user_id_str})
+    assert detail_spoof.status_code == 401
+
+    delete_spoof = client.delete(f"/api/history/{scan_id}", headers={"X-Session-ID": user_id_str})
+    assert delete_spoof.status_code == 401
+
+
+def test_guest_scan_cannot_use_registered_user_uuid_as_owner(client):
+    """Prove an unauthenticated scan supplying a registered user's UUID generates a fresh guest UUID instead."""
+    reg_resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": "target_owner@siftrix.com",
+            "password": "Password123!",
+            "full_name": "Target Owner",
+        },
+    )
+    assert reg_resp.status_code == 201
+    user_id = uuid.UUID(reg_resp.json()["user"]["id"])
+    token = reg_resp.json()["access_token"]
+
+    # Guest attempts to create a scan pretending to be user_id via X-Session-ID
+    spoof_scan = client.post(
+        "/api/scan/message",
+        json={"content": "Injected guest scan attempting to pollute user history", "sender": "+923003334444"},
+        headers={"X-Session-ID": str(user_id)},
+    )
+    assert spoof_scan.status_code == 200
+    emitted_session = spoof_scan.headers.get("X-Session-ID")
+    assert emitted_session is not None
+    assert uuid.UUID(emitted_session) != user_id
+
+    # Verify DB owner is the fresh guest UUID, NOT the registered user's UUID
+    scan_id = uuid.UUID(spoof_scan.json()["id"])
+    db = TestingSessionLocal()
+    try:
+        record = db.query(ScanRecord).filter(ScanRecord.id == scan_id).first()
+        assert record is not None
+        assert record.user_id != user_id
+        assert record.user_id == uuid.UUID(emitted_session)
+    finally:
+        db.close()
+
+    # Registered user's history remains clean (0 items)
+    user_history = client.get("/api/history", headers={"Authorization": f"Bearer {token}"})
+    assert user_history.status_code == 200
+    assert user_history.json()["total"] == 0
+
+
+def test_guest_migration_cannot_steal_registered_user_scans(client):
+    """Prove register and login cannot migrate scans belonging to another registered user."""
+    # 1. Victim registers and creates a scan
+    victim_reg = client.post(
+        "/api/auth/register",
+        json={
+            "email": "victim_owner@siftrix.com",
+            "password": "Password123!",
+            "full_name": "Victim Owner",
+        },
+    )
+    assert victim_reg.status_code == 201
+    victim_id = uuid.UUID(victim_reg.json()["user"]["id"])
+    victim_token = victim_reg.json()["access_token"]
+
+    victim_scan = client.post(
+        "/api/scan/message",
+        json={"content": "Victim private scan", "sender": "+923005556666"},
+        headers={"Authorization": f"Bearer {victim_token}"},
+    )
+    assert victim_scan.status_code == 200
+    victim_scan_id = uuid.UUID(victim_scan.json()["id"])
+
+    # 2. Attacker registers while supplying victim's UUID in X-Session-ID
+    attacker_reg = client.post(
+        "/api/auth/register",
+        json={
+            "email": "attacker@siftrix.com",
+            "password": "Password123!",
+            "full_name": "Attacker User",
+        },
+        headers={"X-Session-ID": str(victim_id)},
+    )
+    assert attacker_reg.status_code == 201
+    attacker_token = attacker_reg.json()["access_token"]
+
+    # 3. Attacker also logs in while supplying victim's UUID in X-Session-ID
+    attacker_login = client.post(
+        "/api/auth/login",
+        json={
+            "email": "attacker@siftrix.com",
+            "password": "Password123!",
+        },
+        headers={"X-Session-ID": str(victim_id)},
+    )
+    assert attacker_login.status_code == 200
+
+    # 4. Verify victim's scan STILL belongs to victim in DB and was not migrated to attacker
+    db = TestingSessionLocal()
+    try:
+        record = db.query(ScanRecord).filter(ScanRecord.id == victim_scan_id).first()
+        assert record is not None
+        assert record.user_id == victim_id
+    finally:
+        db.close()
+
+    # 5. Victim still sees their scan; attacker sees 0 scans
+    victim_hist = client.get("/api/history", headers={"Authorization": f"Bearer {victim_token}"})
+    assert victim_hist.status_code == 200
+    assert victim_hist.json()["total"] == 1
+
+    attacker_hist = client.get("/api/history", headers={"Authorization": f"Bearer {attacker_token}"})
+    assert attacker_hist.status_code == 200
+    assert attacker_hist.json()["total"] == 0
+
+
+def test_authenticated_scans_do_not_expose_account_uuid_in_x_session_id_and_retrieve_history(client):
+    """Verify authenticated scan responses never emit X-Session-ID and authenticated users can retrieve their history."""
+    reg_resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": "auth_scanner@siftrix.com",
+            "password": "Password123!",
+            "full_name": "Authenticated Scanner",
+        },
+    )
+    assert reg_resp.status_code == 201
+    user_id = uuid.UUID(reg_resp.json()["user"]["id"])
+    token = reg_resp.json()["access_token"]
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. POST /api/scan/message as authenticated user
+    msg_scan = client.post(
+        "/api/scan/message",
+        json={"content": "Urgent OTP verification message", "sender": "+923007778888"},
+        headers=auth_headers,
+    )
+    assert msg_scan.status_code == 200
+    assert "X-Session-ID" not in msg_scan.headers
+    assert "x-session-id" not in {k.lower() for k in msg_scan.headers.keys()}
+
+    # 2. POST /api/scan (unified) as authenticated user
+    unified_scan = client.post(
+        "/api/scan",
+        json={"target_type": "message", "content": "Unified scan payload for authenticated user"},
+        headers=auth_headers,
+    )
+    assert unified_scan.status_code == 200
+    assert "X-Session-ID" not in unified_scan.headers
+    assert "x-session-id" not in {k.lower() for k in unified_scan.headers.keys()}
+
+    # 3. Verify authenticated user can retrieve both scans in history
+    hist_resp = client.get("/api/history", headers=auth_headers)
+    assert hist_resp.status_code == 200
+    hist_data = hist_resp.json()
+    assert hist_data["total"] == 2
+    returned_ids = {item["id"] for item in hist_data["items"]}
+    assert msg_scan.json()["id"] in returned_ids
+    assert unified_scan.json()["id"] in returned_ids
+
+    # Verify DB records are owned by user_id
+    db = TestingSessionLocal()
+    try:
+        records = db.query(ScanRecord).filter(ScanRecord.user_id == user_id).all()
+        assert len(records) == 2
+    finally:
+        db.close()
