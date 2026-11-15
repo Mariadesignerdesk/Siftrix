@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import AuthFormShell from '../components/AuthFormShell'
 import {
   evaluatePasswordStrength,
-  mockLogin,
+  loginUser,
   type AuthUser,
 } from '../services/authService'
 import {
@@ -47,7 +47,7 @@ export default function LoginPage({
     setIsLoading(true)
 
     try {
-      const response = await mockLogin({
+      const response = await loginUser({
         email,
         password,
         rememberMe,
@@ -60,6 +60,7 @@ export default function LoginPage({
 
       const user: AuthUser = response.user
       const previewSession: AuthPreviewSession = {
+        id: user.id,
         name: user.name,
         email: user.email,
         mode: 'signin',

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { checkBackendHealth, fetchScans, type ScanResponse } from '../services/api'
-import { getUserGamificationProfile } from '../services/gamificationService'
-import { getMockScanHistory } from '../services/scanHistoryService'
+import {
+  getCurrentUserRank,
+  getUserGamificationProfile,
+  syncScansCompleted,
+} from '../services/gamificationService'
 import { isMissingSessionUnauthorized } from '../utils/session'
 import { clampRiskScore, formatTimestamp } from '../utils/scanPresentation'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
@@ -92,20 +95,20 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     ) => {
       setHealthState(healthRes.ok ? 'online' : 'offline')
 
-      if (!scansRes.ok || !scansRes.data || scansRes.data.length === 0) {
-        // Fall back to 20 realistic telemetry entries so evaluators see charts and activity
-        const fallbackData = getMockScanHistory()
-        setScans(fallbackData)
-        if (isMissingSessionUnauthorized(scansRes.status)) {
-          setErrorMessage('')
-        } else if (!healthRes.ok) {
-          setErrorMessage('FastAPI backend offline — displaying realistic telemetry dataset.')
-        } else {
-          setErrorMessage('')
-        }
-      } else {
+      if (scansRes.ok && scansRes.data) {
         setScans(scansRes.data)
+        syncScansCompleted(scansRes.data.length)
         setErrorMessage('')
+      } else if (isMissingSessionUnauthorized(scansRes.status)) {
+        setScans([])
+        setErrorMessage('')
+      } else {
+        setScans([])
+        if (!healthRes.ok) {
+          setErrorMessage('FastAPI backend offline — start the backend server to load scan history.')
+        } else {
+          setErrorMessage(scansRes.error || 'Unable to load scan history.')
+        }
       }
       setIsLoading(false)
     },
@@ -305,6 +308,10 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           100,
           Math.round((gamificationProfile.currentLevelXp / gamificationProfile.nextLevelXp) * 100)
         )
+        const currentUserRank = getCurrentUserRank(
+          gamificationProfile.xp,
+          gamificationProfile
+        )
         return (
           <div className="rounded-2xl border border-siftrix-gold/40 bg-[#E8D5B5] dark:bg-gradient-to-r dark:from-siftrix-pearl dark:via-[#1D1C24] dark:to-siftrix-pearl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="space-y-1.5 flex-1 min-w-0">
@@ -316,7 +323,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                   🔥 {gamificationProfile.dailyStreak}-Day Streak
                 </span>
                 <span className="text-xs text-siftrix-muted-dark">
-                  Rank #4 on Global Board
+                  Rank #{currentUserRank} on Sample Leaderboard
                 </span>
               </div>
 

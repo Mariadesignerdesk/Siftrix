@@ -532,3 +532,24 @@ html {
     transform: none !important;
   }
 }
+
+/* Markdown lists: enforce visible sequential numbering (1, 2, 3...) and bullets */
+ol.siftrix-markdown-ol,
+.siftrix-markdown-ol {
+  list-style-type: decimal !important;
+}
+
+ol.siftrix-markdown-ol > li,
+.siftrix-markdown-ol > li {
+  list-style-type: decimal !important;
+}
+
+ul.siftrix-markdown-ul,
+.siftrix-markdown-ul {
+  list-style-type: disc !important;
+}
+
+ul.siftrix-markdown-ul > li,
+.siftrix-markdown-ul > li {
+  list-style-type: disc !important;
+}

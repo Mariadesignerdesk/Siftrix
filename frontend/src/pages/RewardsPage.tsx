@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AchievementBadgeCard from '../components/gamification/AchievementBadgeCard'
 import {
   getAchievementBadges,
   getDailyStreakCalendar,
   getUserGamificationProfile,
+  subscribeGamificationChange,
   type AchievementBadge,
 } from '../services/gamificationService'
 import type { NavigateFn } from '../utils/router'
@@ -13,10 +14,18 @@ interface RewardsPageProps {
 }
 
 export default function RewardsPage({ onNavigate }: RewardsPageProps) {
-  const [profile] = useState(() => getUserGamificationProfile())
-  const [badges] = useState<AchievementBadge[]>(() => getAchievementBadges())
-  const [streakDays] = useState(() => getDailyStreakCalendar())
+  const [profile, setProfile] = useState(() => getUserGamificationProfile())
+  const [badges, setBadges] = useState<AchievementBadge[]>(() => getAchievementBadges())
+  const [streakDays, setStreakDays] = useState(() => getDailyStreakCalendar())
   const [filterCategory, setFilterCategory] = useState<string>('all')
+
+  useEffect(() => {
+    return subscribeGamificationChange(() => {
+      setProfile(getUserGamificationProfile())
+      setBadges(getAchievementBadges())
+      setStreakDays(getDailyStreakCalendar())
+    })
+  }, [])
 
   const progressPercent = Math.min(
     100,

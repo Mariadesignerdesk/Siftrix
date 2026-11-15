@@ -1,3 +1,26 @@
+import { apiGet, apiPost } from './apiClient'
+import {
+  clearAuthPreviewSession,
+  saveAuthPreviewSession,
+} from '../utils/authPreview'
+import {
+  AUTHORIZATION_HEADER,
+  clearSessionId,
+  getGuestSessionHeaders,
+  loadAuthToken,
+  setMemoryAuthToken,
+} from '../utils/session'
+import {
+  notifyChatSessionChange,
+  resetChatStateOnSignOut,
+  setActiveChatUserId,
+} from './chatService'
+import {
+  resetGamificationStateOnSignOut,
+  setActiveGamificationUserId,
+} from './gamificationService'
+import { clearCustomMockScans } from './scanHistoryService'
+
 export interface AuthUser {
   id: string
   name: string
@@ -6,6 +29,21 @@ export interface AuthUser {
   avatarUrl?: string
   organization?: string
   createdAt: string
+}
+
+export interface BackendUserPublic {
+  id: string
+  email: string
+  full_name: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface BackendTokenResponse {
+  access_token: string
+  token_type: string
+  expires_in: number
+  user: BackendUserPublic
 }
 
 export interface LoginCredentials {
@@ -173,6 +211,202 @@ export function validateSignupPayload(payload: SignupPayload): {
   return { valid: true }
 }
 
+function mapBackendUserToAuthUser(
+  backendUser: BackendUserPublic,
+  organization?: string
+): AuthUser {
+  return {
+    id: String(backendUser.id),
+    name: backendUser.full_name?.trim() || deriveNameFromEmail(backendUser.email),
+    email: backendUser.email.toLowerCase().trim(),
+    role: 'analyst',
+    organization: organization?.trim() || 'SIFTRIX Cyber Defense',
+    createdAt: backendUser.created_at || new Date().toISOString(),
+  }
+}
+
+/**
+ * Authenticates a user against POST /api/auth/login.
+ */
+export async function loginUser(
+  credentials: LoginCredentials
+): Promise<AuthResponse> {
+  const validation = validateLoginCredentials(credentials)
+  if (!validation.valid) {
+    return {
+      success: false,
+      error: validation.error,
+      mode: 'api',
+    }
+  }
+
+  const res = await apiPost<BackendTokenResponse>(
+    '/api/auth/login',
+    {
+      email: credentials.email.trim().toLowerCase(),
+      password: credentials.password,
+    },
+    {
+      headers: getGuestSessionHeaders(),
+    }
+  )
+
+  if (!res.ok || !res.data || !res.data.access_token || !res.data.user) {
+    return {
+      success: false,
+      error: res.error || 'Invalid email or password.',
+      mode: 'api',
+    }
+  }
+
+  const user = mapBackendUserToAuthUser(res.data.user)
+  const token = res.data.access_token
+
+  // Clear guest X-Session-ID now that backend migrated any guest scans to user.id
+  clearSessionId()
+  saveStoredUser(user, token, credentials.rememberMe ?? true)
+
+  return {
+    success: true,
+    user,
+    token,
+    mode: 'api',
+  }
+}
+
+/**
+ * Registers a new user account via POST /api/auth/register.
+ */
+export async function registerUser(
+  payload: SignupPayload
+): Promise<AuthResponse> {
+  const validation = validateSignupPayload(payload)
+  if (!validation.valid) {
+    return {
+      success: false,
+      error: validation.error,
+      mode: 'api',
+    }
+  }
+
+  const res = await apiPost<BackendTokenResponse>(
+    '/api/auth/register',
+    {
+      email: payload.email.trim().toLowerCase(),
+      password: payload.password,
+      full_name: payload.fullName.trim(),
+    },
+    {
+      headers: getGuestSessionHeaders(),
+    }
+  )
+
+  if (!res.ok || !res.data || !res.data.access_token || !res.data.user) {
+    return {
+      success: false,
+      error:
+        res.error ||
+        'Registration failed. Please verify your details and try again.',
+      mode: 'api',
+    }
+  }
+
+  const user = mapBackendUserToAuthUser(
+    res.data.user,
+    payload.organization?.trim() || 'Independent Security Team'
+  )
+  const token = res.data.access_token
+
+  clearSessionId()
+  saveStoredUser(user, token, true)
+
+  return {
+    success: true,
+    user,
+    token,
+    mode: 'api',
+  }
+}
+
+/**
+ * Verifies the stored JWT token on app startup via GET /api/auth/me.
+ * Clears invalid or expired sessions so the user is not left logged in.
+ */
+export async function verifyCurrentSession(): Promise<AuthUser | null> {
+  const token = getAuthToken()
+  if (!token) {
+    logoutUser()
+    return null
+  }
+
+  const res = await apiGet<BackendUserPublic>('/api/auth/me', {
+    headers: {
+      [AUTHORIZATION_HEADER]: `Bearer ${token}`,
+    },
+  })
+
+  if (!res.ok || !res.data || !res.data.id) {
+    logoutUser()
+    return null
+  }
+
+  const existing = getActiveUser()
+  const remember = isRememberedSession()
+  const verifiedUser = mapBackendUserToAuthUser(
+    res.data,
+    existing?.organization || 'SIFTRIX Cyber Defense'
+  )
+  saveStoredUser(verifiedUser, token, remember)
+  return verifiedUser
+}
+
+/**
+ * Retrieves the active JWT access token if present.
+ */
+export function getAuthToken(): string | null {
+  return loadAuthToken()
+}
+
+function getSafeLocalStorage(): Storage | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage
+    }
+    if (typeof localStorage !== 'undefined') {
+      return localStorage
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+function getSafeSessionStorage(): Storage | null {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      return window.sessionStorage
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+function isRememberedSession(): boolean {
+  try {
+    const local = getSafeLocalStorage()
+    if (local) {
+      return Boolean(local.getItem(AUTH_TOKEN_KEY))
+    }
+  } catch {
+    // Ignore storage read issues
+  }
+  return true
+}
+
 /**
  * Mock authentication service function that simulates login network round-trip.
  * Prepares the architecture for connecting to FastAPI `/api/auth/login`.
@@ -266,11 +500,12 @@ export async function mockSignup(
  */
 export function getActiveUser(): AuthUser | null {
   try {
+    const local = getSafeLocalStorage()
+    const session = getSafeSessionStorage()
     const raw =
-      typeof window !== 'undefined'
-        ? localStorage.getItem(AUTH_STORAGE_KEY) ||
-          sessionStorage.getItem(AUTH_STORAGE_KEY)
-        : null
+      local?.getItem(AUTH_STORAGE_KEY) ||
+      session?.getItem(AUTH_STORAGE_KEY) ||
+      null
     if (!raw) return memoryStoredUser
     return JSON.parse(raw) as AuthUser
   } catch {
@@ -279,33 +514,55 @@ export function getActiveUser(): AuthUser | null {
 }
 
 /**
- * Clears the active user session across storage providers.
+ * Clears the active user session across storage providers and resets session-scoped UI caches.
  */
 export function logoutUser(): void {
   memoryStoredUser = null
+  setMemoryAuthToken(null)
+  setActiveChatUserId(null)
+  setActiveGamificationUserId(null)
   try {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(AUTH_STORAGE_KEY)
-      localStorage.removeItem(AUTH_TOKEN_KEY)
-      sessionStorage.removeItem(AUTH_STORAGE_KEY)
-      sessionStorage.removeItem(AUTH_TOKEN_KEY)
-    }
+    const local = getSafeLocalStorage()
+    const session = getSafeSessionStorage()
+    local?.removeItem(AUTH_STORAGE_KEY)
+    local?.removeItem(AUTH_TOKEN_KEY)
+    session?.removeItem(AUTH_STORAGE_KEY)
+    session?.removeItem(AUTH_TOKEN_KEY)
   } catch {
     // Ignore storage clear issues
   }
+  clearAuthPreviewSession()
+  clearSessionId()
+  clearCustomMockScans()
+  resetChatStateOnSignOut()
+  resetGamificationStateOnSignOut()
 }
 
 function saveStoredUser(user: AuthUser, token: string, remember: boolean): void {
   memoryStoredUser = user
+  setMemoryAuthToken(token)
+  setActiveChatUserId(user.id)
+  setActiveGamificationUserId(user.id)
   try {
-    if (typeof window !== 'undefined') {
-      const storage = remember ? localStorage : sessionStorage
-      storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user))
-      storage.setItem(AUTH_TOKEN_KEY, token)
-    }
+    const local = getSafeLocalStorage()
+    const session = getSafeSessionStorage()
+    const targetStorage = remember ? local : session
+    const otherStorage = remember ? session : local
+    otherStorage?.removeItem(AUTH_STORAGE_KEY)
+    otherStorage?.removeItem(AUTH_TOKEN_KEY)
+    targetStorage?.setItem(AUTH_STORAGE_KEY, JSON.stringify(user))
+    targetStorage?.setItem(AUTH_TOKEN_KEY, token)
   } catch {
     // Ignore quota issues
   }
+  saveAuthPreviewSession({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    mode: 'signin',
+    createdAt: user.createdAt || new Date().toISOString(),
+  })
+  notifyChatSessionChange()
 }
 
 function deriveNameFromEmail(email: string): string {

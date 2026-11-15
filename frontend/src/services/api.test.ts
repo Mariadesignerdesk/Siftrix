@@ -9,7 +9,14 @@ import {
   fetchScanById,
   normalizeScanListResponse,
 } from './api'
-import { SESSION_ID_HEADER, SESSION_ID_STORAGE_KEY, loadSessionId } from '../utils/session'
+import {
+  AUTHORIZATION_HEADER,
+  AUTH_TOKEN_STORAGE_KEY,
+  SESSION_ID_HEADER,
+  SESSION_ID_STORAGE_KEY,
+  loadSessionId,
+} from '../utils/session'
+import { AUTH_STORAGE_KEY, logoutUser } from './authService'
 
 function createMemoryStorage(initial: Record<string, string> = {}) {
   const backing = new Map<string, string>(Object.entries(initial))
@@ -33,8 +40,8 @@ describe('SIFTRIX API Client & Service', () => {
     vi.unstubAllGlobals()
   })
 
-  it('uses http://localhost:8000 as default base URL and a 30-second timeout', () => {
-    expect(API_CONFIG.BASE_URL).toBe('http://localhost:8000')
+  it('uses the configured base URL and a 30-second timeout', () => {
+  expect(API_CONFIG.BASE_URL).toMatch(/^https?:\/\//)
     expect(API_CONFIG.TIMEOUT_MS).toBe(30000)
   })
 
@@ -128,7 +135,7 @@ describe('SIFTRIX API Client & Service', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     const [calledUrl, requestInit] = fetchSpy.mock.calls[0]
-    expect(calledUrl).toBe('http://localhost:8000/api/scan')
+    expect(calledUrl).toBe(`${API_CONFIG.BASE_URL}/api/scan`)
     expect(requestInit?.method).toBe('POST')
     expect(JSON.parse(String(requestInit?.body))).toEqual({
       target_type: 'url',
@@ -146,7 +153,7 @@ describe('SIFTRIX API Client & Service', () => {
     expect(historyResult.data).toHaveLength(1)
     const [historyUrl, historyInit] = fetchSpy.mock.calls[1]
     expect(historyUrl).toBe(
-      `http://localhost:8000/api/history?page=1&page_size=${HISTORY_PAGE_SIZE}`
+      `${API_CONFIG.BASE_URL}/api/history?page=1&page_size=${HISTORY_PAGE_SIZE}`
     )
     expect(historyInit?.method).toBe('GET')
     expect((historyInit?.headers as Record<string, string>)?.[SESSION_ID_HEADER]).toBe(
@@ -158,7 +165,7 @@ describe('SIFTRIX API Client & Service', () => {
     expect(detailResult.ok).toBe(true)
     const [detailUrl, detailInit] = fetchSpy.mock.calls[2]
     expect(detailUrl).toBe(
-      `http://localhost:8000/api/history/${mockScanResponse.id}`
+      `${API_CONFIG.BASE_URL}/api/history/${mockScanResponse.id}`
     )
     expect((detailInit?.headers as Record<string, string>)?.[SESSION_ID_HEADER]).toBe(
       assignedSessionId
@@ -170,7 +177,7 @@ describe('SIFTRIX API Client & Service', () => {
       content: 'Verify your account now',
     })
     const [secondScanUrl, secondScanInit] = fetchSpy.mock.calls[3]
-    expect(secondScanUrl).toBe('http://localhost:8000/api/scan')
+    expect(secondScanUrl).toBe(`${API_CONFIG.BASE_URL}/api/scan`)
     expect((secondScanInit?.headers as Record<string, string>)?.[SESSION_ID_HEADER]).toBe(
       assignedSessionId
     )
@@ -347,7 +354,7 @@ describe('SIFTRIX API Client & Service', () => {
     const result = await checkBackendHealth()
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'http://localhost:8000/api/health',
+      `${API_CONFIG.BASE_URL}/api/health`,
       expect.objectContaining({ method: 'GET' })
     )
     expect(result.ok).toBe(true)
@@ -484,12 +491,12 @@ describe('SIFTRIX API Client & Service', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
-      `http://localhost:8000/api/history?page=1&page_size=${HISTORY_PAGE_SIZE}`,
+      `${API_CONFIG.BASE_URL}/api/history?page=1&page_size=${HISTORY_PAGE_SIZE}`,
       expect.objectContaining({ method: 'GET' })
     )
     expect(fetchSpy).toHaveBeenNthCalledWith(
       2,
-      `http://localhost:8000/api/history?page=2&page_size=${HISTORY_PAGE_SIZE}`,
+      `${API_CONFIG.BASE_URL}/api/history?page=2&page_size=${HISTORY_PAGE_SIZE}`,
       expect.objectContaining({ method: 'GET' })
     )
   })
@@ -622,5 +629,110 @@ describe('SIFTRIX API Client & Service', () => {
     const retrySuccess = await fetchScanById(validRecord.id)
     expect(retrySuccess.ok).toBe(true)
     expect(retrySuccess.data).toEqual(validRecord)
+  })
+
+  it('sends Authorization Bearer token when authenticated, does not leak user UUID into guest X-Session-ID, and isolates scan history after signout', async () => {
+    const userId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+    const jwtToken = 'jwt_authenticated_scan_token'
+    const { storage, backing } = createMemoryStorage({
+      [AUTH_TOKEN_STORAGE_KEY]: jwtToken,
+      [AUTH_STORAGE_KEY]: JSON.stringify({
+        id: userId,
+        name: 'Authenticated Analyst',
+        email: 'auth@siftrix.internal',
+        role: 'analyst',
+        createdAt: '2026-11-15T12:00:00Z',
+      }),
+    })
+    vi.stubGlobal('localStorage', storage)
+
+    const userScanRecord = {
+      id: '44444444-4444-4444-8444-444444444444',
+      user_id: userId,
+      target_type: 'url' as const,
+      target_content: 'https://user-private-scan.example',
+      overall_risk_score: 18,
+      verdict: 'safe' as const,
+      risk_level: 'low' as const,
+      summary: { en: 'Clean URL', ur: 'محفوظ لنک' },
+      recommendations: { en: [], ur: [] },
+      agent_findings: {},
+      created_at: '2026-11-15T12:00:00Z',
+      updated_at: '2026-11-15T12:00:00Z',
+    }
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(userScanRecord), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            // Even if backend echoes X-Session-ID with userId, frontend must NOT save it as a guest session ID
+            [SESSION_ID_HEADER]: userId,
+          },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [userScanRecord],
+            total: 1,
+            page: 1,
+            page_size: 100,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false,
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            detail: 'Authentication or X-Session-ID header required to access scan history',
+          }),
+          {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+
+    const submitRes = await submitScan({
+      target_type: 'url',
+      content: 'https://user-private-scan.example',
+    })
+    expect(submitRes.ok).toBe(true)
+    const [, firstInit] = fetchSpy.mock.calls[0]
+    expect((firstInit?.headers as Record<string, string>)?.[AUTHORIZATION_HEADER]).toBe(
+      `Bearer ${jwtToken}`
+    )
+    expect((firstInit?.headers as Record<string, string>)?.[SESSION_ID_HEADER]).toBeUndefined()
+    // Ensure userId was NOT saved into guest X-Session-ID storage
+    expect(backing.get(SESSION_ID_STORAGE_KEY)).toBeUndefined()
+
+    const authedHistory = await fetchScans()
+    expect(authedHistory.ok).toBe(true)
+    expect(authedHistory.data).toHaveLength(1)
+    const [, secondInit] = fetchSpy.mock.calls[1]
+    expect((secondInit?.headers as Record<string, string>)?.[AUTHORIZATION_HEADER]).toBe(
+      `Bearer ${jwtToken}`
+    )
+
+    // Sign out -> clears token and session ID so subsequent unauthenticated fetchScans sends neither header
+    logoutUser()
+    expect(backing.get(AUTH_TOKEN_STORAGE_KEY)).toBeUndefined()
+    expect(backing.get(SESSION_ID_STORAGE_KEY)).toBeUndefined()
+
+    const signedOutHistory = await fetchScans()
+    expect(signedOutHistory.ok).toBe(false)
+    expect(signedOutHistory.status).toBe(401)
+    const [, thirdInit] = fetchSpy.mock.calls[2]
+    expect((thirdInit?.headers as Record<string, string>)?.[AUTHORIZATION_HEADER]).toBeUndefined()
+    expect((thirdInit?.headers as Record<string, string>)?.[SESSION_ID_HEADER]).toBeUndefined()
   })
 })

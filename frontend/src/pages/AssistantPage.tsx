@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import MarkdownRenderer from '../components/common/MarkdownRenderer'
+import CitationsList from '../components/chat/CitationsList'
 import {
   clearChatHistory,
   createUserMessage,
@@ -6,6 +8,7 @@ import {
   loadChatHistory,
   saveChatHistory,
   sendChatMessage,
+  subscribeChatSessionChange,
   type ChatMessage,
 } from '../services/chatService'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
@@ -20,6 +23,14 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return subscribeChatSessionChange(() => {
+      setMessages(loadChatHistory())
+      setInputText('')
+      setIsTyping(false)
+    })
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -202,26 +213,14 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
                     }`}
                   >
                     <div
-                      className="whitespace-pre-wrap break-words prose prose-sm max-w-none text-xs sm:text-sm leading-relaxed"
+                      className="break-words max-w-none text-xs sm:text-sm leading-relaxed"
                       dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
                     >
-                      {msg.content}
+                      <MarkdownRenderer content={msg.content} />
                     </div>
 
                     {msg.citations && msg.citations.length > 0 ? (
-                      <div className="pt-2 border-t border-siftrix-border/60 flex flex-wrap gap-1.5 text-[10px] text-siftrix-muted-dark">
-                        <span className="font-semibold text-siftrix-antique-ink">
-                          Verified Sources:
-                        </span>
-                        {msg.citations.map((cite) => (
-                          <span
-                            key={cite}
-                            className="rounded bg-siftrix-pearl px-2 py-0.5 border border-siftrix-border"
-                          >
-                            {cite}
-                          </span>
-                        ))}
-                      </div>
+                      <CitationsList citations={msg.citations} />
                     ) : null}
 
                     <span className="block text-[10px] text-siftrix-muted-dark text-right pt-1">

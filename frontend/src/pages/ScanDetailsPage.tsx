@@ -418,7 +418,7 @@ export default function ScanDetailsPage({
     if (requestSeqRef.current !== seq) {
       return
     }
-    if (!response.ok) {
+    if (!response.ok && response.status === 0 && targetId.startsWith('sfx_mock_')) {
       const mockScan = getMockScanById(targetId)
       if (mockScan) {
         setViewState({ scanId: targetId, status: 'ready', scan: mockScan })

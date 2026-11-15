@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
@@ -20,22 +20,79 @@ import RewardsPage from './pages/RewardsPage'
 import CyberAssistant from './components/chat/CyberAssistant'
 import PwaInstallBanner from './components/pwa/PwaInstallBanner'
 import {
+  getActiveUser,
+  getAuthToken,
+  logoutUser,
+  verifyCurrentSession,
+} from './services/authService'
+import {
   clearAuthPreviewSession,
   loadAuthPreviewSession,
   type AuthPreviewSession,
 } from './utils/authPreview'
 import { useAppRouter } from './utils/router'
 
+function loadInitialAuthSession(): AuthPreviewSession | null {
+  const token = getAuthToken()
+  const activeUser = getActiveUser()
+  if (token && activeUser) {
+    return {
+      id: activeUser.id,
+      name: activeUser.name,
+      email: activeUser.email,
+      mode: 'signin',
+      createdAt: activeUser.createdAt,
+    }
+  }
+  return loadAuthPreviewSession()
+}
+
 function App() {
   const { route, navigate } = useAppRouter()
   const [authSession, setAuthSession] = useState<AuthPreviewSession | null>(
-    () => loadAuthPreviewSession()
+    () => loadInitialAuthSession()
   )
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function verifyStartupAuth() {
+      const token = getAuthToken()
+      const existingPreview = loadAuthPreviewSession()
+      if (!token && !existingPreview) {
+        return
+      }
+      const verifiedUser = await verifyCurrentSession()
+      if (cancelled) return
+      if (verifiedUser) {
+        setAuthSession({
+          id: verifiedUser.id,
+          name: verifiedUser.name,
+          email: verifiedUser.email,
+          mode: 'signin',
+          createdAt: verifiedUser.createdAt,
+        })
+      } else {
+        setAuthSession(null)
+      }
+    }
+
+    void verifyStartupAuth()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const handleSignOut = () => {
+    logoutUser()
     clearAuthPreviewSession()
     setAuthSession(null)
   }
+
+  const sessionScopeKey = authSession
+    ? `auth:${authSession.id || authSession.email}`
+    : 'guest'
 
   return (
     <div
@@ -68,12 +125,12 @@ function App() {
         />
         <main className="flex-1">
           {route.page === 'dashboard' ? (
-            <DashboardPage onNavigate={navigate} />
+            <DashboardPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'history' ? (
-            <ScanHistoryPage onNavigate={navigate} />
+            <ScanHistoryPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'scan-details' ? (
             <ScanDetailsPage
-              key={route.scanId}
+              key={`${sessionScopeKey}:${route.scanId}`}
               scanId={route.scanId}
               onNavigate={navigate}
             />
@@ -96,16 +153,16 @@ function App() {
               onNavigate={navigate}
             />
           ) : route.page === 'assistant' ? (
-            <AssistantPage onNavigate={navigate} />
+            <AssistantPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'leaderboard' ? (
-            <LeaderboardPage onNavigate={navigate} />
+            <LeaderboardPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'rewards' ? (
-            <RewardsPage onNavigate={navigate} />
+            <RewardsPage key={sessionScopeKey} onNavigate={navigate} />
           ) : (
             <>
               <Hero />
               <Features />
-              <Scanner />
+              <Scanner key={sessionScopeKey} />
               <HowItWorks onNavigate={navigate} />
               <CommandCenterPreview onNavigate={navigate} />
               <About />
@@ -116,7 +173,7 @@ function App() {
       </div>
 
       {/* Persistent Floating AI Cyber Assistant Launcher */}
-      <CyberAssistant />
+      <CyberAssistant key={sessionScopeKey} />
     </div>
   )
 }

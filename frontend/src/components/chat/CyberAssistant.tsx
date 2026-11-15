@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import MarkdownRenderer from '../common/MarkdownRenderer'
+import CitationsList from './CitationsList'
 import {
   clearChatHistory,
   createUserMessage,
@@ -6,6 +8,7 @@ import {
   loadChatHistory,
   saveChatHistory,
   sendChatMessage,
+  subscribeChatSessionChange,
   type ChatMessage,
 } from '../../services/chatService'
 
@@ -17,6 +20,14 @@ export default function CyberAssistant() {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return subscribeChatSessionChange(() => {
+      setMessages(loadChatHistory())
+      setInputText('')
+      setIsTyping(false)
+    })
+  }, [])
 
   useEffect(() => {
     if (isOpen && !isMinimized) {
@@ -184,28 +195,16 @@ export default function CyberAssistant() {
                             : 'bg-white dark:bg-siftrix-white border border-siftrix-border text-siftrix-charcoal rounded-tl-xs'
                         }`}
                       >
-                        <div
-                          className="whitespace-pre-wrap break-words prose prose-sm max-w-none text-xs leading-relaxed"
-                          dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
-                        >
-                          {msg.content}
-                        </div>
+                    <div
+                      className="break-words max-w-none text-xs leading-relaxed"
+                      dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
+                    >
+                      <MarkdownRenderer content={msg.content} />
+                    </div>
 
-                        {msg.citations && msg.citations.length > 0 ? (
-                          <div className="pt-2 border-t border-siftrix-border/60 flex flex-wrap gap-1 text-[10px] text-siftrix-muted-dark">
-                            <span className="font-semibold text-siftrix-antique-ink">
-                              Sources:
-                            </span>
-                            {msg.citations.map((cite) => (
-                              <span
-                                key={cite}
-                                className="rounded bg-siftrix-pearl px-1.5 py-0.5 border border-siftrix-border"
-                              >
-                                {cite}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
+                    {msg.citations && msg.citations.length > 0 ? (
+                      <CitationsList citations={msg.citations} />
+                    ) : null}
 
                         <span className="block text-[9px] text-siftrix-muted-dark text-right pt-0.5">
                           {formatTime(msg.timestamp)}

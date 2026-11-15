@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { logoutUser } from '../services/authService'
 import {
   clearAuthPreviewSession,
   type AuthPreviewSession,
@@ -28,6 +29,7 @@ export default function AuthFormShell({
   children,
 }: AuthFormShellProps) {
   const handlePreviewSignOut = () => {
+    logoutUser()
     clearAuthPreviewSession()
     onSignOut?.()
   }

@@ -1,7 +1,16 @@
 export const SESSION_ID_STORAGE_KEY = 'siftrix.session.id'
 export const SESSION_ID_HEADER = 'X-Session-ID'
+export const AUTH_TOKEN_STORAGE_KEY = 'siftrix_auth_token_v2'
+export const AUTHORIZATION_HEADER = 'Authorization'
 
 const MAX_SESSION_ID_LENGTH = 128
+const MAX_AUTH_TOKEN_LENGTH = 4096
+
+let memoryAuthToken: string | null = null
+
+export function setMemoryAuthToken(token: string | null): void {
+  memoryAuthToken = token
+}
 
 export interface SessionStorageLike {
   getItem: (key: string) => string | null
@@ -121,22 +130,75 @@ export function hasSavedSessionId(
 }
 
 /**
- * Returns true when an HTTP 401 occurs solely because no X-Session-ID has been
- * initialized yet in browser storage, allowing list/dashboard views to render
+ * Safely loads the saved JWT bearer token from browser storage or memory fallback.
+ */
+export function loadAuthToken(
+  storage?: SessionStorageLike | null
+): string | null {
+  if (storage !== undefined) {
+    if (!storage) return null
+    try {
+      const raw = storage.getItem(AUTH_TOKEN_STORAGE_KEY)
+      if (typeof raw === 'string' && raw.trim() && raw.trim().length <= MAX_AUTH_TOKEN_LENGTH) {
+        return raw.trim()
+      }
+    } catch {
+      return null
+    }
+    return null
+  }
+
+  try {
+    const defaultStorage = getDefaultSessionStorage()
+    if (defaultStorage) {
+      const fromLocal = defaultStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+      if (typeof fromLocal === 'string' && fromLocal.trim() && fromLocal.trim().length <= MAX_AUTH_TOKEN_LENGTH) {
+        return fromLocal.trim()
+      }
+    }
+    if (typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined') {
+      const fromSession = window.sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+      if (typeof fromSession === 'string' && fromSession.trim() && fromSession.trim().length <= MAX_AUTH_TOKEN_LENGTH) {
+        return fromSession.trim()
+      }
+    }
+  } catch {
+    // Fall back to memory token
+  }
+
+  return memoryAuthToken
+}
+
+/**
+ * Returns whether a valid authentication bearer token is currently stored.
+ */
+export function hasSavedAuthToken(
+  storage?: SessionStorageLike | null
+): boolean {
+  return loadAuthToken(storage) !== null
+}
+
+/**
+ * Returns true when an HTTP 401 occurs solely because no X-Session-ID or auth token
+ * has been initialized yet in browser storage, allowing list/dashboard views to render
  * an empty initial state instead of an unexpected connection error.
  */
 export function isMissingSessionUnauthorized(
   status: number,
   storage: SessionStorageLike | null = getDefaultSessionStorage()
 ): boolean {
-  return status === 401 && !hasSavedSessionId(storage)
+  return (
+    status === 401 &&
+    !hasSavedSessionId(storage) &&
+    !hasSavedAuthToken(storage)
+  )
 }
 
 /**
- * Builds request headers containing X-Session-ID when a valid session exists.
- * Omits the header cleanly when absent instead of sending empty or null values.
+ * Builds request headers containing only the guest X-Session-ID when present.
+ * Used during login/signup so the backend can migrate prior guest scans.
  */
-export function getSessionHeaders(
+export function getGuestSessionHeaders(
   storage: SessionStorageLike | null = getDefaultSessionStorage()
 ): Record<string, string> {
   const sessionId = loadSessionId(storage)
@@ -147,4 +209,24 @@ export function getSessionHeaders(
   return {
     [SESSION_ID_HEADER]: sessionId,
   }
+}
+
+/**
+ * Builds request headers for API calls:
+ * - Priority 1: Authorization Bearer token when the user is authenticated.
+ * - Priority 2: X-Session-ID header when operating as a guest session.
+ * Omits headers cleanly when absent.
+ */
+export function getSessionHeaders(
+  storage?: SessionStorageLike | null
+): Record<string, string> {
+  const token = loadAuthToken(storage)
+  if (token) {
+    return {
+      [AUTHORIZATION_HEADER]: `Bearer ${token}`,
+    }
+  }
+
+  const targetStorage = storage === undefined ? getDefaultSessionStorage() : storage
+  return getGuestSessionHeaders(targetStorage)
 }

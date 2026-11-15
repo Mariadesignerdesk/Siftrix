@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   getLeaderboardRankings,
   getUserGamificationProfile,
+  subscribeGamificationChange,
+  syncScansCompleted,
   type LeaderboardEntry,
+  type UserGamificationProfile,
 } from '../services/gamificationService'
+import { fetchScans } from '../services/api'
 import type { NavigateFn } from '../utils/router'
 
 interface LeaderboardPageProps {
@@ -11,10 +15,44 @@ interface LeaderboardPageProps {
 }
 
 export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
-  const [rankings] = useState<LeaderboardEntry[]>(() => getLeaderboardRankings())
-  const userProfile = getUserGamificationProfile()
+  const [profile, setProfile] = useState<UserGamificationProfile>(() => getUserGamificationProfile())
+  const [actualScans, setActualScans] = useState<number | null>(null)
 
-  const top3 = [rankings[1], rankings[0], rankings[2]] // 2nd, 1st, 3rd for podium layout
+  useEffect(() => {
+    return subscribeGamificationChange(() => {
+      setProfile(getUserGamificationProfile())
+    })
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadScans() {
+      try {
+        const res = await fetchScans()
+        if (!cancelled && res.ok && Array.isArray(res.data)) {
+          setActualScans(res.data.length)
+          syncScansCompleted(res.data.length)
+        }
+      } catch {
+        // fallback
+      }
+    }
+    void loadScans()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const effectiveScansCount = actualScans !== null ? actualScans : profile.scansCompleted
+  const rankings = useMemo(
+    () => getLeaderboardRankings(profile, effectiveScansCount),
+    [profile, effectiveScansCount]
+  )
+  const currentUserRank = useMemo(
+    () => rankings.find((r) => r.isCurrentUser)?.rank ?? 4,
+    [rankings]
+  )
+  const top3 = useMemo(() => [rankings[1], rankings[0], rankings[2]], [rankings]) // 2nd, 1st, 3rd for podium layout
 
   const getTierBadge = (tier: LeaderboardEntry['tier']) => {
     switch (tier) {
@@ -61,14 +99,14 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-siftrix-gold animate-pulse" />
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-siftrix-champagne">
-              Global Cyber Defense Network
+              Sample Operative Benchmarks · Demo Dataset
             </p>
           </div>
           <h2 className="text-3xl font-bold text-siftrix-white dark:text-[#FAF6EF] mt-1 tracking-tight">
             Threat Hunter Leaderboard
           </h2>
           <p className="text-[#C8C1B6] text-sm md:text-base mt-1">
-            Top security operatives ranked by verified threat verifications and XP contributions.
+            Sample operative rankings benchmarked against simulated cybersecurity peers. Real server-backed global telemetry rankings will activate in upcoming cloud releases.
           </p>
         </div>
 
@@ -93,7 +131,7 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
       {/* Top-3 Podium */}
       <div className="pt-4">
         <h3 className="text-center text-xs font-bold uppercase tracking-widest text-siftrix-muted-dark mb-6">
-          Elite Tier Sentinels
+          Top Operatives (Sample Benchmarks)
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end max-w-4xl mx-auto">
@@ -171,10 +209,10 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
       <div className="siftrix-card rounded-2xl overflow-hidden border border-siftrix-border shadow-sm">
         <div className="border-b border-siftrix-border bg-siftrix-pearl/80 px-6 py-4 flex items-center justify-between">
           <h4 className="text-sm font-bold text-siftrix-charcoal uppercase tracking-wider">
-            All Operative Rankings
+            All Operative Rankings (Sample Benchmarks)
           </h4>
           <span className="text-xs text-siftrix-muted">
-            Your Status: Rank #4 ({userProfile.xp} XP)
+            Your Status: Rank #{currentUserRank} ({profile.xp.toLocaleString()} XP)
           </span>
         </div>
 

@@ -5,9 +5,11 @@ import {
   SESSION_ID_HEADER,
   clearSessionId,
   getSessionHeaders,
+  hasSavedAuthToken,
   normalizeSessionId,
   saveSessionId,
 } from '../utils/session'
+import { getActiveUser, logoutUser } from './authService'
 
 export { API_CONFIG }
 export type { ApiResponse }
@@ -93,9 +95,11 @@ export async function submitScan(payload: ScanRequest): Promise<ApiResponse<Scan
     const responseSessionId = normalizeSessionId(
       response.headers?.get(SESSION_ID_HEADER)
     )
-    if (responseSessionId) {
+    if (responseSessionId && !hasSavedAuthToken() && !getActiveUser()) {
       saveSessionId(responseSessionId)
     }
+  } else if (response.status === 401 && hasSavedAuthToken()) {
+    logoutUser()
   } else if (isInvalidSessionError(response.status, response.error)) {
     clearSessionId()
   }
@@ -216,7 +220,9 @@ export async function fetchScans(): Promise<ApiResponse<ScanResponse[]>> {
     lastHeaders = response.headers
 
     if (!response.ok) {
-      if (isInvalidSessionError(response.status, response.error)) {
+      if (response.status === 401 && hasSavedAuthToken()) {
+        logoutUser()
+      } else if (isInvalidSessionError(response.status, response.error)) {
         clearSessionId()
       }
 
@@ -274,7 +280,9 @@ export async function fetchScanById(scanId: string): Promise<ApiResponse<ScanRes
   )
 
   if (!response.ok) {
-    if (isInvalidSessionError(response.status, response.error)) {
+    if (response.status === 401 && hasSavedAuthToken()) {
+      logoutUser()
+    } else if (isInvalidSessionError(response.status, response.error)) {
       clearSessionId()
     }
 

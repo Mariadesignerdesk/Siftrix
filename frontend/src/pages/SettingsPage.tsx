@@ -6,6 +6,7 @@ import {
   setThemePreference,
   type ThemeMode,
 } from '../services/themeService'
+import { logoutUser } from '../services/authService'
 import {
   clearAuthPreviewSession,
   type AuthPreviewSession,
@@ -514,6 +515,7 @@ export function SettingsContent({
                 <button
                   type="button"
                   onClick={() => {
+                    logoutUser()
                     clearAuthPreviewSession()
                     onSignOut?.()
                   }}

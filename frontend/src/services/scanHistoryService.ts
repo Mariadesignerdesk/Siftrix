@@ -629,6 +629,10 @@ export function addMockScan(scan: ScanResponse): void {
   customMockScans.unshift(scan)
 }
 
+export function clearCustomMockScans(): void {
+  customMockScans.length = 0
+}
+
 export function searchAndFilterMockScans(
   query = '',
   targetType?: ScanTargetType,

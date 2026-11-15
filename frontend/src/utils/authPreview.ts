@@ -1,6 +1,7 @@
 export type AuthPreviewMode = 'signin' | 'signup'
 
 export interface AuthPreviewSession {
+  id?: string
   name: string
   email: string
   mode: AuthPreviewMode
@@ -96,9 +97,13 @@ function getSafeSessionStorage(
     return storage
   }
   try {
-    return typeof window !== 'undefined' && window.sessionStorage
-      ? window.sessionStorage
-      : null
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      return window.sessionStorage
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage
+    }
+    return null
   } catch {
     return null
   }
@@ -129,6 +134,7 @@ export function loadAuthPreviewSession(
       typeof parsed.createdAt === 'string'
     ) {
       return {
+        ...(typeof parsed.id === 'string' && parsed.id.trim() ? { id: parsed.id.trim() } : {}),
         name: parsed.name,
         email: parsed.email,
         mode: parsed.mode,

@@ -1,3 +1,5 @@
+import { loadSessionId } from '../utils/session'
+
 export interface AchievementBadge {
   id: string
   title: string
@@ -34,9 +36,95 @@ export interface LeaderboardEntry {
   isCurrentUser?: boolean
 }
 
-const GAMIFICATION_STORAGE_KEY = 'siftrix_gamification_v2'
+export const GAMIFICATION_STORAGE_KEY = 'siftrix_gamification_v2'
+const AUTH_USER_STORAGE_KEY = 'siftrix_auth_user_v2'
 
-const INITIAL_PROFILE: UserGamificationProfile = {
+let activeGamificationUserId: string | null = null
+const gamificationChangeListeners = new Set<() => void>()
+
+export function setActiveGamificationUserId(userId: string | null): void {
+  activeGamificationUserId = userId ? userId.trim() : null
+}
+
+export function subscribeGamificationChange(listener: () => void): () => void {
+  gamificationChangeListeners.add(listener)
+  return () => {
+    gamificationChangeListeners.delete(listener)
+  }
+}
+
+export function notifyGamificationChange(): void {
+  for (const listener of gamificationChangeListeners) {
+    try {
+      listener()
+    } catch {
+      // Ignore listener errors
+    }
+  }
+}
+
+function getSafeStorage(): Storage | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage
+    }
+    if (typeof localStorage !== 'undefined') {
+      return localStorage
+    }
+  } catch {
+    // fallback
+  }
+  return null
+}
+
+function getSafeSessionStorage(): Storage | null {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      return window.sessionStorage
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage
+    }
+  } catch {
+    // fallback
+  }
+  return null
+}
+
+function resolveActiveUserId(): string | null {
+  if (activeGamificationUserId) {
+    return activeGamificationUserId
+  }
+  try {
+    const local = getSafeStorage()
+    const session = getSafeSessionStorage()
+    const raw =
+      local?.getItem(AUTH_USER_STORAGE_KEY) ||
+      session?.getItem(AUTH_USER_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as { id?: string; email?: string }
+      const id = parsed?.id?.trim() || parsed?.email?.trim()?.toLowerCase()
+      if (id) return id
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+  return null
+}
+
+export function getGamificationStorageKey(): string {
+  const userId = resolveActiveUserId()
+  if (userId) {
+    return `${GAMIFICATION_STORAGE_KEY}:user:${userId}`
+  }
+  const guestSessionId = loadSessionId()
+  if (guestSessionId) {
+    return `${GAMIFICATION_STORAGE_KEY}:guest:${guestSessionId}`
+  }
+  return `${GAMIFICATION_STORAGE_KEY}:guest:default`
+}
+
+export const INITIAL_PROFILE: UserGamificationProfile = {
   xp: 1250,
   level: 3,
   levelTitle: 'Senior Threat Hunter',
@@ -48,7 +136,14 @@ const INITIAL_PROFILE: UserGamificationProfile = {
   lastActiveDate: new Date().toISOString(),
 }
 
-const INITIAL_BADGES: AchievementBadge[] = [
+export function createInitialProfile(): UserGamificationProfile {
+  return {
+    ...INITIAL_PROFILE,
+    lastActiveDate: new Date().toISOString(),
+  }
+}
+
+export const INITIAL_BADGES: AchievementBadge[] = [
   {
     id: 'badge_first_scan',
     title: 'First Recon Probe',
@@ -132,6 +227,72 @@ const INITIAL_BADGES: AchievementBadge[] = [
     unlocked: false,
     xpReward: 1000,
     progress: { current: 4, max: 7 },
+  },
+]
+
+export const DEMO_PEER_RANKINGS: Omit<LeaderboardEntry, 'rank' | 'isCurrentUser'>[] = [
+  {
+    name: 'Tariq Al-Mansoor',
+    handle: '@tariq.sentinel',
+    title: 'Principal Cyber Warfare Architect',
+    xp: 4850,
+    scansCount: 142,
+    accuracyRate: '99.4%',
+    tier: 'Gold Sentinel',
+  },
+  {
+    name: 'Elena Rostova',
+    handle: '@rostova_defense',
+    title: 'Lead Incident Response Operative',
+    xp: 3920,
+    scansCount: 98,
+    accuracyRate: '98.8%',
+    tier: 'Gold Sentinel',
+  },
+  {
+    name: 'Marcus Vance',
+    handle: '@vance_sec',
+    title: 'Senior Forensics Analyst',
+    xp: 3100,
+    scansCount: 84,
+    accuracyRate: '97.5%',
+    tier: 'Silver Warden',
+  },
+  {
+    name: 'Dr. Aisha Malik',
+    handle: '@aisha_ml_threat',
+    title: 'AI Threat Modeler',
+    xp: 1180,
+    scansCount: 22,
+    accuracyRate: '95.9%',
+    tier: 'Bronze Guardian',
+  },
+  {
+    name: 'Devon Reed',
+    handle: '@d_reed_soc',
+    title: 'SOC Tier 2 Investigator',
+    xp: 940,
+    scansCount: 19,
+    accuracyRate: '94.0%',
+    tier: 'Bronze Guardian',
+  },
+  {
+    name: 'Sofia Chen',
+    handle: '@sofia_cloudsec',
+    title: 'Cloud Infrastructure Guard',
+    xp: 820,
+    scansCount: 15,
+    accuracyRate: '93.5%',
+    tier: 'Field Analyst',
+  },
+  {
+    name: 'Kareem Bennett',
+    handle: '@kareem_sec',
+    title: 'AppSec Penetration Tester',
+    xp: 680,
+    scansCount: 12,
+    accuracyRate: '91.8%',
+    tier: 'Field Analyst',
   },
 ]
 
@@ -219,45 +380,56 @@ export const LEADERBOARD_RANKINGS: LeaderboardEntry[] = [
   },
 ]
 
-let memoryProfile: UserGamificationProfile | null = null
-const memoryBadges: AchievementBadge[] | null = null
-
-function getSafeStorage(): Storage | null {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return window.localStorage
-    }
-  } catch {
-    // fallback
-  }
-  return null
-}
+const memoryProfilesByScope = new Map<string, UserGamificationProfile>()
+const memoryBadgesByScope = new Map<string, AchievementBadge[]>()
 
 export function getUserGamificationProfile(): UserGamificationProfile {
+  const key = getGamificationStorageKey()
   const storage = getSafeStorage()
   if (storage) {
     try {
-      const raw = storage.getItem(GAMIFICATION_STORAGE_KEY)
+      const raw = storage.getItem(key)
       if (raw) {
-        return JSON.parse(raw) as UserGamificationProfile
+        const parsed = JSON.parse(raw) as UserGamificationProfile
+        memoryProfilesByScope.set(key, parsed)
+        return parsed
       }
     } catch {
       // fallback
     }
   }
-  return memoryProfile || INITIAL_PROFILE
+  const fromMem = memoryProfilesByScope.get(key)
+  if (fromMem) {
+    return fromMem
+  }
+  const initial = createInitialProfile()
+  return initial
 }
 
 export function saveUserGamificationProfile(profile: UserGamificationProfile): void {
-  memoryProfile = profile
+  const key = getGamificationStorageKey()
+  memoryProfilesByScope.set(key, profile)
   const storage = getSafeStorage()
   if (storage) {
     try {
-      storage.setItem(GAMIFICATION_STORAGE_KEY, JSON.stringify(profile))
+      storage.setItem(key, JSON.stringify(profile))
     } catch {
       // ignore
     }
   }
+  notifyGamificationChange()
+}
+
+export function resetGamificationStateOnSignOut(): void {
+  activeGamificationUserId = null
+  memoryProfilesByScope.delete(`${GAMIFICATION_STORAGE_KEY}:guest:default`)
+  for (const key of Array.from(memoryProfilesByScope.keys())) {
+    if (key.includes(':guest:')) {
+      memoryProfilesByScope.delete(key)
+    }
+  }
+  memoryBadgesByScope.clear()
+  notifyGamificationChange()
 }
 
 const LEVEL_TITLES = [
@@ -297,27 +469,186 @@ export function addXp(
   return { profile: updated, leveledUp, xpEarned: amount }
 }
 
-export function getAchievementBadges(): AchievementBadge[] {
-  return memoryBadges || INITIAL_BADGES
+export function syncScansCompleted(count: number): UserGamificationProfile {
+  const current = getUserGamificationProfile()
+  if (current.scansCompleted === count) {
+    return current
+  }
+  const updated: UserGamificationProfile = {
+    ...current,
+    scansCompleted: count,
+  }
+  saveUserGamificationProfile(updated)
+  return updated
 }
 
-export function getLeaderboardRankings(): LeaderboardEntry[] {
-  return LEADERBOARD_RANKINGS
+export function getTierForXp(xp: number): LeaderboardEntry['tier'] {
+  if (xp >= 3500) return 'Gold Sentinel'
+  if (xp >= 1250) return 'Silver Warden'
+  if (xp >= 800) return 'Bronze Guardian'
+  return 'Field Analyst'
 }
 
-export function getDailyStreakCalendar(): {
+export function calculateLeaderboardRankings(
+  customProfile?: UserGamificationProfile,
+  actualScansCount?: number
+): LeaderboardEntry[] {
+  const profile = customProfile || getUserGamificationProfile()
+  const scansCount =
+    typeof actualScansCount === 'number' ? actualScansCount : profile.scansCompleted
+  const tier = getTierForXp(profile.xp)
+
+  const currentUserEntry: LeaderboardEntry = {
+    rank: 1,
+    name: 'You (Security Lead)',
+    handle: '@analyst_you',
+    title: profile.levelTitle || 'Senior Threat Hunter',
+    xp: profile.xp,
+    scansCount,
+    accuracyRate: '96.2%',
+    tier,
+    isCurrentUser: true,
+  }
+
+  const allEntries: LeaderboardEntry[] = [
+    ...DEMO_PEER_RANKINGS.map((e) => ({ ...e, isCurrentUser: false, rank: 0 })),
+    currentUserEntry,
+  ]
+
+  allEntries.sort((a, b) => {
+    if (b.xp !== a.xp) {
+      return b.xp - a.xp
+    }
+    if (a.isCurrentUser) return -1
+    if (b.isCurrentUser) return 1
+    return 0
+  })
+
+  return allEntries.map((entry, idx) => ({
+    ...entry,
+    rank: idx + 1,
+  }))
+}
+
+export function getLeaderboardRankings(
+  customProfile?: UserGamificationProfile,
+  actualScansCount?: number
+): LeaderboardEntry[] {
+  return calculateLeaderboardRankings(customProfile, actualScansCount)
+}
+
+export function getCurrentUserRank(
+  xp?: number,
+  profile?: UserGamificationProfile
+): number {
+  const currentProfile = profile || getUserGamificationProfile()
+  const targetXp = typeof xp === 'number' ? xp : currentProfile.xp
+  const rankings = calculateLeaderboardRankings({ ...currentProfile, xp: targetXp })
+  const found = rankings.find((r) => r.isCurrentUser)
+  return found ? found.rank : 4
+}
+
+export function getAchievementBadges(profile?: UserGamificationProfile): AchievementBadge[] {
+  const currentProfile = profile || getUserGamificationProfile()
+  const key = `${getGamificationStorageKey()}:badges`
+  let badges: AchievementBadge[] | null = null
+  const storage = getSafeStorage()
+  if (storage) {
+    try {
+      const raw = storage.getItem(key)
+      if (raw) {
+        badges = JSON.parse(raw) as AchievementBadge[]
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!badges) {
+    badges = memoryBadgesByScope.get(key) || INITIAL_BADGES
+  }
+
+  return badges.map((badge) => {
+    if (badge.id === 'badge_first_scan') {
+      const unlocked = currentProfile.scansCompleted >= 1
+      return {
+        ...badge,
+        unlocked,
+        progress: { current: Math.min(currentProfile.scansCompleted, 1), max: 1 },
+      }
+    }
+    if (badge.id === 'badge_scan_century') {
+      const unlocked = currentProfile.scansCompleted >= 100
+      return {
+        ...badge,
+        unlocked,
+        progress: { current: Math.min(currentProfile.scansCompleted, 100), max: 100 },
+      }
+    }
+    if (badge.id === 'badge_streak_3') {
+      const unlocked = currentProfile.dailyStreak >= 3
+      return {
+        ...badge,
+        unlocked,
+        progress: { current: Math.min(currentProfile.dailyStreak, 3), max: 3 },
+      }
+    }
+    if (badge.id === 'badge_streak_7') {
+      const unlocked = currentProfile.dailyStreak >= 7
+      return {
+        ...badge,
+        unlocked,
+        progress: { current: Math.min(currentProfile.dailyStreak, 7), max: 7 },
+      }
+    }
+    return badge
+  })
+}
+
+export function saveAchievementBadges(badges: AchievementBadge[]): void {
+  const key = `${getGamificationStorageKey()}:badges`
+  memoryBadgesByScope.set(key, badges)
+  const storage = getSafeStorage()
+  if (storage) {
+    try {
+      storage.setItem(key, JSON.stringify(badges))
+    } catch {
+      // ignore
+    }
+  }
+  notifyGamificationChange()
+}
+
+export function getDailyStreakCalendar(
+  profile?: UserGamificationProfile,
+  referenceDate?: Date
+): {
   dayName: string
   dayNumber: number
   active: boolean
   isToday: boolean
 }[] {
-  return [
-    { dayName: 'Mon', dayNumber: 10, active: true, isToday: false },
-    { dayName: 'Tue', dayNumber: 11, active: true, isToday: false },
-    { dayName: 'Wed', dayNumber: 12, active: true, isToday: false },
-    { dayName: 'Thu', dayNumber: 13, active: true, isToday: true },
-    { dayName: 'Fri', dayNumber: 14, active: false, isToday: false },
-    { dayName: 'Sat', dayNumber: 15, active: false, isToday: false },
-    { dayName: 'Sun', dayNumber: 16, active: false, isToday: false },
-  ]
+  const currentProfile = profile || getUserGamificationProfile()
+  const streak = currentProfile.dailyStreak || 1
+  const today = referenceDate ? new Date(referenceDate) : new Date()
+
+  // In JS getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+  // Convert to Monday-first index: 0 = Mon, 1 = Tue, ..., 6 = Sun
+  const dayOfWeek = today.getDay()
+  const todayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+  return weekdayNames.map((dayName, index) => {
+    const diff = index - todayIndex
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff)
+    const isToday = index === todayIndex
+    const daysBeforeToday = todayIndex - index
+    const active = index <= todayIndex && streak >= daysBeforeToday + 1
+
+    return {
+      dayName,
+      dayNumber: d.getDate(),
+      active,
+      isToday,
+    }
+  })
 }
