@@ -1,4 +1,5 @@
 """Message Analysis Agent for Siftrix phishing and social engineering detection."""
+import asyncio
 import logging
 import re
 from typing import List, Dict, Any, Optional
@@ -144,9 +145,14 @@ class MessageAnalysisAgent(BaseAgent):
                     f"{sanitize_and_quarantine(content_text)}\n\n"
                     f"Return a structured JSON with: sentiment (string), summary_notes (string)."
                 )
-                gemini_res = await gemini_client.analyze_threat(quarantined_prompt)
+                gemini_res = await asyncio.wait_for(
+                    gemini_client.analyze_threat(quarantined_prompt),
+                    timeout=3.0,
+                )
                 if not gemini_res.get("is_fallback") and isinstance(gemini_res.get("sentiment"), str):
                     sentiment = gemini_res["sentiment"]
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.warning(f"[{self.name}] Gemini enrichment failed (continuing with deterministic findings): {e}")
 

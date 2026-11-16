@@ -1,4 +1,5 @@
 """Comprehensive unit and integration tests for Phase 5 AI Agents, Skills & Orchestrator."""
+import asyncio
 import html
 import uuid
 import pytest
@@ -508,3 +509,87 @@ async def test_bank_suspension_and_otp_message_scoring():
     assert response.verdict == Verdict.SUSPICIOUS
     assert response.risk_level == RiskLevel.MEDIUM
     assert "Sensitive credential" in response.summary.en
+
+
+# =====================================================================
+# 11. Gemini Enrichment Timeout, Resilience, and Sentiment Tests
+# =====================================================================
+
+@pytest.mark.asyncio
+async def test_message_agent_gemini_timeout_preserves_deterministic_findings():
+    """Verify that a hanging Gemini call times out at 3.0s and preserves deterministic score & sentiment."""
+    agent = MessageAnalysisAgent()
+
+    async def hanging_analyze_threat(*args, **kwargs):
+        await asyncio.sleep(10.0)
+        return {"sentiment": "llm-sentiment", "is_fallback": False}
+
+    with patch("app.agents.message_agent.gemini_client") as mock_gemini:
+        mock_gemini.is_configured = True
+        mock_gemini.analyze_threat = hanging_analyze_threat
+
+        # Urgency text -> deterministic score 15.0, deterministic sentiment "alarmist"
+        res = await agent.analyze("Urgent action required! Your account will be blocked within 24 hours.")
+        assert res.risk_score == 15.0
+        assert res.urgency_detected is True
+        assert res.sentiment == "alarmist"
+        assert any("urgency" in ind.lower() for ind in res.indicators)
+
+
+@pytest.mark.asyncio
+async def test_message_agent_gemini_enrichment_success():
+    """Verify that a prompt Gemini response successfully enriches sentiment without modifying score."""
+    agent = MessageAnalysisAgent()
+
+    with patch("app.agents.message_agent.gemini_client") as mock_gemini:
+        mock_gemini.is_configured = True
+        mock_gemini.analyze_threat = AsyncMock(return_value={
+            "sentiment": "coercive-pressure",
+            "is_fallback": False,
+        })
+
+        res = await agent.analyze("Urgent action required! Your account will be blocked within 24 hours.")
+        assert res.risk_score == 15.0
+        assert res.urgency_detected is True
+        assert res.sentiment == "coercive-pressure"
+
+
+@pytest.mark.asyncio
+async def test_message_agent_cancellation_not_swallowed():
+    """Verify that asyncio.CancelledError is not suppressed during Gemini enrichment."""
+    agent = MessageAnalysisAgent()
+
+    async def cancelled_call(*args, **kwargs):
+        raise asyncio.CancelledError()
+
+    with patch("app.agents.message_agent.gemini_client") as mock_gemini:
+        mock_gemini.is_configured = True
+        mock_gemini.analyze_threat = cancelled_call
+
+        with pytest.raises(asyncio.CancelledError):
+            await agent.analyze("Urgent: provide OTP now.")
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_completes_when_gemini_hangs():
+    """Verify that orchestrator returns a full ScanResponse even if Gemini hangs."""
+    orchestrator = AIOrchestrator()
+
+    async def hanging_analyze_threat(*args, **kwargs):
+        await asyncio.sleep(10.0)
+        return {"sentiment": "llm-sentiment", "is_fallback": False}
+
+    with patch("app.agents.message_agent.gemini_client") as mock_gemini:
+        mock_gemini.is_configured = True
+        mock_gemini.analyze_threat = hanging_analyze_threat
+
+        response = await orchestrator.scan(
+            content="Urgent alert: provide your OTP immediately to verify your account.",
+            target_type=TargetType.MESSAGE,
+        )
+
+        assert response.overall_risk_score == 45.0  # 30 (credential) + 15 (urgency)
+        assert response.verdict == Verdict.SUSPICIOUS
+        assert response.risk_level == RiskLevel.MEDIUM
+        assert response.agent_findings.message_intelligence is not None
+        assert response.agent_findings.message_intelligence.sentiment == "alarmist"
