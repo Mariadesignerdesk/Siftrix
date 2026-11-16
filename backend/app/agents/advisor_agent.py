@@ -15,6 +15,50 @@ PTA_HELPLINE = "0800-55055"
 PTA_SMS_SHORTCODE = "9000"
 SBP_HELPLINE = "021-111-727-273"
 
+# Natural Urdu translations for all threat indicators
+INDICATOR_URDU_TRANSLATIONS: Dict[str, str] = {
+    "Sensitive credential or personal identity data requested": "حساس معلومات یا پاس ورڈ کی چوری کی کوشش",
+    "Artificial urgency, deadline, or punitive threat detected": "فوری کارروائی کا غیر حقیقی دباؤ یا اکاؤنٹ بندش کی دھمکی",
+    "Unrealistic prize, lottery, or unsolicited financial grant lure": "جعلی لاٹری، انعامی اسکیم یا مفت گرانٹ کا جھانسا",
+    "Advance fee, transfer charge, or money request detected": "پیشگی فیس، چارجز یا رقم کی منتقلی کا مشکوک مطالبہ",
+    "Impersonation of trusted financial, government, or courier institution": "معروف بینک، سرکاری ادارے یا کوریئر سروس کی جعلی شناخت",
+    "Embedded link or external call-to-action detected": "پیغام میں بیرونی ویب سائٹ کا مشکوک لنک شامل ہے",
+    "Adversarial prompt injection attempt detected: text contains command override directives": "سیکیورٹی احکامات کو بائی پاس کرنے کی مشکوک کوشش",
+    "Unencrypted HTTP protocol used instead of HTTPS": "غیر محفوظ پروٹوکول (HTTP)، ڈیٹا انکرپٹڈ نہیں ہے",
+    "Explicit IP address used as hostname instead of a registered domain": "رجسٹرڈ ڈومین کی بجائے براہ راست آئی پی ایڈریس کا مشکوک استعمال",
+    "URL shortener service obfuscating true destination": "اصل ویب ایڈریس چھپانے کے لیے لنک شارٹنر کا استعمال",
+    "URL contains @ symbol credential lure or punycode domain": "لنک میں مشکوک علامات یا دھوکہ دہی کا عنصر موجود ہے",
+    "URL authority contains embedded @ symbol credential lure": "یو آر ایل کے ایڈریس میں مشکوک علامت (@) موجود ہے",
+    "Unicode confusable or homoglyph brand impersonation detected": "معروف برانڈ سے مشابہت کے لیے جعلی یونیکوڈ یا ہوموگلیف حروف کا استعمال",
+    "Typosquatting brand lure or excessive subdomain nesting detected": "معروف برانڈ سے مشابہت (ٹائپو اسکواٹنگ) یا مشکوک سب ڈومینز",
+    "High-abuse or abnormal top-level domain (TLD) detected": "غیر معمولی یا اکثر فراڈ میں استعمال ہونے والی ڈومین ایکسٹینشن",
+    "URL passed static SSRF validation (Note: this does not guarantee the site is phishing-free)": "یو آر ایل نے بنیادی سیکیورٹی جانچ پاس کر لی ہے",
+    "URL targeting internal or restricted network address (SSRF check blocked)": "یو آر ایل اندرونی نیٹ ورک ایڈریس کو نشانہ بنا رہا ہے (بلاک شدہ)",
+    "Static URL validation service unavailable": "یو آر ایل کی تصدیقی سروس اس وقت دستیاب نہیں ہے",
+}
+
+
+# Safe Urdu fallback for unknown or unregistered threat indicators
+UNKNOWN_INDICATOR_URDU_FALLBACK = "مشکوک سرگرمی کا غیر متعین اشارہ"
+
+
+def translate_indicator_to_urdu(clean_ind: str) -> str:
+    """Translate an English indicator label to natural Urdu script.
+    
+    If the indicator is unknown or unmapped, returns a safe Urdu fallback
+    to prevent leaking raw English text into localized Urdu summaries.
+    """
+    if not clean_ind:
+        return ""
+    if clean_ind in INDICATOR_URDU_TRANSLATIONS:
+        return INDICATOR_URDU_TRANSLATIONS[clean_ind]
+    if clean_ind.startswith("VirusTotal detected"):
+        return "وائرس ٹوٹل (VirusTotal) پر سیکیورٹی انجنوں نے اسے خطرناک قرار دیا ہے"
+    for en_key, ur_val in INDICATOR_URDU_TRANSLATIONS.items():
+        if en_key in clean_ind or clean_ind in en_key:
+            return ur_val
+    return UNKNOWN_INDICATOR_URDU_FALLBACK
+
 
 class SecurityAdvisorAgent(BaseAgent):
     """Generates tiered incident response playbooks and localized bilingual guidance."""
@@ -44,14 +88,14 @@ class SecurityAdvisorAgent(BaseAgent):
                 "Never share sensitive personal information or passwords with unknown contacts.",
             ]
             summary_en = "The scanned content does not exhibit known phishing indicators or malicious signatures."
-            summary_ur = "Is scan kiye gaye content mein kisi fraud ya phishing ka wazeh khatra nazar nahi aaya."
+            summary_ur = "اس مواد میں کسی معروف فشنگ، دھوکہ دہی یا سیکیورٹی خطرے کی علامات نہیں پائی گئیں۔"
             recs_en = [
                 "Always verify unexpected communications before sharing details.",
                 "Use two-factor authentication on all sensitive financial accounts.",
             ]
             recs_ur = [
-                "Ghair mutawaqqe paighaamat par hamesha ahtiyaat baratna munasib hai.",
-                "Apne tamam bank aur wallet accounts par two-factor authentication (2FA) fa'al karein.",
+                "غیر متوقع پیغامات اور لنکس پر کلک کرنے سے پہلے ہمیشہ خود تصدیق کریں۔",
+                "اپنے تمام بینک اور حساس اکاؤنٹس پر ٹو فیکٹر توثیق (2FA) فعال رکھیں۔",
             ]
 
         elif risk_level == "medium":
@@ -66,14 +110,15 @@ class SecurityAdvisorAgent(BaseAgent):
                 "Never disclose your OTP, banking PIN, or CNIC number under any circumstances.",
             ]
             summary_en = "Suspicious indicators detected. The content exhibits potential social engineering or deceptive patterns."
-            summary_ur = "Mashkook khatraat paye gaye hain. Yeh paighaam farzi ya dhokay baazi par mabni ho sakta hai."
+            summary_ur = "مشکوک عوامل پائے گئے ہیں۔ یہ پیغام دھوکہ دہی یا جعل سازی پر مبنی ہو سکتا ہے۔"
             recs_en = [
                 f"Report unsolicited SMS scams to PTA by texting {PTA_SMS_SHORTCODE}.",
                 "Contact your bank only through the official helpline number printed on your card.",
             ]
             recs_ur = [
-                f"Mashkook SMS ki itla PTA ko 9000 par sender number ke sath SMS kar ke dein.",
-                "Bank se rabtay ke liye sirf apne card ki pusht par mojood official helpline istemal karein.",
+                f"مشکوک ایس ایم ایس بھیجنے والے کا نمبر اور پیغام {PTA_SMS_SHORTCODE} پر پی ٹی اے (PTA) کو فارورڈ کریں۔",
+                "بینک سے رابطے کے لیے صرف اپنے کارڈ کی پشت پر درج سرکاری ہیلپ لائن استعمال کریں۔",
+                "پیغام میں موجود کسی بھی غیر تصدیق شدہ لنک پر کلک نہ کریں۔",
             ]
 
         else:  # high
@@ -90,16 +135,17 @@ class SecurityAdvisorAgent(BaseAgent):
                 "Do not call any phone numbers provided within the fraudulent message.",
             ]
             summary_en = "High-risk threat detected. Strong evidence of credential harvesting, financial scamming, or malicious targeting."
-            summary_ur = "Khatarnaak phishing attack detected. Yeh paighaam aap ki raqam ya password churanay ke liye bheja gaya hai."
+            summary_ur = "شدید سیکیورٹی خطرہ پایا گیا ہے۔ یہ پیغام آپ کے پاس ورڈ یا رقم چرانے کے لیے بھیجا گیا ہے۔"
             recs_en = [
                 f"Report this scam immediately to NCCIA at {NCCIA_PORTAL} or call {NCCIA_HELPLINE}.",
                 "Call your bank immediately if any financial details were disclosed.",
                 f"Forward the fraudulent message to PTA at {PTA_SMS_SHORTCODE} to block the scammer's SIM.",
             ]
             recs_ur = [
-                f"Is fraud ki foran NCCIA ko portal ({NCCIA_PORTAL}) par ya helpline {NCCIA_HELPLINE} par complaint darj karein.",
-                "Agar aap ne koi maloomat share kar di hain to foran apne bank se rabta kar ke account freeze karwayen.",
-                f"Spammer ki SIM block karwanay ke liye message {PTA_SMS_SHORTCODE} par PTA ko forward karein.",
+                f"این سی سی آئی اے (NCCIA) کے پورٹل ({NCCIA_PORTAL}) پر فوری شکایت درج کریں یا {NCCIA_HELPLINE} پر کال کریں۔",
+                "اگر آپ نے کوئی مالیاتی معلومات یا پاس ورڈ شیئر کیا ہے تو فوراً اپنے بینک سے رابطہ کر کے اکاؤنٹ منجمد کروائیں۔",
+                f"اسپیمر کی سم بلاک کروانے کے لیے میسج {PTA_SMS_SHORTCODE} پر پی ٹی اے کو فارورڈ کریں۔",
+                "پیغام بھیجنے والے کو اپنی میسجنگ ایپ پر فوری بلاک اور رپورٹ کریں۔",
             ]
 
         # 2. Contextual Enrichment from Active Agent Findings
@@ -120,28 +166,35 @@ class SecurityAdvisorAgent(BaseAgent):
         # Ensure summary reflects actual findings and NEVER claims "no phishing indicators" when findings exist
         if has_findings:
             if detected_indicators:
-                indicators_summary = "; ".join(detected_indicators[:3])
+                indicators_summary_en = "; ".join(detected_indicators[:3])
+                urdu_indicators: List[str] = []
+                for ind in detected_indicators[:3]:
+                    ur_ind = translate_indicator_to_urdu(ind)
+                    if ur_ind and ur_ind not in urdu_indicators:
+                        urdu_indicators.append(ur_ind)
+                indicators_summary_ur = "، ".join(urdu_indicators) if urdu_indicators else UNKNOWN_INDICATOR_URDU_FALLBACK
+
                 if risk_level in ("high", "critical"):
-                    summary_en = f"High-risk threat detected: {indicators_summary}. Immediate containment and reporting required."
-                    summary_ur = f"Khatarnaak phishing attack detected: {indicators_summary}. Foran reporting aur containment zaroori hai."
+                    summary_en = f"High-risk threat detected: {indicators_summary_en}. Immediate containment and reporting required."
+                    summary_ur = f"شدید سیکیورٹی خطرہ: {indicators_summary_ur}۔ یہ آپ کا ڈیٹا یا رقم چرانے کی کوشش ہے۔ فوری تدارک ضروری ہے۔"
                 else:
-                    summary_en = f"Suspicious activity detected: {indicators_summary}. Exercise high caution."
-                    summary_ur = f"Mashkook awamil paye gaye hain: {indicators_summary}. Is paighaam par amal karne se pehle tasdeeq zaroori hai."
+                    summary_en = f"Suspicious activity detected: {indicators_summary_en}. Exercise high caution."
+                    summary_ur = f"مشکوک سرگرمی کی نشاندہی ہوئی ہے: {indicators_summary_ur}۔ براہ کرم احتیاط برتیں اور آزادانہ تصدیق کریں۔"
             else:
                 if risk_level in ("high", "critical"):
                     summary_en = "High-risk threat detected. Strong evidence of credential harvesting, financial scamming, or malicious targeting."
-                    summary_ur = "Khatarnaak phishing attack detected. Yeh paighaam aap ki raqam ya password churanay ke liye bheja gaya hai."
+                    summary_ur = "شدید سیکیورٹی خطرہ پایا گیا ہے۔ معلومات کی چوری یا مالیاتی دھوکہ دہی کے شواہد موجود ہیں۔"
                 else:
                     summary_en = "Suspicious indicators detected. The content exhibits potential social engineering or deceptive patterns."
-                    summary_ur = "Mashkook khatraat paye gaye hain. Yeh paighaam farzi ya dhokay baazi par mabni ho sakta hai."
+                    summary_ur = "مشکوک عوامل پائے گئے ہیں۔ یہ پیغام دھوکہ دہی یا جعل سازی پر مبنی ہو سکتا ہے۔"
         elif risk_level == "low":
             summary_en = "The scanned content does not exhibit known phishing indicators or malicious signatures."
-            summary_ur = "Is scan kiye gaye content mein kisi fraud ya phishing ka wazeh khatra nazar nahi aaya."
+            summary_ur = "اس مواد میں کسی معروف فشنگ، دھوکہ دہی یا سیکیورٹی خطرے کی علامات نہیں پائی گئیں۔"
 
         if message_finding:
             if message_finding.credential_harvesting_detected:
-                recs_en.insert(0, f"Immediately contact your bank or call SBP helpline at {SBP_HELPLINE} to freeze accounts.")
-                recs_ur.insert(0, f"Foran apne bank ya State Bank helpline {SBP_HELPLINE} par rabta kar ke account freeze karwayen.")
+                recs_en.insert(0, f"Immediately contact your bank to freeze accounts; contact SBP helpline at {SBP_HELPLINE} for complaint escalation if unresolved.")
+                recs_ur.insert(0, f"اکاؤنٹ فوری منجمد کروانے کے لیے اپنے متعلقہ بینک کے سرکاری ہیلپ لائن نمبر پر رابطہ کریں۔ شکایت کے ازالے یا تنازع کی صورت میں اسٹیٹ بینک (SBP) کی ہیلپ لائن {SBP_HELPLINE} پر رجوع کریں۔")
             if message_finding.urgency_detected and risk_level != "low":
                 donts_en.append("Do not act under artificial pressure or urgent deadlines.")
             if message_finding.impersonation_detected and risk_level != "low":

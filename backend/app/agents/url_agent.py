@@ -51,12 +51,138 @@ TARGETED_BRANDS = [
     "jazzcash", "easypaisa", "nayapay", "sadapay", "nadra", "fbr", "bisp",
 ]
 
+# Unicode TR39-inspired confusable mapping for domain homoglyphs
+UNICODE_CONFUSABLES_MAP: Dict[str, str] = {
+    # Latin lookalikes
+    "\u0251": "a",  # ɑ (Latin small letter alpha) -> a
+    "\u0261": "g",  # ɡ (Latin small letter script g) -> g
+    "\u0131": "i",  # ı (Latin small letter dotless i) -> i
+    # Cyrillic lookalikes
+    "\u0430": "a",  # а (Cyrillic small letter a) -> a
+    "\u0441": "c",  # с (Cyrillic small letter es) -> c
+    "\u0435": "e",  # е (Cyrillic small letter ie) -> e
+    "\u0456": "i",  # і (Cyrillic small letter i) -> i
+    "\u0458": "j",  # ј (Cyrillic small letter je) -> j
+    "\u043e": "o",  # о (Cyrillic small letter o) -> o
+    "\u0440": "p",  # р (Cyrillic small letter er) -> p
+    "\u0455": "s",  # ѕ (Cyrillic small letter dze) -> s
+    "\u0445": "x",  # х (Cyrillic small letter ha) -> x
+    "\u0443": "y",  # у (Cyrillic small letter u) -> y
+    # Greek lookalikes
+    "\u03b1": "a",  # α (Greek small letter alpha) -> a
+    "\u03bf": "o",  # ο (Greek small letter omicron) -> o
+    "\u03c1": "p",  # ρ (Greek small letter rho) -> p
+    "\u03bd": "v",  # ν (Greek small letter nu) -> v
+}
+
+
+def safe_decode_idna_label(label: str) -> str:
+    """Safely decode an IDNA/Punycode label (xn--) to Unicode with graceful error fallback."""
+    if not label.lower().startswith("xn--"):
+        return label
+    try:
+        return label.encode("ascii").decode("idna")
+    except Exception:
+        return label
+
+
+def safe_decode_domain(hostname: str) -> str:
+    """Decode all Punycode labels in a hostname to their Unicode representation."""
+    if not hostname:
+        return ""
+    labels = hostname.split(".")
+    decoded_labels = [safe_decode_idna_label(lbl) for lbl in labels]
+    return ".".join(decoded_labels)
+
+
+# Verified conservative official domain allowlists for supported protected brands
+VERIFIED_OFFICIAL_BRAND_DOMAINS: Dict[str, Set[str]] = {
+    "paypal": {"paypal.com", "paypal.me"},
+    "google": {"google.com", "google.com.pk", "google.co.uk"},
+    "microsoft": {"microsoft.com"},
+    "apple": {"apple.com"},
+    "amazon": {"amazon.com", "amazon.co.uk"},
+    "facebook": {"facebook.com"},
+    "netflix": {"netflix.com"},
+    "whatsapp": {"whatsapp.com"},
+    "hbl": {"hbl.com"},
+    "ubl": {"ubldigital.com", "ubl.com.pk"},
+    "meezan": {"meezanbank.com"},
+    "alfalah": {"bankalfalah.com"},
+    "jazzcash": {"jazzcash.com.pk"},
+    "easypaisa": {"easypaisa.com.pk"},
+    "nayapay": {"nayapay.com"},
+    "sadapay": {"sadapay.pk"},
+    "nadra": {"nadra.gov.pk"},
+    "fbr": {"fbr.gov.pk"},
+    "bisp": {"bisp.gov.pk"},
+}
+
+
+def is_official_brand_domain(hostname: str, brand: str) -> bool:
+    """Check if hostname is strictly a verified official brand domain or legitimate subdomain.
+    
+    Only exact registered domains in VERIFIED_OFFICIAL_BRAND_DOMAINS and their genuine
+    subdomains (e.g. login.paypal.com) are excluded.
+    Unverified domains (e.g. paypal.org, paypal.net) are NOT assumed official.
+    """
+    clean_host = hostname.lower().strip(".")
+    allowed_domains = VERIFIED_OFFICIAL_BRAND_DOMAINS.get(brand, set())
+    for official in allowed_domains:
+        if clean_host == official or clean_host.endswith(f".{official}"):
+            return True
+    return False
+
+
+def map_confusables(text: str) -> str:
+    """Map confusable characters in a string to their ASCII base equivalents."""
+    return "".join(UNICODE_CONFUSABLES_MAP.get(ch, ch) for ch in text)
+
+
+def detect_brand_homoglyph(hostname: str, targeted_brands: List[str] = TARGETED_BRANDS) -> Optional[str]:
+    """Detect if a hostname uses Unicode confusables or homoglyphs to impersonate a protected brand.
+    
+    Evaluates each decoded domain label independently to prevent cross-label false positives.
+    A candidate label must itself contain at least one mapped confusable character,
+    and its own skeleton must match a protected brand or an explicitly supported brand-lure pattern.
+    
+    Returns the impersonated brand name if a confirmed homoglyph attack is detected, or None.
+    """
+    if not hostname:
+        return None
+
+    decoded_host = safe_decode_domain(hostname.lower().strip("."))
+    labels = decoded_host.split(".")
+
+    for label in labels:
+        # 1. Candidate label must independently contain at least one mapped confusable
+        if not any(ch in UNICODE_CONFUSABLES_MAP for ch in label):
+            continue
+
+        # 2. Compute the confusable skeleton for this specific label only
+        label_skeleton = map_confusables(label)
+
+        # 3. Check if this label's skeleton matches a protected brand or brand-lure pattern
+        for brand in targeted_brands:
+            is_match = (
+                label_skeleton == brand
+                or label_skeleton.startswith(f"{brand}-")
+                or label_skeleton.endswith(f"-{brand}")
+            )
+            if is_match:
+                # 4. Verify that the overall hostname is not a verified official brand domain
+                if not is_official_brand_domain(decoded_host, brand):
+                    return brand
+
+    return None
+
+
 # Exact PhishGuard Build Guide Indicator Weights
 URL_INDICATOR_WEIGHTS: Dict[str, float] = {
     "ip_host": 20.0,
     "url_shortener": 15.0,
     "lookalike_subdomains": 15.0,
-    "at_symbol_punycode": 15.0,
+    "at_symbol": 15.0,
     "no_https": 10.0,
     "suspicious_tld": 10.0,
 }
@@ -207,29 +333,43 @@ class URLSecurityAgent(BaseAgent):
             active_indicators.add("url_shortener")
             indicator_labels.append("URL shortener service obfuscating true destination (+15)")
 
-        # 4. @ Symbol or Punycode Indicator (+15)
-        has_at_symbol = "@" in url
-        has_punycode = "xn--" in hostname
-        if has_at_symbol or has_punycode:
-            active_indicators.add("at_symbol_punycode")
-            indicator_labels.append("URL contains @ symbol credential lure or punycode domain (+15)")
+        # 4. @ Symbol Indicator (+15) (Strictly in URL authority component, not path/query)
+        has_at_symbol = "@" in (parsed.netloc or "")
+        if has_at_symbol:
+            active_indicators.add("at_symbol")
+            indicator_labels.append("URL authority contains embedded @ symbol credential lure (+15)")
 
-        # 5. Lookalike / Excessive Subdomains Indicator (+15)
+        # 5. Lookalike, Confusables, or Excessive Subdomains Indicator (+15)
         is_typosquatting = False
-        # Check excessive subdomains (> 3 dots)
-        has_excessive_subdomains = hostname.count(".") > 3
-
-        # Check lookalike brand keywords in domain
-        for brand in TARGETED_BRANDS:
-            if brand in hostname:
-                # If brand is in hostname but hostname does not equal the official brand domain
-                if not (hostname == f"{brand}.com" or hostname.endswith(f".{brand}.com") or hostname == f"{brand}.pk"):
-                    is_typosquatting = True
-                    break
-
-        if has_excessive_subdomains or is_typosquatting:
+        homoglyph_brand = detect_brand_homoglyph(hostname)
+        if homoglyph_brand:
+            is_typosquatting = True
             active_indicators.add("lookalike_subdomains")
-            indicator_labels.append("Typosquatting brand lure or excessive subdomain nesting detected (+15)")
+            indicator_labels.append(f"Unicode confusable or homoglyph brand impersonation detected targeting '{homoglyph_brand}' (+15)")
+        else:
+            # Check excessive subdomains (> 3 dots)
+            has_excessive_subdomains = hostname.count(".") > 3
+
+            # Check ASCII lookalike brand keywords in domain using label-boundary matching
+            ascii_typosquatting = False
+            hostname_labels = hostname.split(".")
+            for brand in TARGETED_BRANDS:
+                # Label matches only if it exactly equals the brand or uses an explicitly supported hyphenated lure pattern
+                # (e.g. 'paypal.evil.com', 'paypal-login.com', 'verify-paypal.com')
+                # Prevents unconstrained substring collisions like 'public.com' (ubl) or 'pineapple.com' (apple)
+                has_brand_label = any(
+                    lbl == brand or lbl.startswith(f"{brand}-") or lbl.endswith(f"-{brand}")
+                    for lbl in hostname_labels
+                )
+                if has_brand_label:
+                    if not is_official_brand_domain(hostname, brand):
+                        ascii_typosquatting = True
+                        break
+
+            if has_excessive_subdomains or ascii_typosquatting:
+                is_typosquatting = True
+                active_indicators.add("lookalike_subdomains")
+                indicator_labels.append("Typosquatting brand lure or excessive subdomain nesting detected (+15)")
 
         # 6. Suspicious TLD Indicator (+10)
         suspicious_tld = any(hostname.endswith(tld) for tld in SUSPICIOUS_TLDS)

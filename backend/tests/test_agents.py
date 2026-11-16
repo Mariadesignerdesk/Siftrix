@@ -1,14 +1,26 @@
 """Comprehensive unit and integration tests for Phase 5 AI Agents, Skills & Orchestrator."""
 import asyncio
 import html
+import re
 import uuid
 import pytest
 from unittest.mock import AsyncMock, patch
 
 from app.agents.base import detect_prompt_injection, sanitize_and_quarantine
 from app.agents.message_agent import MessageAnalysisAgent
-from app.agents.url_agent import URLSecurityAgent
-from app.agents.advisor_agent import SecurityAdvisorAgent
+from app.agents.url_agent import (
+    URLSecurityAgent,
+    detect_brand_homoglyph,
+    safe_decode_domain,
+    is_official_brand_domain,
+    VERIFIED_OFFICIAL_BRAND_DOMAINS,
+)
+from app.agents.advisor_agent import (
+    SecurityAdvisorAgent,
+    translate_indicator_to_urdu,
+    UNKNOWN_INDICATOR_URDU_FALLBACK,
+    SBP_HELPLINE,
+)
 from app.agents.orchestrator import AIOrchestrator, classify_risk
 from app.schemas.common import TargetType, Verdict, RiskLevel
 from app.schemas.scan import ScanResponse, MessageAgentFinding, URLAgentFinding, AdvisorAgentFinding
@@ -375,7 +387,7 @@ async def test_security_advisor_low_risk_scenario():
     assert len(finding.dos) >= 2
     assert len(finding.donts) >= 1
     assert "phishing" in summary.en.lower()
-    assert "khatra" in summary.ur.lower()
+    assert "خطرے" in summary.ur or "خطرہ" in summary.ur or any("\u0600" <= c <= "\u06ff" for c in summary.ur)
     assert any("2FA" in r or "two-factor" in r.lower() for r in recs.en + recs.ur)
 
 
@@ -593,3 +605,498 @@ async def test_orchestrator_completes_when_gemini_hangs():
         assert response.risk_level == RiskLevel.MEDIUM
         assert response.agent_findings.message_intelligence is not None
         assert response.agent_findings.message_intelligence.sentiment == "alarmist"
+
+
+# =====================================================================
+# 12. Urdu Localization & Script Purity Tests (Phase 1)
+# =====================================================================
+
+ALLOWED_TECHNICAL_TOKENS = {
+    "2FA", "SMS", "PTA", "NCCIA", "OTP", "PIN", "HTTP", "HTTPS", "VirusTotal", "SIM", "SBP"
+}
+
+ROMAN_URDU_PATTERNS = [
+    r"\bkhatra\b", r"\bmashkook\b", r"\bpaighaam\b", r"\bdhokay\b", r"\bdhoka\b",
+    r"\bkarein\b", r"\bapne\b", r"\bapni\b", r"\bhifazat\b", r"\bhushyar\b",
+    r"\braabta\b", r"\btauseeq\b", r"\bkhulasa\b", r"\bhidayat\b", r"\bshikayat\b",
+    r"\bband\b", r"\bkholain\b", r"\bhogaya\b", r"\bhai\b", r"\bhain\b", r"\bmein\b"
+]
+
+
+def assert_urdu_script_purity(text: str, allowed_tokens: set = ALLOWED_TECHNICAL_TOKENS):
+    """Assert text is in authentic Urdu script, permitting specific technical acronyms, URLs, and numbers,
+    while strictly barring Roman Urdu and untranslated English prose or indicator labels."""
+    # 1. Must contain authentic Urdu script characters
+    urdu_chars = [c for c in text if "\u0600" <= c <= "\u06ff"]
+    assert len(urdu_chars) > 0, f"Expected Urdu script in '{text}'"
+
+    # 2. Strict prohibition against Roman Urdu patterns
+    for pattern in ROMAN_URDU_PATTERNS:
+        assert not re.search(pattern, text, re.IGNORECASE), f"Found Roman Urdu pattern '{pattern}' in: {text}"
+
+    # 3. Strip URLs, known allowed technical tokens (like 2FA, VirusTotal, PTA), numbers, punctuation, and Urdu characters
+    # What remains should not contain standalone Latin words
+    cleaned = re.sub(r"https?://\S+", " ", text)
+    for tok in sorted(allowed_tokens, key=len, reverse=True):
+        cleaned = re.sub(rf"\b{re.escape(tok)}\b", " ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"[0-9\-\(\)\:\,\.\/\s\،\۔\!]+", " ", cleaned)
+    cleaned = re.sub(r"[\u0600-\u06ff\u0750-\u077f\ufb50-\ufdff\ufe70-\ufeff]+", " ", cleaned)
+    remaining_words = [w.strip() for w in cleaned.split() if w.strip()]
+    assert not remaining_words, f"Found untranslated English or disallowed tokens {remaining_words} in Urdu text: {text}"
+
+
+@pytest.mark.asyncio
+async def test_security_advisor_urdu_script_purity_and_indicator_translation():
+    """Verify that Urdu summaries and recommendations use authentic Urdu script without Roman Urdu or English indicator leaks."""
+    advisor = SecurityAdvisorAgent()
+
+    msg_finding = MessageAgentFinding(
+        risk_score=75.0,
+        urgency_detected=True,
+        impersonation_detected=True,
+        credential_harvesting_detected=True,
+        sentiment="alarmist",
+        indicators=[
+            "Sensitive credential or personal identity data requested (+30)",
+            "Artificial urgency, deadline, or punitive threat detected (+15)",
+            "Impersonation of trusted financial, government, or courier institution (+10)",
+        ],
+    )
+
+    finding, summary, recs = await advisor.advise(
+        risk_level="high",
+        verdict="malicious",
+        overall_score=75.0,
+        message_finding=msg_finding,
+        target_content="Urgent: your account will be blocked. Share OTP now.",
+    )
+
+    # 1. English summary and recommendations are intact and properly formatted
+    assert "High-risk threat detected" in summary.en
+    assert "Sensitive credential or personal identity data requested" in summary.en
+    assert len(recs.en) >= 3
+
+    # 2. Urdu summary passes strict script purity (permits technical tokens, bans Roman Urdu / English prose)
+    assert_urdu_script_purity(summary.ur)
+
+    # 3. Urdu summary does not contain raw English indicator labels
+    assert "Sensitive credential" not in summary.ur
+    assert "Artificial urgency" not in summary.ur
+    assert "Impersonation of trusted" not in summary.ur
+
+    # 4. Translated Urdu indicators are present in summary
+    assert "حساس معلومات" in summary.ur
+    assert "فوری کارروائی" in summary.ur
+
+    # 5. All recommendations in recs.ur pass strict script purity
+    for rec in recs.ur:
+        assert_urdu_script_purity(rec)
+
+    # 6. SBP banking guidance correctness:
+    # Immediate account freezing is directed to user's bank; SBP is complaint/escalation channel
+    assert any(SBP_HELPLINE in r for r in recs.en)
+    assert any(SBP_HELPLINE in r for r in recs.ur)
+    assert any("freeze accounts" in r.lower() and "bank" in r.lower() for r in recs.en)
+    assert any("بینک" in r and "منجمد" in r for r in recs.ur)
+    assert any("complaint escalation" in r.lower() for r in recs.en)
+    assert any("شکایت" in r and "اسٹیٹ بینک" in r for r in recs.ur)
+
+
+@pytest.mark.asyncio
+async def test_unknown_indicator_safe_urdu_fallback():
+    """Verify unknown or unmapped indicators use a safe Urdu fallback without leaking raw English."""
+    advisor = SecurityAdvisorAgent()
+
+    # 1. Direct function fallback verification
+    raw_unknown = "Zero-Day Exploit Heuristic Vector (+45)"
+    clean_unknown = "Zero-Day Exploit Heuristic Vector"
+    translated = translate_indicator_to_urdu(clean_unknown)
+    assert translated == UNKNOWN_INDICATOR_URDU_FALLBACK
+    assert "Zero-Day" not in translated
+    assert "Exploit" not in translated
+    assert translate_indicator_to_urdu("") == ""
+
+    # 2. Advisor run with unknown indicator
+    msg_finding = MessageAgentFinding(
+        risk_score=65.0,
+        urgency_detected=False,
+        impersonation_detected=False,
+        credential_harvesting_detected=False,
+        sentiment="alarmist",
+        indicators=[raw_unknown],
+    )
+
+    _, summary, _ = await advisor.advise(
+        risk_level="high",
+        verdict="suspicious",
+        overall_score=65.0,
+        message_finding=msg_finding,
+        target_content="Suspicious system activity detected",
+    )
+
+    # Summary contains Urdu fallback and does NOT leak raw English words
+    assert UNKNOWN_INDICATOR_URDU_FALLBACK in summary.ur
+    assert "Zero-Day" not in summary.ur
+    assert "Exploit" not in summary.ur
+    assert_urdu_script_purity(summary.ur)
+
+
+@pytest.mark.asyncio
+async def test_security_advisor_all_risk_tiers_urdu_script():
+    """Verify that low, medium, and high risk tiers all produce authentic Urdu script."""
+    advisor = SecurityAdvisorAgent()
+
+    # Low risk
+    _, low_sum, low_recs = await advisor.advise(risk_level="low", verdict="safe", overall_score=0.0)
+    assert_urdu_script_purity(low_sum.ur)
+    assert "اس مواد میں کسی معروف فشنگ" in low_sum.ur
+    for r in low_recs.ur:
+        assert_urdu_script_purity(r)
+
+    # Medium risk
+    _, med_sum, med_recs = await advisor.advise(risk_level="medium", verdict="suspicious", overall_score=40.0)
+    assert_urdu_script_purity(med_sum.ur)
+    assert "مشکوک" in med_sum.ur
+    for r in med_recs.ur:
+        assert_urdu_script_purity(r)
+
+    # High risk
+    _, high_sum, high_recs = await advisor.advise(risk_level="high", verdict="malicious", overall_score=80.0)
+    assert_urdu_script_purity(high_sum.ur)
+    assert "شدید سیکیورٹی خطرہ" in high_sum.ur
+    for r in high_recs.ur:
+        assert_urdu_script_purity(r)
+
+
+# =====================================================================
+# 13. Unicode Confusable & Brand Homoglyph Detection Tests (Phase 2)
+# =====================================================================
+
+@pytest.mark.asyncio
+async def test_url_unicode_confusable_positive_detection():
+    """Verify that Unicode homoglyphs and their Punycode forms targeting protected brands are detected."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    # Verified test vectors with independently tested Punycode encodings
+    positive_vectors = [
+        ("https://p\u0251yp\u0251l.com", "paypal", "p\u0251yp\u0251l.com"),
+        ("https://p\u0430ypal.com", "paypal", "p\u0430ypal.com"),
+        ("https://xn--pypal-4ve.com", "paypal", "xn--pypal-4ve.com"),  # Punycode of pаypal.com
+        ("https://g\u043e\u043egle.com", "google", "g\u043e\u043egle.com"),
+        ("https://xn--ggle-55da.com", "google", "xn--ggle-55da.com"),  # Punycode of gооgle.com
+        ("https://\u0251pple.com", "apple", "\u0251pple.com"),
+        ("https://micros\u043eft.com", "microsoft", "micros\u043eft.com"),
+        ("https://meez\u0430n.com", "meezan", "meez\u0430n.com"),
+    ]
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        for url, expected_brand, expected_domain in positive_vectors:
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(url)
+
+            # 1. Lookalike / typosquatting is triggered (+15)
+            assert res.risk_score == 15.0, f"Expected 15.0 for {url}, got {res.risk_score}"
+            assert res.is_typosquatting is True, f"Expected is_typosquatting=True for {url}"
+
+            # 2. Indicator mentions Unicode confusable detection and target brand
+            assert any("Unicode confusable" in ind and expected_brand in ind for ind in res.indicators), (
+                f"Expected confusable indicator for brand '{expected_brand}' in {res.indicators}"
+            )
+
+            # 3. Original hostname is preserved in finding domain
+            assert res.domain == expected_domain, f"Expected domain '{expected_domain}', got '{res.domain}'"
+
+
+@pytest.mark.asyncio
+async def test_url_unicode_confusable_negative_detection():
+    """Verify that non-matching lookalikes, legitimate IDNs, and official brand domains are NOT flagged."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    # Verified negative test cases
+    # Note: gɑɑgle maps ɑ -> a = gaagle, which does NOT match the google brand skeleton
+    negative_vectors = [
+        "https://g\u0251\u0251gle.com",       # maps to gaagle.com != google -> NOT flagged as brand impersonation
+        "https://m\u00fcnchen.de",             # Legitimate German IDN -> NOT flagged
+        "https://xn--mnchen-3ya.de",           # Punycode of münchen.de -> NOT flagged
+        "https://xn--mgbqf7g.org",             # Punycode of اردو.org -> NOT flagged
+        "https://google.com",                  # Official brand domain -> NOT flagged
+        "https://paypal.com",                  # Official brand domain -> NOT flagged
+        "https://example.com/login",           # Standard benign domain -> NOT flagged
+    ]
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        for url in negative_vectors:
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(url)
+
+            assert res.risk_score == 0.0, f"Expected clean score 0.0 for {url}, got {res.risk_score}"
+            assert res.is_typosquatting is False, f"Expected is_typosquatting=False for {url}"
+            assert not any("Unicode confusable" in ind for ind in res.indicators), (
+                f"Unexpected confusable indicator in {res.indicators} for {url}"
+            )
+
+
+@pytest.mark.asyncio
+async def test_url_official_brand_domain_boundary_defense():
+    """Verify exact hostname boundary matching for official brand domains vs deceptive lookalikes."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        # 1. Official domain and official subdomain are NOT typosquatting
+        for official_url in ["https://paypal.com", "https://login.paypal.com", "https://api.paypal.com"]:
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(official_url)
+            assert res.is_typosquatting is False, f"Official domain {official_url} must not be flagged"
+            assert res.risk_score == 0.0
+
+        # 2. Deceptive attacker subdomain containing brand name MUST be flagged
+        instance.call_tool.side_effect = [mock_val, mock_rep]
+        res_attacker = await agent.analyze("https://paypal.com.attacker.example")
+        assert res_attacker.is_typosquatting is True, "paypal.com.attacker.example must be flagged"
+        assert res_attacker.risk_score == 15.0
+
+        # 3. Phishing prefix domain MUST be flagged
+        instance.call_tool.side_effect = [mock_val, mock_rep]
+        res_prefix = await agent.analyze("https://fake-paypal.com/signin")
+        assert res_prefix.is_typosquatting is True
+        assert res_prefix.risk_score == 15.0
+
+
+@pytest.mark.asyncio
+async def test_url_at_symbol_authority_vs_path_and_query():
+    """Verify @ credential-lure indicator inspects authority netloc component strictly."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        # 1. @ in authority: FLAGGED (+15)
+        instance.call_tool.side_effect = [mock_val, mock_rep]
+        res_auth = await agent.analyze("https://user:secret@evil.com/login")
+        assert res_auth.risk_score == 15.0
+        assert any("authority contains embedded @" in ind for ind in res_auth.indicators)
+
+        # 2. @ in path: NOT flagged (0.0)
+        instance.call_tool.side_effect = [mock_val, mock_rep]
+        res_path = await agent.analyze("https://example.com/@sarah/posts")
+        assert res_path.risk_score == 0.0
+        assert not any("@ symbol" in ind for ind in res_path.indicators)
+
+        # 3. @ in query string: NOT flagged (0.0)
+        instance.call_tool.side_effect = [mock_val, mock_rep]
+        res_query = await agent.analyze("https://example.com/api?user=admin@example.com")
+        assert res_query.risk_score == 0.0
+        assert not any("@ symbol" in ind for ind in res_query.indicators)
+
+        # 4. @ in fragment: NOT flagged (0.0)
+        instance.call_tool.side_effect = [mock_val, mock_rep]
+        res_frag = await agent.analyze("https://example.com/#@profile")
+        assert res_frag.risk_score == 0.0
+        assert not any("@ symbol" in ind for ind in res_frag.indicators)
+
+
+@pytest.mark.asyncio
+async def test_url_invalid_punycode_handled_gracefully():
+    """Verify invalid Punycode labels do not cause exceptions and fail safely."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        instance.call_tool.side_effect = [mock_val, mock_rep]
+        res = await agent.analyze("https://xn--invalid-test!!-99.com/test")
+
+        # Handled gracefully, no unhandled exception, score is clean heuristics
+        assert res.risk_score == 0.0
+        assert res.is_typosquatting is False
+
+
+@pytest.mark.asyncio
+async def test_prevent_cross_label_homoglyph_false_positives():
+    """Verify that a confusable character in an unrelated label does NOT classify an ASCII brand as homoglyph attack."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    # Cross-label test vectors: confusable exists in one label, protected brand is pure ASCII in another
+    cross_label_vectors = [
+        ("https://test.\u043e.paypal.com", "test.\u043e.paypal.com"),
+        ("https://sub.\u0251bc.paypal.com", "sub.\u0251bc.paypal.com"),
+        ("https://paypal.m\u00fcnchen.de", "paypal.m\u00fcnchen.de"),
+    ]
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        for url, host in cross_label_vectors:
+            # 1. Direct unit verification: detect_brand_homoglyph must return None
+            assert detect_brand_homoglyph(host) is None, f"detect_brand_homoglyph must be None for {host}"
+
+            # 2. Agent analysis: must not flag as Unicode confusable homoglyph attack
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(url)
+            assert not any("Unicode confusable" in ind for ind in res.indicators), (
+                f"Cross-label confusable false positive detected for {url}: {res.indicators}"
+            )
+
+
+@pytest.mark.asyncio
+async def test_verified_official_domain_allowlists():
+    """Verify that all 19 conservative official domains and their multi-level subdomains are excluded from typosquatting."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        # 1. Test ALL 19 configured brand entries in VERIFIED_OFFICIAL_BRAND_DOMAINS
+        assert len(VERIFIED_OFFICIAL_BRAND_DOMAINS) == 19, "Expected exactly 19 official brand allowlist entries"
+        for brand, domains in VERIFIED_OFFICIAL_BRAND_DOMAINS.items():
+            for official_domain in domains:
+                # Direct unit verification
+                assert is_official_brand_domain(official_domain, brand) is True, (
+                    f"Official domain {official_domain} must be recognized for brand {brand}"
+                )
+                # Agent analyze verification
+                instance.call_tool.side_effect = [mock_val, mock_rep]
+                res = await agent.analyze(f"https://{official_domain}")
+                assert res.is_typosquatting is False, f"Verified domain {official_domain} should not be typosquatting"
+                assert res.risk_score == 0.0
+
+        # 2. Test legitimate multi-level subdomains of configured official domains
+        multilevel_subdomains = [
+            ("portal.login.hbl.com", "hbl"),
+            ("auth.api.sadapay.pk", "sadapay"),
+            ("cdn.accounts.google.com", "google"),
+            ("www.google.co.uk", "google"),
+            ("secure.login.paypal.com", "paypal"),
+            ("sub.paypal.me", "paypal"),
+            ("corporate.ebanking.ubldigital.com", "ubl"),
+            ("dev.api.nayapay.com", "nayapay"),
+            ("online.banking.meezanbank.com", "meezan"),
+            ("www.amazon.co.uk", "amazon"),
+        ]
+        for sub_domain, brand in multilevel_subdomains:
+            assert is_official_brand_domain(sub_domain, brand) is True, (
+                f"Multi-level subdomain {sub_domain} must be recognized as official"
+            )
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(f"https://{sub_domain}")
+            assert res.is_typosquatting is False, f"Subdomain {sub_domain} should not be typosquatting"
+            assert res.risk_score == 0.0
+
+        # 3. Attacker domains exploiting official domains must still be flagged as typosquatting
+        attacker_subdomain_cases = [
+            ("https://paypal.me.attacker.example", 15.0),
+            ("https://amazon.co.uk.attacker.example", 15.0),
+            ("https://google.co.uk.attacker.example", 15.0),
+        ]
+        for url, expected_min_score in attacker_subdomain_cases:
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(url)
+            assert res.is_typosquatting is True, f"Attacker domain {url} must be flagged as typosquatting"
+            assert res.risk_score >= expected_min_score
+
+        # 4. Unverified domains (e.g. .org, .net, or fake brand TLDs) MUST be flagged as typosquatting
+        unverified_cases = [
+            ("https://paypal.org", 15.0),
+            ("https://google.net", 15.0),
+            ("https://meezan.org", 15.0),
+            ("https://apple-security.org", 15.0),
+            ("https://hbl.net", 15.0),
+            ("https://whatsapp.net", 15.0),
+        ]
+        for url, expected_min_score in unverified_cases:
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(url)
+            assert res.is_typosquatting is True, f"Unverified domain {url} must be flagged as typosquatting"
+            assert res.risk_score >= expected_min_score
+
+
+@pytest.mark.asyncio
+async def test_url_ascii_typosquatting_no_substring_collisions():
+    """Verify label-boundary matching prevents false positives for unrelated domains containing brand substrings."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    # Domains that contain brand substrings ('ubl', 'apple', 'hbl') but are completely unrelated
+    collision_vectors = [
+        "https://public.com",         # Contains 'ubl' in 'public' -> NOT UBL typosquatting
+        "https://doubleclick.net",    # Contains 'ubl' in 'doubleclick' -> NOT UBL typosquatting
+        "https://pineapple.com",      # Contains 'apple' in 'pineapple' -> NOT Apple typosquatting
+        "https://snapple.com",        # Contains 'apple' in 'snapple' -> NOT Apple typosquatting
+        "https://wishblend.com",      # Contains 'hbl' in 'wishblend' -> NOT HBL typosquatting
+    ]
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        for url in collision_vectors:
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(url)
+
+            # Must NOT be flagged as typosquatting
+            assert res.is_typosquatting is False, f"False positive detected for unrelated domain {url}"
+            assert res.risk_score == 0.0, f"Expected 0.0 for {url}, got {res.risk_score}"
+            assert not any("Typosquatting" in ind for ind in res.indicators), (
+                f"Unexpected typosquatting indicator for {url}: {res.indicators}"
+            )
+
+
+@pytest.mark.asyncio
+async def test_url_suspicious_brand_lookalike_labels_positive_detection():
+    """Verify label-boundary matching reliably detects suspicious hyphenated brand-lookalike lures."""
+    agent = URLSecurityAgent()
+    mock_val = {"is_valid": True, "is_safe_target": True}
+    mock_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+
+    # Brand lures with hyphenated prefixes/suffixes and attacker subdomains
+    suspicious_lures = [
+        "https://paypal-security.com",
+        "https://verify-paypal.com",
+        "https://login-google.com",
+        "https://apple-verify.com",
+        "https://hbl-login.com",
+        "https://hbl.attacker.com",
+        "https://meezan-portal.com",
+    ]
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        for url in suspicious_lures:
+            instance.call_tool.side_effect = [mock_val, mock_rep]
+            res = await agent.analyze(url)
+
+            assert res.is_typosquatting is True, f"Brand lure {url} MUST be flagged as typosquatting"
+            assert res.risk_score == 15.0, f"Expected 15.0 for {url}, got {res.risk_score}"
+            assert any("Typosquatting brand lure" in ind for ind in res.indicators), (
+                f"Expected typosquatting indicator in {res.indicators} for {url}"
+            )
