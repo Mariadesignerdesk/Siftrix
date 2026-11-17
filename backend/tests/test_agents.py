@@ -1230,9 +1230,12 @@ async def test_conditional_credential_phishing_risk_floor_negatives():
         "Visit https://hbl.com/security to learn how to stay safe."
     )
     res_def = await agent.analyze(defensive_advisory)
-    # Base sum: Credential (+30) + Urgency (+15) + Impersonation (+10) + Link (+10) = 65.0
-    # Floor must NOT be applied to defensive advisories
-    assert res_def.risk_score == 65.0
+    # Context-aware evaluation: credential, urgency, and impersonation are recognized as defensive
+    # Only embedded link (+10) contributes to risk score. Floor must NOT be applied.
+    assert res_def.risk_score == 10.0
+    assert res_def.credential_harvesting_detected is False
+    assert res_def.urgency_detected is False
+    assert res_def.impersonation_detected is False
     assert not any("Critical credential phishing" in ind for ind in res_def.indicators)
 
     # Case D: Informational documentation linking to knowledge base
@@ -1313,3 +1316,151 @@ async def test_conditional_credential_phishing_risk_floor_negatives():
     assert res_f2.urgency_detected is True
     assert res_f2.risk_score == 25.0
     assert not any("Critical credential phishing" in ind for ind in res_f2.indicators)
+
+
+# =====================================================================
+# 19. Phase 4 Defensive False Positives & Advisor Severity Tiering Tests
+# =====================================================================
+
+@pytest.mark.asyncio
+async def test_phase4_exact_defensive_hbl_advisory():
+    """Verify exact defensive HBL advisory is not falsely flagged for credentials, urgency, or impersonation."""
+    agent = MessageAnalysisAgent()
+    advisor = SecurityAdvisorAgent()
+
+    advisory_text = (
+        "HBL will never ask for your password or OTP. "
+        "Beware of urgent calls claiming your account will be blocked. "
+        "Visit https://hbl.com/security to learn how to stay safe."
+    )
+    res = await agent.analyze(advisory_text)
+
+    # Must accurately evaluate to 10.0 (embedded link only), suppressing false positives
+    assert res.risk_score == 10.0
+    assert res.credential_harvesting_detected is False
+    assert res.urgency_detected is False
+    assert res.impersonation_detected is False
+    assert res.indicators == ["Embedded link or external call-to-action detected (+10)"]
+
+    # Security Advisor evaluation at score 10.0 (LOW risk)
+    adv, summary, _ = await advisor.advise(
+        risk_level="low",
+        verdict="suspicious",
+        overall_score=res.risk_score,
+        message_finding=res,
+    )
+    assert adv.action_required == "No immediate threat detected. Exercise routine cyber caution."
+    assert "Critical threat detected" not in adv.action_required
+    assert "High-risk threat detected" not in adv.action_required
+
+
+@pytest.mark.asyncio
+async def test_phase4_genuine_urgent_credential_phishing():
+    """Verify genuine urgent credential phishing with an external link receives score >= 70 and high-risk action."""
+    agent = MessageAnalysisAgent()
+    advisor = SecurityAdvisorAgent()
+
+    phish_msg = (
+        "URGENT: Your account has been suspended due to suspicious activity. "
+        "Enter your OTP immediately at https://secure-bank-login.example.com to restore access."
+    )
+    res = await agent.analyze(phish_msg)
+
+    assert res.credential_harvesting_detected is True
+    assert res.urgency_detected is True
+    assert res.risk_score >= 70.0
+    assert any("Critical credential phishing" in ind for ind in res.indicators)
+
+    # Advisor evaluation for high risk malicious
+    adv, _, _ = await advisor.advise(
+        risk_level="high",
+        verdict="malicious",
+        overall_score=res.risk_score,
+        message_finding=res,
+    )
+    assert adv.action_required == "High-risk threat detected. Do not interact. Immediate containment and reporting required."
+    assert "No immediate threat detected" not in adv.action_required
+
+
+@pytest.mark.asyncio
+async def test_phase4_attacker_defensive_preface_with_active_solicitation():
+    """Verify attacker evasion (defensive phrasing preceding active harvesting) still triggers floor >= 70."""
+    agent = MessageAnalysisAgent()
+
+    attacker_msg = (
+        "HBL Advisory: Never share your OTP. However, your account will be suspended within 24 hours. "
+        "Enter your password at https://evil.com/login to restore access."
+    )
+    res = await agent.analyze(attacker_msg)
+
+    assert res.credential_harvesting_detected is True
+    assert res.urgency_detected is True
+    assert res.impersonation_detected is True
+    assert res.risk_score >= 70.0
+    assert any("Critical credential phishing" in ind for ind in res.indicators)
+
+
+@pytest.mark.asyncio
+async def test_phase4_normal_operational_message_with_link():
+    """Verify normal operational messages containing links score exactly 10 and retain low risk advisory."""
+    agent = MessageAnalysisAgent()
+    advisor = SecurityAdvisorAgent()
+
+    ops_msg = "Please review our documentation at https://example.com/docs"
+    res = await agent.analyze(ops_msg)
+
+    assert res.risk_score == 10.0
+    assert res.credential_harvesting_detected is False
+    assert res.urgency_detected is False
+    assert res.impersonation_detected is False
+    assert res.indicators == ["Embedded link or external call-to-action detected (+10)"]
+
+    adv, _, _ = await advisor.advise(
+        risk_level="low",
+        verdict="suspicious",
+        overall_score=res.risk_score,
+        message_finding=res,
+    )
+    assert adv.action_required == "No immediate threat detected. Exercise routine cyber caution."
+    assert "Critical threat detected" not in adv.action_required
+
+
+@pytest.mark.asyncio
+async def test_phase4_advisor_action_required_severity_tiering():
+    """Verify Advisor action_required separation for scores 45 (medium), 65 (high/suspicious), 75 (high/malicious), and 95 (critical)."""
+    advisor = SecurityAdvisorAgent()
+
+    # Score 45: Medium risk, suspicious
+    adv45, _, _ = await advisor.advise(
+        risk_level="medium",
+        verdict="suspicious",
+        overall_score=45.0,
+    )
+    assert adv45.action_required == "Suspicious activity detected. Exercise high caution and verify sender independently."
+    assert "Critical threat detected" not in adv45.action_required
+
+    # Score 65: High risk, suspicious (MUST NOT display 'Critical threat detected')
+    adv65, _, _ = await advisor.advise(
+        risk_level="high",
+        verdict="suspicious",
+        overall_score=65.0,
+    )
+    assert adv65.action_required == "High-risk suspicious activity detected. Exercise extreme caution and verify sender independently."
+    assert "Critical threat detected" not in adv65.action_required
+
+    # Score 75: High risk, malicious (displays High-risk threat detected, NOT critical)
+    adv75, _, _ = await advisor.advise(
+        risk_level="high",
+        verdict="malicious",
+        overall_score=75.0,
+    )
+    assert adv75.action_required == "High-risk threat detected. Do not interact. Immediate containment and reporting required."
+    assert "Critical threat detected" not in adv75.action_required
+
+    # Score 95: Critical risk, malicious
+    adv95, _, _ = await advisor.advise(
+        risk_level="critical",
+        verdict="malicious",
+        overall_score=95.0,
+    )
+    assert adv95.action_required == "Critical threat detected. Do not interact. Immediate containment and reporting required."

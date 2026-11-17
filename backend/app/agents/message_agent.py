@@ -67,16 +67,37 @@ MEETING_HOSTS = {
 }
 
 # Defensive advisory and legitimate informational communication patterns
+CREDENTIAL_TOKENS = (
+    r"(?:otp|one[-\s]?time\s+password|pin\b|password|login\s+code|cnic|cvv|atm\s+pin|"
+    r"card\s+details|credit\s+card|debit\s+card|security\s+code|secret\s+key|credentials|code)"
+)
+CREDENTIAL_LIST = rf"(?:{CREDENTIAL_TOKENS}(?:\s*(?:,|/|or|and)\s*{CREDENTIAL_TOKENS})*)"
+
 DEFENSIVE_CREDENTIAL_WARNING = re.compile(
-    r"\b(?:never|do\s+not|don't)\s+(?:share|provide|disclose|give|send|enter|reveal)\s+(?:your\s+)?"
-    r"(?:otp|one[-\s]?time\s+password|pin|password|cnic|cvv|credentials|security\s+code)\b",
+    rf"\b(?:never|do\s+not|don't)\s+(?:share|provide|disclose|give|send|enter|reveal)\s+(?:your\s+)?"
+    rf"{CREDENTIAL_LIST}\b",
     re.IGNORECASE,
 )
 
 DEFENSIVE_INSTITUTION_NEVER_ASKS = re.compile(
-    r"\b(?:bank|hbl|ubl|meezan|alfalah|mcb|standard\s+chartered|sbp|state\s+bank|fbr|nadra|easypaisa|jazzcash|nayapay|sadapay|we)\s+"
-    r"(?:never|will\s+never|does\s+not|never\s+calls\s+to)\s+(?:ask|call|request|demand)\s+(?:for\s+)?"
-    r"(?:your\s+)?(?:otp|pin|password|credentials|cnic|cvv|code)\b",
+    rf"\b(?:bank|hbl|ubl|meezan|bank\s+alfalah|alfalah|mcb|standard\s+chartered|sbp|state\s+bank|fbr|nadra|bisp|easypaisa|jazzcash|nayapay|sadapay|we)\s+"
+    rf"(?:never|will\s+never|does\s+not|never\s+calls\s+to)\s+(?:ask|call|request|demand)\s+(?:for\s+)?"
+    rf"(?:your\s+)?{CREDENTIAL_LIST}\b",
+    re.IGNORECASE,
+)
+
+DEFENSIVE_ADVISORY_HEADER = re.compile(
+    r"\b(?:hbl|ubl|meezan|bank\s+alfalah|alfalah|mcb|standard\s+chartered|state\s+bank|sbp|"
+    r"fbr|nadra|bisp|jazzcash|easypaisa|nayapay|sadapay|pakistan\s+post|tcs|leopards|"
+    r"netflix|microsoft|google|whatsapp)\s+(?:security\s+advisory|advisory|security\s+alert|safety\s+tip|public\s+advisory)\b",
+    re.IGNORECASE,
+)
+
+DEFENSIVE_URGENCY_WARNING = re.compile(
+    r"\b(?:beware\s+of|watch\s+out\s+for|caution\s+against|ignore|do\s+not\s+(?:trust|fall\s+for|respond\s+to)|be\s+aware\s+of)\s+"
+    r"(?:(?:urgent|fake|fraudulent|suspicious|unsolicited|scam)\s+(?:calls?|sms|messages?|emails?|links?|threats?|callers?)"
+    r"(?:\s+(?:claiming|stating|saying|alleging)\s+(?:that\s+)?(?:your\s+)?(?:account|sim)\s+(?:will\s+be\s+|is\s+)?(?:blocked|suspended|frozen|deactivated))?"
+    r"|(?:calls?|sms|messages?|emails?|links?|threats?|callers?)\s+(?:claiming|stating|saying|alleging)\s+(?:that\s+)?(?:your\s+)?(?:account|sim)\s+(?:will\s+be\s+|is\s+)?(?:blocked|suspended|frozen|deactivated))\b",
     re.IGNORECASE,
 )
 
@@ -155,6 +176,8 @@ class MessageAnalysisAgent(BaseAgent):
             or DEFENSIVE_INSTITUTION_NEVER_ASKS.search(text)
             or DEFENSIVE_AGAINST_SHARING.search(text)
             or INFORMATIONAL_DOC_PATTERNS.search(text)
+            or DEFENSIVE_URGENCY_WARNING.search(text)
+            or DEFENSIVE_ADVISORY_HEADER.search(text)
         )
         if not is_defensive:
             return False
@@ -164,6 +187,8 @@ class MessageAnalysisAgent(BaseAgent):
         # or "we will never ask for your password" do not falsely trigger solicitation checks.
         cleaned = DEFENSIVE_CREDENTIAL_WARNING.sub("", text)
         cleaned = DEFENSIVE_INSTITUTION_NEVER_ASKS.sub("", cleaned)
+        cleaned = DEFENSIVE_URGENCY_WARNING.sub("", cleaned)
+        cleaned = DEFENSIVE_ADVISORY_HEADER.sub("", cleaned)
 
         # Check if attacker included active harvest solicitation directives
         if ACTIVE_HARVEST_SOLICITATION.search(cleaned):
@@ -187,13 +212,42 @@ class MessageAnalysisAgent(BaseAgent):
         # 2. Extract Embedded Links
         embedded_urls = self.extract_urls(content_text)
 
-        # 3. Deterministic Indicator Evaluation with Strict Deduplication
+        # 3. Context-Aware Deterministic Indicator Evaluation with Strict Deduplication
         # Each indicator key contributes at most once, regardless of repetition
         active_indicators = set()
 
-        for key, pattern in INDICATOR_PATTERNS.items():
-            if pattern.search(combined_text):
-                active_indicators.add(key)
+        is_defensive = self.is_defensive_or_informational(combined_text)
+
+        # Context-aware credential harvesting evaluation:
+        # Strip legitimate defensive warnings (e.g. "never share your OTP", "bank will never ask for password or OTP")
+        cred_eval_text = DEFENSIVE_CREDENTIAL_WARNING.sub("", combined_text)
+        cred_eval_text = DEFENSIVE_INSTITUTION_NEVER_ASKS.sub("", cred_eval_text)
+        if INDICATOR_PATTERNS["credential_request"].search(cred_eval_text):
+            active_indicators.add("credential_request")
+
+        # Context-aware urgency/threat evaluation:
+        # Strip defensive warnings warning against scam urgency (e.g. "beware of urgent calls claiming your account will be blocked")
+        urg_eval_text = DEFENSIVE_URGENCY_WARNING.sub("", combined_text)
+        if INDICATOR_PATTERNS["urgency_threat"].search(urg_eval_text):
+            active_indicators.add("urgency_threat")
+
+        # Context-aware impersonation evaluation:
+        # In confirmed defensive advisories, institutional headers and official domains are not impersonation lures
+        if is_defensive:
+            imp_eval_text = DEFENSIVE_ADVISORY_HEADER.sub("", combined_text)
+            imp_eval_text = DEFENSIVE_INSTITUTION_NEVER_ASKS.sub("", imp_eval_text)
+            imp_eval_text = URL_REGEX.sub("", imp_eval_text)
+            if INDICATOR_PATTERNS["impersonation"].search(imp_eval_text):
+                active_indicators.add("impersonation")
+        else:
+            if INDICATOR_PATTERNS["impersonation"].search(combined_text):
+                active_indicators.add("impersonation")
+
+        if INDICATOR_PATTERNS["unrealistic_prize_job"].search(combined_text):
+            active_indicators.add("unrealistic_prize_job")
+
+        if INDICATOR_PATTERNS["payment_transfer"].search(combined_text):
+            active_indicators.add("payment_transfer")
 
         # Suspicious link indicator is triggered if embedded links are present
         if embedded_urls:
@@ -215,7 +269,6 @@ class MessageAnalysisAgent(BaseAgent):
         # 3. At least one external URL is extracted (excluding web conferencing URLs)
         # 4. Message is not a defensive advisory or legitimate informational communication
         has_external_url = bool(embedded_urls) and any(not self.is_meeting_url(u) for u in embedded_urls)
-        is_defensive = self.is_defensive_or_informational(combined_text)
 
         applied_phishing_floor = False
         if (
