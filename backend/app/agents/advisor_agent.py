@@ -214,7 +214,7 @@ class SecurityAdvisorAgent(BaseAgent):
                 if clean_ind and clean_ind not in detected_indicators:
                     detected_indicators.append(clean_ind)
 
-        has_findings = bool(detected_indicators) or (overall_score > 0.0 and risk_level != "low")
+        has_findings = bool(detected_indicators) or (overall_score > 0.0 and verdict != "safe")
 
         # Ensure summary reflects actual findings and NEVER claims "no phishing indicators" when findings exist
         if has_findings:
@@ -230,6 +230,9 @@ class SecurityAdvisorAgent(BaseAgent):
                 if risk_level == "critical" or (risk_level == "high" and verdict != "suspicious"):
                     summary_en = f"High-risk threat detected: {indicators_summary_en}. Immediate containment and reporting required."
                     summary_ur = f"شدید سیکیورٹی خطرہ: {indicators_summary_ur}۔ یہ آپ کا ڈیٹا یا رقم چرانے کی کوشش ہے۔ فوری تدارک ضروری ہے۔"
+                elif risk_level == "low":
+                    summary_en = f"Low-risk content with contextual indicators: {indicators_summary_en}. Exercise routine cyber caution."
+                    summary_ur = f"کم خطرے کا مواد: {indicators_summary_ur}۔ معمول کے مطابق سیکیورٹی احتیاط برتیں۔"
                 else:
                     summary_en = f"Suspicious activity detected: {indicators_summary_en}. Exercise high caution."
                     summary_ur = f"مشکوک سرگرمی کی نشاندہی ہوئی ہے: {indicators_summary_ur}۔ براہ کرم احتیاط برتیں اور آزادانہ تصدیق کریں۔"
@@ -237,6 +240,9 @@ class SecurityAdvisorAgent(BaseAgent):
                 if risk_level == "critical" or (risk_level == "high" and verdict != "suspicious"):
                     summary_en = "High-risk threat detected. Strong evidence of credential harvesting, financial scamming, or malicious targeting."
                     summary_ur = "شدید سیکیورٹی خطرہ پایا گیا ہے۔ معلومات کی چوری یا مالیاتی دھوکہ دہی کے شواہد موجود ہیں۔"
+                elif risk_level == "low":
+                    summary_en = "Low-risk content. Exercise routine cyber caution."
+                    summary_ur = "کم خطرے کا مواد۔ معمول کے مطابق سیکیورٹی احتیاط برتیں۔"
                 else:
                     summary_en = "Suspicious indicators detected. The content exhibits potential social engineering or deceptive patterns."
                     summary_ur = "مشکوک عوامل پائے گئے ہیں۔ یہ پیغام دھوکہ دہی یا جعل سازی پر مبنی ہو سکتا ہے۔"

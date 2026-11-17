@@ -1364,6 +1364,9 @@ async def test_phase4_exact_defensive_hbl_advisory():
     assert adv.action_required == "No immediate threat detected. Exercise routine cyber caution."
     assert "Critical threat detected" not in adv.action_required
     assert "High-risk threat detected" not in adv.action_required
+    assert "Exercise routine cyber caution" in summary.en
+    assert "Exercise high caution" not in summary.en
+    assert_urdu_script_purity(summary.ur)
 
 
 @pytest.mark.asyncio
@@ -1506,6 +1509,9 @@ async def test_orchestrator_scan_defensive_advisory_produces_low_risk_and_low_gu
         assert response.agent_findings.security_advisor.action_required == "No immediate threat detected. Exercise routine cyber caution."
         assert "Critical threat detected" not in response.agent_findings.security_advisor.action_required
         assert "High-risk threat detected" not in response.agent_findings.security_advisor.action_required
+        assert "Exercise routine cyber caution" in response.summary.en
+        assert "Exercise high caution" not in response.summary.en
+        assert_urdu_script_purity(response.summary.ur)
 
 
 @pytest.mark.asyncio
@@ -1532,6 +1538,76 @@ async def test_orchestrator_scan_operational_message_produces_low_risk_and_low_g
         assert response.agent_findings.security_advisor is not None
         assert response.agent_findings.security_advisor.action_required == "No immediate threat detected. Exercise routine cyber caution."
         assert "Critical threat detected" not in response.agent_findings.security_advisor.action_required
+        assert "Exercise routine cyber caution" in response.summary.en
+        assert "Exercise high caution" not in response.summary.en
+        assert_urdu_script_purity(response.summary.ur)
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_scan_scheduled_maintenance_operational_link():
+    """Verify orchestrator.scan on scheduled maintenance message produces score 10, LOW risk, SUSPICIOUS verdict, and routine caution summary."""
+    orchestrator = AIOrchestrator()
+    maint_text = "Your scheduled maintenance is complete. Please visit https://example.com/status to view the service update."
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+        instance.call_tool.side_effect = [
+            {"is_valid": True, "is_safe_target": True},
+            {"status": "completed", "malicious": 0, "suspicious": 0},
+        ]
+        response = await orchestrator.scan(
+            content=maint_text,
+            target_type=TargetType.MESSAGE,
+        )
+
+        assert response.overall_risk_score == 10.0
+        assert response.verdict == Verdict.SUSPICIOUS
+        assert response.risk_level == RiskLevel.LOW
+        assert response.agent_findings.security_advisor is not None
+        assert response.agent_findings.security_advisor.action_required == "No immediate threat detected. Exercise routine cyber caution."
+        assert "Exercise routine cyber caution" in response.summary.en
+        assert "Exercise high caution" not in response.summary.en
+        assert_urdu_script_purity(response.summary.ur)
+
+
+@pytest.mark.asyncio
+async def test_medium_risk_summary_preserves_high_caution_wording():
+    """Verify medium-risk scan preserves 'Suspicious activity detected' and 'Exercise high caution' in summary."""
+    orchestrator = AIOrchestrator()
+    response = await orchestrator.scan(
+        content="Your bank account will be suspended immediately within 24 hours. Please send your OTP to unblock.",
+        target_type=TargetType.MESSAGE,
+    )
+    assert response.overall_risk_score == 45.0
+    assert response.verdict == Verdict.SUSPICIOUS
+    assert response.risk_level == RiskLevel.MEDIUM
+    assert "Suspicious activity detected" in response.summary.en
+    assert "Exercise high caution" in response.summary.en
+    assert_urdu_script_purity(response.summary.ur)
+
+
+@pytest.mark.asyncio
+async def test_security_advisor_low_risk_empty_indicators_summary_wording():
+    """Verify advisor produces routine caution for low risk when finding has empty indicators list."""
+    advisor = SecurityAdvisorAgent()
+    finding = MessageAgentFinding(
+        risk_score=10.0,
+        indicators=[],
+        credential_harvesting_detected=False,
+        urgency_detected=False,
+        impersonation_detected=False,
+        sentiment="neutral",
+    )
+    _, summary, _ = await advisor.advise(
+        risk_level="low",
+        verdict="suspicious",
+        overall_score=10.0,
+        message_finding=finding,
+    )
+    assert summary.en == "Low-risk content. Exercise routine cyber caution."
+    assert "معمول کے مطابق سیکیورٹی احتیاط برتیں۔" in summary.ur
+    assert_urdu_script_purity(summary.ur)
 
 
 def test_scan_response_low_risk_schema_validation():
