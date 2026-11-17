@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import re
+import urllib.parse
 from typing import List, Dict, Any, Optional
 
 from app.agents.base import BaseAgent, detect_prompt_injection, sanitize_and_quarantine
@@ -56,6 +57,56 @@ MESSAGE_INDICATOR_WEIGHTS: Dict[str, float] = {
     "suspicious_link": 10.0,
 }
 
+# Recognized web conferencing hosts exempt from external phishing link classification
+MEETING_HOSTS = {
+    "meet.google.com",
+    "teams.microsoft.com",
+    "teams.live.com",
+    "zoom.us",
+    "webex.com",
+}
+
+# Defensive advisory and legitimate informational communication patterns
+DEFENSIVE_CREDENTIAL_WARNING = re.compile(
+    r"\b(?:never|do\s+not|don't)\s+(?:share|provide|disclose|give|send|enter|reveal)\s+(?:your\s+)?"
+    r"(?:otp|one[-\s]?time\s+password|pin|password|cnic|cvv|credentials|security\s+code)\b",
+    re.IGNORECASE,
+)
+
+DEFENSIVE_INSTITUTION_NEVER_ASKS = re.compile(
+    r"\b(?:bank|hbl|ubl|meezan|alfalah|mcb|standard\s+chartered|sbp|state\s+bank|fbr|nadra|easypaisa|jazzcash|nayapay|sadapay|we)\s+"
+    r"(?:never|will\s+never|does\s+not|never\s+calls\s+to)\s+(?:ask|call|request|demand)\s+(?:for\s+)?"
+    r"(?:your\s+)?(?:otp|pin|password|credentials|cnic|cvv|code)\b",
+    re.IGNORECASE,
+)
+
+DEFENSIVE_AGAINST_SHARING = re.compile(
+    r"\b(?:beware\s+of|caution|advisory|safety\s+tip|security\s+alert|be\s+aware|stay\s+safe)[\s\S]*?"
+    r"(?:fraud|scam|phishing|fake\s+calls|fake\s+sms)\b",
+    re.IGNORECASE,
+)
+
+INFORMATIONAL_DOC_PATTERNS = re.compile(
+    r"\b(?:how\s+to\s+reset|documentation|guide\s+to|learn\s+more\s+about|faq|knowledge\s+base)\b",
+    re.IGNORECASE,
+)
+
+# Active phishing lures: soliciting user credentials or action to unblock/verify
+ACTIVE_HARVEST_SOLICITATION = re.compile(
+    r"\b(?:"
+    r"(?:click\s+(?:here|below|the\s+link)|visit|go\s+to|log\s*in\s+(?:at|to|here)|sign\s*in\s+(?:at|to|here))\s+to\s+(?:login|sign\s*in|verify|unblock|unlock|reactivate|restore|update|claim|secure|confirm)\b|"
+    r"(?:verify|update|confirm|unblock|reactivate)\s+(?:your\s+)?(?:account|identity|details|cnic|card|access|otp|password|pin|credentials)\s+(?:at|now|here|immediately|within|to)\b|"
+    r"(?:enter|provide|submit|input|type)\s+(?:your\s+)?(?:otp|password|pin|cnic|cvv|atm\s*pin|code|credentials)\b"
+    r")",
+    re.IGNORECASE,
+)
+
+# Direct prompt soliciting user credentials
+CREDENTIAL_PROMPT = re.compile(
+    r"\b(?:enter|provide|submit|send|type|input|fill\s*in|verify|confirm|update)\s+(?:your\s+)?(?:otp|one[-\s]?time\s+password|password|pin|cnic|cvv|atm\s*pin|code|credentials|security\s*code)\b",
+    re.IGNORECASE,
+)
+
 
 class MessageAnalysisAgent(BaseAgent):
     """Analyzes message content for phishing lures and social engineering indicators."""
@@ -76,6 +127,53 @@ class MessageAnalysisAgent(BaseAgent):
             if cleaned and cleaned not in urls:
                 urls.append(cleaned)
         return urls
+
+    @staticmethod
+    def is_meeting_url(url: str) -> bool:
+        """Check if a URL belongs to a recognized web conferencing service."""
+        try:
+            parsed = urllib.parse.urlparse(url)
+            host = (parsed.hostname or "").lower()
+            if not host:
+                return False
+            for mh in MEETING_HOSTS:
+                if host == mh or host.endswith(f".{mh}"):
+                    return True
+            return False
+        except Exception:
+            return False
+
+    @staticmethod
+    def is_defensive_or_informational(text: str) -> bool:
+        """Determine if text is a defensive advisory or legitimate informational message.
+
+        Evaluates conservative defensive indicators while verifying that active
+        credential harvesting solicitation directives are not present.
+        """
+        is_defensive = bool(
+            DEFENSIVE_CREDENTIAL_WARNING.search(text)
+            or DEFENSIVE_INSTITUTION_NEVER_ASKS.search(text)
+            or DEFENSIVE_AGAINST_SHARING.search(text)
+            or INFORMATIONAL_DOC_PATTERNS.search(text)
+        )
+        if not is_defensive:
+            return False
+
+        # Defensive wording must not exempt a message that also contains an actual credential-harvesting solicitation.
+        # Strip legitimate defensive warnings first so that warnings like "never share your OTP"
+        # or "we will never ask for your password" do not falsely trigger solicitation checks.
+        cleaned = DEFENSIVE_CREDENTIAL_WARNING.sub("", text)
+        cleaned = DEFENSIVE_INSTITUTION_NEVER_ASKS.sub("", cleaned)
+
+        # Check if attacker included active harvest solicitation directives
+        if ACTIVE_HARVEST_SOLICITATION.search(cleaned):
+            return False
+
+        # Check if text prompts user to enter/provide/verify credentials
+        if CREDENTIAL_PROMPT.search(cleaned):
+            return False
+
+        return True
 
     async def analyze(self, content: str, sender: Optional[str] = None) -> MessageAgentFinding:
         """Execute deterministic indicator evaluation and optional Gemini enrichment."""
@@ -110,6 +208,25 @@ class MessageAnalysisAgent(BaseAgent):
         urgency_detected = "urgency_threat" in active_indicators
         impersonation_detected = "impersonation" in active_indicators
 
+        # Phase 3: Conditional Credential-Phishing Risk Floor
+        # Raise deterministic score to a minimum of 70.0 ONLY when ALL 4 conditions are met:
+        # 1. Credential harvesting is detected ("credential_request" in active_indicators)
+        # 2. Urgency/threat is detected ("urgency_threat" in active_indicators)
+        # 3. At least one external URL is extracted (excluding web conferencing URLs)
+        # 4. Message is not a defensive advisory or legitimate informational communication
+        has_external_url = bool(embedded_urls) and any(not self.is_meeting_url(u) for u in embedded_urls)
+        is_defensive = self.is_defensive_or_informational(combined_text)
+
+        applied_phishing_floor = False
+        if (
+            credential_harvesting_detected
+            and urgency_detected
+            and has_external_url
+            and not is_defensive
+        ):
+            deterministic_score = max(deterministic_score, 70.0)
+            applied_phishing_floor = True
+
         # Build descriptive indicator labels
         indicator_labels: List[str] = []
         if "credential_request" in active_indicators:
@@ -124,6 +241,8 @@ class MessageAnalysisAgent(BaseAgent):
             indicator_labels.append("Impersonation of trusted financial, government, or courier institution (+10)")
         if "suspicious_link" in active_indicators:
             indicator_labels.append("Embedded link or external call-to-action detected (+10)")
+        if applied_phishing_floor:
+            indicator_labels.append("Critical credential phishing attack pattern detected: urgent credential harvesting via external link (+floor 70)")
 
         if is_injection_detected:
             indicator_labels.append("Adversarial prompt injection attempt detected: text contains command override directives")

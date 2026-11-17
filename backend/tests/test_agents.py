@@ -1100,3 +1100,216 @@ async def test_url_suspicious_brand_lookalike_labels_positive_detection():
             assert any("Typosquatting brand lure" in ind for ind in res.indicators), (
                 f"Expected typosquatting indicator in {res.indicators} for {url}"
             )
+
+
+# =====================================================================
+# 18. Phase 3: Conditional Credential-Phishing Risk Floor Tests
+# =====================================================================
+
+@pytest.mark.asyncio
+async def test_conditional_credential_phishing_risk_floor_positive():
+    """Verify that phishing messages meeting all 4 conditions receive score >= 70 (High/Malicious)."""
+    agent = MessageAnalysisAgent()
+
+    # 1. Standard credential harvesting + urgency + external link
+    phish_msg = (
+        "URGENT: Your account has been suspended due to suspicious activity. "
+        "Enter your OTP immediately at https://secure-bank-login.example.com to restore access."
+    )
+    res = await agent.analyze(phish_msg)
+
+    # Base weights: Credential (+30) + Urgency (+15) + Link (+10) = 55.0
+    # Conditional floor raises score to 70.0
+    assert res.risk_score >= 70.0, f"Expected risk_score >= 70.0, got {res.risk_score}"
+    assert res.risk_score == 70.0
+    assert res.credential_harvesting_detected is True
+    assert res.urgency_detected is True
+    assert any("Critical credential phishing attack pattern detected" in ind for ind in res.indicators)
+
+    # 2. Phishing with deceptive attacker negations ("do not delay", "if you did not make this transaction")
+    # with actual credential request, urgency, and external URL
+    att_neg_1 = (
+        "Do not delay! Your account will be suspended within 24 hours. "
+        "Submit your OTP at https://auth-verify.example.com now to avoid deactivation."
+    )
+    res_att1 = await agent.analyze(att_neg_1)
+    assert res_att1.risk_score >= 70.0
+    assert any("Critical credential phishing" in ind for ind in res_att1.indicators)
+
+    att_neg_2 = (
+        "Security Alert: If you did not authorize this login, your account will be deactivated immediately. "
+        "Enter your password at https://cancel-charge.example.com to verify your account."
+    )
+    res_att2 = await agent.analyze(att_neg_2)
+    assert res_att2.risk_score >= 70.0
+    assert any("Critical credential phishing" in ind for ind in res_att2.indicators)
+
+    # 3. Phishing message containing words like "FAQ", "documentation", or "knowledge base"
+    # but urgently soliciting an OTP/password via an external link (informational keywords must not exempt active harvesting)
+    faq_phish = (
+        "Security FAQ & Documentation: Immediate action required! Your account will be suspended within 24 hours. "
+        "Enter your password at https://phish-portal.example.com to restore access."
+    )
+    res_faq = await agent.analyze(faq_phish)
+    assert res_faq.risk_score >= 70.0
+    assert res_faq.credential_harvesting_detected is True
+    assert res_faq.urgency_detected is True
+    assert any("Critical credential phishing" in ind for ind in res_faq.indicators)
+
+    kb_phish = (
+        "Knowledge base FAQ: Urgent warning! Your account is blocked. "
+        "Verify your OTP at https://portal-verification.example.com now."
+    )
+    res_kb = await agent.analyze(kb_phish)
+    assert res_kb.risk_score >= 70.0
+    assert res_kb.credential_harvesting_detected is True
+    assert res_kb.urgency_detected is True
+    assert any("Critical credential phishing" in ind for ind in res_kb.indicators)
+
+    # 4. Message containing BOTH a meeting URL AND a separate external phishing URL
+    both_urls_msg = (
+        "URGENT: Your account will be suspended within 24 hours. "
+        "Before joining our team sync at https://meet.google.com/abc-defg-hij, "
+        "you must enter your OTP immediately at https://secure-bank-login.example.com to restore access."
+    )
+    res_both = await agent.analyze(both_urls_msg)
+    assert res_both.risk_score >= 70.0
+    assert res_both.credential_harvesting_detected is True
+    assert res_both.urgency_detected is True
+    assert any("Critical credential phishing" in ind for ind in res_both.indicators)
+
+    # 5. End-to-end orchestrator scan verification
+    orchestrator = AIOrchestrator()
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+        instance.call_tool.side_effect = [
+            {"is_valid": True, "is_safe_target": True},
+            {"status": "completed", "malicious": 0, "suspicious": 0},
+        ]
+
+        scan_resp = await orchestrator.scan(
+            content=phish_msg,
+            target_type=TargetType.MESSAGE,
+        )
+        assert scan_resp.overall_risk_score >= 70.0
+        assert scan_resp.verdict == Verdict.MALICIOUS
+        assert scan_resp.risk_level == RiskLevel.HIGH
+        assert scan_resp.agent_findings.message_intelligence is not None
+        assert any("Critical credential phishing" in ind for ind in scan_resp.agent_findings.message_intelligence.indicators)
+        assert translate_indicator_to_urdu("Critical credential phishing attack pattern detected: urgent credential harvesting via external link") == "شدید نوعیت کا فشنگ حملہ: بیرونی لنک کے ذریعے پاس ورڈ یا حساس معلومات چوری کرنے کی کوشش"
+
+
+@pytest.mark.asyncio
+async def test_conditional_credential_phishing_risk_floor_negatives():
+    """Verify that messages failing any of the 4 conditions do NOT receive the floor."""
+    agent = MessageAnalysisAgent()
+
+    # Case A: Urgent operational messages without credential requests (score <= 25.0)
+    ops_msg = "URGENT: Scheduled maintenance will begin in 2 hours. View release notes at https://ops.example.com/status"
+    res_ops = await agent.analyze(ops_msg)
+    # Urgency (+15) + Link (+10) = 25.0; no credential request
+    assert res_ops.credential_harvesting_detected is False
+    assert res_ops.risk_score <= 25.0
+    assert res_ops.risk_score == 25.0
+    assert not any("Critical credential phishing" in ind for ind in res_ops.indicators)
+
+    # Case B: Credential + urgency WITHOUT external URL (score strictly 45.0)
+    no_url_msg = "URGENT: Your account will be suspended. Please provide your OTP immediately to verify your account."
+    res_no_url = await agent.analyze(no_url_msg)
+    # Credential (+30) + Urgency (+15) = 45.0
+    assert res_no_url.credential_harvesting_detected is True
+    assert res_no_url.urgency_detected is True
+    assert res_no_url.risk_score == 45.0
+    assert not any("Critical credential phishing" in ind for ind in res_no_url.indicators)
+
+    # Case C: Defensive banking advisory warning NEVER to share credentials with external link
+    defensive_advisory = (
+        "HBL Security Advisory: HBL will never ask for your password or OTP. "
+        "Beware of urgent calls claiming your account will be blocked. "
+        "Visit https://hbl.com/security to learn how to stay safe."
+    )
+    res_def = await agent.analyze(defensive_advisory)
+    # Base sum: Credential (+30) + Urgency (+15) + Impersonation (+10) + Link (+10) = 65.0
+    # Floor must NOT be applied to defensive advisories
+    assert res_def.risk_score == 65.0
+    assert not any("Critical credential phishing" in ind for ind in res_def.indicators)
+
+    # Case D: Informational documentation linking to knowledge base
+    doc_msg = (
+        "Password reset documentation: If your account will be suspended due to forgotten passwords, "
+        "review our guide to reset credentials at https://support.example.com/faq"
+    )
+    res_doc = await agent.analyze(doc_msg)
+    # Credential (+30) + Urgency (+15) + Link (+10) = 55.0
+    # Floor must NOT be applied to legitimate informational documentation
+    assert res_doc.risk_score == 55.0
+    assert not any("Critical credential phishing" in ind for ind in res_doc.indicators)
+
+    # Case E: Meeting links
+    # E1: Normal meeting invitation mentioning password policy (no urgency)
+    normal_meet = "Team meeting tomorrow at 10 AM to discuss password policy: https://meet.google.com/abc-defg-hij"
+    res_norm_meet = await agent.analyze(normal_meet)
+    assert res_norm_meet.credential_harvesting_detected is True
+    assert res_norm_meet.urgency_detected is False
+    assert res_norm_meet.risk_score == 40.0
+    assert not any("Critical credential phishing" in ind for ind in res_norm_meet.indicators)
+
+    # E2: Urgent meeting invitation mentioning password policy (urgency present, but meeting URL only)
+    meet_msg = (
+        "Urgent sync required within 24 hours to review team password rotation policy: "
+        "https://meet.google.com/abc-defg-hij"
+    )
+    res_meet = await agent.analyze(meet_msg)
+    # Credential (+30) + Urgency (+15) + Link (+10) = 55.0
+    # Floor must NOT be applied because the only URL is a recognized meeting host
+    assert res_meet.risk_score == 55.0
+    assert not any("Critical credential phishing" in ind for ind in res_meet.indicators)
+
+    # E3: Actual credential harvesting with a meeting URL alone (no external phishing URL)
+    harvest_meet = (
+        "URGENT: Your account will be suspended within 24 hours. "
+        "Enter your OTP immediately on our conference bridge: https://meet.google.com/abc-defg-hij"
+    )
+    res_harvest_meet = await agent.analyze(harvest_meet)
+    # Meeting URL is excluded from satisfying external URL condition
+    assert res_harvest_meet.risk_score == 55.0
+    assert not any("Critical credential phishing" in ind for ind in res_harvest_meet.indicators)
+
+    # Zoom: Credential (+30) + Urgency (+15) + Link (+10) = 55.0
+    zoom_msg = (
+        "Urgent: password policy compliance update required within 24 hours: "
+        "https://zoom.us/j/123456789"
+    )
+    res_zoom = await agent.analyze(zoom_msg)
+    assert res_zoom.risk_score == 55.0
+    assert not any("Critical credential phishing" in ind for ind in res_zoom.indicators)
+
+    # Teams: Credential (+30) + Urgency (+15) + Impersonation (+10 for microsoft) + Link (+10) = 65.0
+    teams_msg = (
+        "Urgent: password policy compliance update required within 24 hours: "
+        "https://teams.microsoft.com/l/meetup-join/19%3ameeting"
+    )
+    res_teams = await agent.analyze(teams_msg)
+    assert res_teams.risk_score == 65.0
+    assert not any("Critical credential phishing" in ind for ind in res_teams.indicators)
+
+    # Case F: "Do not delay" with account suspension alone does not satisfy the four risk-floor conditions
+    # F1: Urgency alone without credential harvesting or external URL
+    no_cred_neg_1 = "Do not delay! Your account will be suspended within 24 hours."
+    res_f1 = await agent.analyze(no_cred_neg_1)
+    assert res_f1.credential_harvesting_detected is False
+    assert res_f1.urgency_detected is True
+    assert res_f1.risk_score == 15.0
+    assert not any("Critical credential phishing" in ind for ind in res_f1.indicators)
+
+    # F2: Urgency with non-phishing status link (no credential harvesting)
+    no_cred_neg_2 = (
+        "Do not delay! Your account will be suspended within 24 hours. "
+        "Check system status at https://status.example.com"
+    )
+    res_f2 = await agent.analyze(no_cred_neg_2)
+    assert res_f2.credential_harvesting_detected is False
+    assert res_f2.urgency_detected is True
+    assert res_f2.risk_score == 25.0
+    assert not any("Critical credential phishing" in ind for ind in res_f2.indicators)

@@ -35,6 +35,7 @@ INDICATOR_URDU_TRANSLATIONS: Dict[str, str] = {
     "URL passed static SSRF validation (Note: this does not guarantee the site is phishing-free)": "یو آر ایل نے بنیادی سیکیورٹی جانچ پاس کر لی ہے",
     "URL targeting internal or restricted network address (SSRF check blocked)": "یو آر ایل اندرونی نیٹ ورک ایڈریس کو نشانہ بنا رہا ہے (بلاک شدہ)",
     "Static URL validation service unavailable": "یو آر ایل کی تصدیقی سروس اس وقت دستیاب نہیں ہے",
+    "Critical credential phishing attack pattern detected: urgent credential harvesting via external link": "شدید نوعیت کا فشنگ حملہ: بیرونی لنک کے ذریعے پاس ورڈ یا حساس معلومات چوری کرنے کی کوشش",
 }
 
 
