@@ -108,20 +108,35 @@ def test_cloud_metadata_ip_rejected():
 def test_risk_score_calculation_thresholds():
     """Verify calculated verdicts and risk levels across defined thresholds."""
     assert calculate_verdict(0.0) == Verdict.SAFE
+    assert calculate_verdict(0.1) == Verdict.SUSPICIOUS
     assert calculate_verdict(10.0) == Verdict.SUSPICIOUS
+    assert calculate_verdict(15.0) == Verdict.SUSPICIOUS
     assert calculate_verdict(20.0) == Verdict.SUSPICIOUS
     assert calculate_verdict(29.9) == Verdict.SUSPICIOUS
     assert calculate_verdict(30.0) == Verdict.SUSPICIOUS
+    assert calculate_verdict(59.9) == Verdict.SUSPICIOUS
+    assert calculate_verdict(60.0) == Verdict.SUSPICIOUS
     assert calculate_verdict(69.9) == Verdict.SUSPICIOUS
     assert calculate_verdict(70.0) == Verdict.MALICIOUS
+    assert calculate_verdict(89.9) == Verdict.MALICIOUS
+    assert calculate_verdict(90.0) == Verdict.MALICIOUS
     assert calculate_verdict(100.0) == Verdict.MALICIOUS
 
     assert calculate_risk_level(0.0) == RiskLevel.LOW
-    assert calculate_risk_level(15.0) == RiskLevel.MEDIUM
-    assert calculate_risk_level(20.0) == RiskLevel.MEDIUM
+    assert calculate_risk_level(0.1) == RiskLevel.LOW
+    assert calculate_risk_level(10.0) == RiskLevel.LOW
+    assert calculate_risk_level(15.0) == RiskLevel.LOW
+    assert calculate_risk_level(20.0) == RiskLevel.LOW
+    assert calculate_risk_level(29.9) == RiskLevel.LOW
+    assert calculate_risk_level(30.0) == RiskLevel.MEDIUM
     assert calculate_risk_level(45.0) == RiskLevel.MEDIUM
+    assert calculate_risk_level(59.9) == RiskLevel.MEDIUM
+    assert calculate_risk_level(60.0) == RiskLevel.HIGH
     assert calculate_risk_level(75.0) == RiskLevel.HIGH
+    assert calculate_risk_level(89.9) == RiskLevel.HIGH
+    assert calculate_risk_level(90.0) == RiskLevel.CRITICAL
     assert calculate_risk_level(95.0) == RiskLevel.CRITICAL
+    assert calculate_risk_level(100.0) == RiskLevel.CRITICAL
 
 
 def test_scan_response_score_boundary_validation():
@@ -141,9 +156,28 @@ def test_scan_response_score_boundary_validation():
     res = ScanResponse(**base_data, overall_risk_score=0.0, verdict=Verdict.SAFE, risk_level=RiskLevel.LOW)
     assert res.overall_risk_score == 0.0
 
+    # Low-risk scores (10.0, 20.0) with SUSPICIOUS + LOW are accepted
+    res_10 = ScanResponse(**base_data, overall_risk_score=10.0, verdict=Verdict.SUSPICIOUS, risk_level=RiskLevel.LOW)
+    assert res_10.overall_risk_score == 10.0
+    assert res_10.verdict == Verdict.SUSPICIOUS
+    assert res_10.risk_level == RiskLevel.LOW
+
+    res_20 = ScanResponse(**base_data, overall_risk_score=20.0, verdict=Verdict.SUSPICIOUS, risk_level=RiskLevel.LOW)
+    assert res_20.overall_risk_score == 20.0
+    assert res_20.verdict == Verdict.SUSPICIOUS
+    assert res_20.risk_level == RiskLevel.LOW
+
+    # Score 30.0 with SUSPICIOUS + LOW is rejected (exceeds LOW_RISK_MAX_SCORE 29.9)
+    with pytest.raises(ValueError):
+        ScanResponse(**base_data, overall_risk_score=30.0, verdict=Verdict.SUSPICIOUS, risk_level=RiskLevel.LOW)
+
+    # Score 10.0 with Safe verdict is rejected (SAFE verdict strictly forbidden for score > 0.0)
+    with pytest.raises(ValueError):
+        ScanResponse(**base_data, overall_risk_score=10.0, verdict=Verdict.SAFE, risk_level=RiskLevel.LOW)
+
     # Inconsistent: Score 20.0 with Safe verdict -> Must raise ValueError
     with pytest.raises(ValueError):
-        ScanResponse(**base_data, overall_risk_score=20.0, verdict=Verdict.SAFE, risk_level=RiskLevel.MEDIUM)
+        ScanResponse(**base_data, overall_risk_score=20.0, verdict=Verdict.SAFE, risk_level=RiskLevel.LOW)
 
     # Inconsistent: Score 85.0 with Safe verdict -> Must raise ValueError
     with pytest.raises(ValueError):

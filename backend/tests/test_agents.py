@@ -1,5 +1,6 @@
 """Comprehensive unit and integration tests for Phase 5 AI Agents, Skills & Orchestrator."""
 import asyncio
+from datetime import datetime, timezone
 import html
 import re
 import uuid
@@ -289,14 +290,25 @@ async def test_prompt_injection_combined_with_phishing_scoring():
 # =====================================================================
 
 def test_risk_classification_boundaries():
-    """Verify exact approved boundary mapping for 0.0, 0.1-59.9, 60-69.9, 70-89.9, 90-100."""
+    """Verify exact approved boundary mapping for:
+    0: SAFE / LOW
+    0.1–29.9: SUSPICIOUS / LOW
+    30–59.9: SUSPICIOUS / MEDIUM
+    60–69.9: SUSPICIOUS / HIGH
+    70–89.9: MALICIOUS / HIGH
+    90–100: MALICIOUS / CRITICAL
+    """
     # 0.0: LOW / SAFE
     assert classify_risk(0.0) == (RiskLevel.LOW, Verdict.SAFE)
 
-    # 0.1 - 59.9: MEDIUM / SUSPICIOUS
-    assert classify_risk(10.0) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
-    assert classify_risk(20.0) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
-    assert classify_risk(29.9) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
+    # 0.1 - 29.9: LOW / SUSPICIOUS
+    assert classify_risk(0.1) == (RiskLevel.LOW, Verdict.SUSPICIOUS)
+    assert classify_risk(10.0) == (RiskLevel.LOW, Verdict.SUSPICIOUS)
+    assert classify_risk(15.0) == (RiskLevel.LOW, Verdict.SUSPICIOUS)
+    assert classify_risk(20.0) == (RiskLevel.LOW, Verdict.SUSPICIOUS)
+    assert classify_risk(29.9) == (RiskLevel.LOW, Verdict.SUSPICIOUS)
+
+    # 30.0 - 59.9: MEDIUM / SUSPICIOUS
     assert classify_risk(30.0) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
     assert classify_risk(59.9) == (RiskLevel.MEDIUM, Verdict.SUSPICIOUS)
 
@@ -318,7 +330,7 @@ def test_scan_response_boundary_validation_compliance():
     from datetime import datetime, timezone
 
     now = datetime.now(timezone.utc)
-    test_scores = [0.0, 10.0, 20.0, 29.9, 30.0, 59.9, 60.0, 69.9, 70.0, 89.9, 90.0, 100.0]
+    test_scores = [0.0, 0.1, 10.0, 15.0, 20.0, 29.9, 30.0, 59.9, 60.0, 69.9, 70.0, 89.9, 90.0, 100.0]
 
     for score in test_scores:
         risk_lvl, vrd = classify_risk(score)
@@ -482,7 +494,7 @@ async def test_orchestrator_compound_scan_max_score():
 
 @pytest.mark.asyncio
 async def test_prize_lure_message_is_suspicious_not_safe():
-    """Verify that a message with a prize/lottery lure (score 20) is classified as SUSPICIOUS/MEDIUM, not SAFE."""
+    """Verify that a message with a prize/lottery lure (score 20) is classified as SUSPICIOUS/LOW, not SAFE."""
     orchestrator = AIOrchestrator()
     response = await orchestrator.scan(
         content="Congratulations! You have won 1,000,000 PKR in Jeeto Pakistan lucky draw! Call now to claim.",
@@ -490,7 +502,7 @@ async def test_prize_lure_message_is_suspicious_not_safe():
     )
     assert response.overall_risk_score == 20.0
     assert response.verdict == Verdict.SUSPICIOUS
-    assert response.risk_level == RiskLevel.MEDIUM
+    assert response.risk_level == RiskLevel.LOW
     assert "Unrealistic prize, lottery, or unsolicited financial grant lure" in response.summary.en
     assert "no known phishing indicators" not in response.summary.en.lower()
 
@@ -1464,3 +1476,93 @@ async def test_phase4_advisor_action_required_severity_tiering():
         overall_score=95.0,
     )
     assert adv95.action_required == "Critical threat detected. Do not interact. Immediate containment and reporting required."
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_scan_defensive_advisory_produces_low_risk_and_low_guidance():
+    """Verify orchestrator.scan on defensive HBL advisory produces score 10, SUSPICIOUS verdict, LOW risk, and LOW guidance."""
+    orchestrator = AIOrchestrator()
+    advisory_text = (
+        "HBL will never ask for your password or OTP. "
+        "Beware of urgent calls claiming your account will be blocked. "
+        "Visit https://hbl.com/security to learn how to stay safe."
+    )
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+        instance.call_tool.side_effect = [
+            {"is_valid": True, "is_safe_target": True},
+            {"status": "completed", "malicious": 0, "suspicious": 0},
+        ]
+        response = await orchestrator.scan(
+            content=advisory_text,
+            target_type=TargetType.MESSAGE,
+        )
+
+        assert response.overall_risk_score == 10.0
+        assert response.verdict == Verdict.SUSPICIOUS
+        assert response.risk_level == RiskLevel.LOW
+        assert response.agent_findings.security_advisor is not None
+        assert response.agent_findings.security_advisor.action_required == "No immediate threat detected. Exercise routine cyber caution."
+        assert "Critical threat detected" not in response.agent_findings.security_advisor.action_required
+        assert "High-risk threat detected" not in response.agent_findings.security_advisor.action_required
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_scan_operational_message_produces_low_risk_and_low_guidance():
+    """Verify orchestrator.scan on normal operational link message produces score 10, SUSPICIOUS verdict, LOW risk, and LOW guidance."""
+    orchestrator = AIOrchestrator()
+    ops_text = "Please review our documentation at https://example.com/docs"
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+        instance.call_tool.side_effect = [
+            {"is_valid": True, "is_safe_target": True},
+            {"status": "completed", "malicious": 0, "suspicious": 0},
+        ]
+        response = await orchestrator.scan(
+            content=ops_text,
+            target_type=TargetType.MESSAGE,
+        )
+
+        assert response.overall_risk_score == 10.0
+        assert response.verdict == Verdict.SUSPICIOUS
+        assert response.risk_level == RiskLevel.LOW
+        assert response.agent_findings.security_advisor is not None
+        assert response.agent_findings.security_advisor.action_required == "No immediate threat detected. Exercise routine cyber caution."
+        assert "Critical threat detected" not in response.agent_findings.security_advisor.action_required
+
+
+def test_scan_response_low_risk_schema_validation():
+    """Verify ScanResponse permits LOW risk up to 29.9 and forbids invalid combinations."""
+    now = datetime.now(timezone.utc)
+    base_data = {
+        "id": uuid.uuid4(),
+        "target_type": TargetType.MESSAGE,
+        "target_content": "Sample message content",
+        "summary": {"en": "Sample summary", "ur": "Sample khulasa"},
+        "recommendations": {"en": ["Don't click"], "ur": ["Click mat karein"]},
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    # 1. Score 10 with SUSPICIOUS + LOW is accepted
+    res10 = ScanResponse(**base_data, overall_risk_score=10.0, verdict=Verdict.SUSPICIOUS, risk_level=RiskLevel.LOW)
+    assert res10.overall_risk_score == 10.0
+    assert res10.verdict == Verdict.SUSPICIOUS
+    assert res10.risk_level == RiskLevel.LOW
+
+    # 2. Score 20 with SUSPICIOUS + LOW is accepted
+    res20 = ScanResponse(**base_data, overall_risk_score=20.0, verdict=Verdict.SUSPICIOUS, risk_level=RiskLevel.LOW)
+    assert res20.overall_risk_score == 20.0
+    assert res20.verdict == Verdict.SUSPICIOUS
+    assert res20.risk_level == RiskLevel.LOW
+
+    # 3. Score 30 with SUSPICIOUS + LOW is rejected
+    with pytest.raises(ValueError):
+        ScanResponse(**base_data, overall_risk_score=30.0, verdict=Verdict.SUSPICIOUS, risk_level=RiskLevel.LOW)
+
+    # 4. Score 10 with SAFE verdict is rejected
+    with pytest.raises(ValueError):
+        ScanResponse(**base_data, overall_risk_score=10.0, verdict=Verdict.SAFE, risk_level=RiskLevel.LOW)

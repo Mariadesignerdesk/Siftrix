@@ -13,6 +13,7 @@ from app.schemas.common import (
     BilingualText,
     BilingualList,
     SAFE_MAX_SCORE,
+    LOW_RISK_MAX_SCORE,
     SUSPICIOUS_MAX_SCORE,
     HIGH_RISK_MAX_SCORE,
 )
@@ -217,7 +218,7 @@ class ScanResponse(BaseModel):
         """Enforce strict consistency between risk score, verdict, and risk level."""
         score = self.overall_risk_score
 
-        # Rule 1: Safe verdict is strictly forbidden for scores > 29.9
+        # Rule 1: Safe verdict is strictly forbidden for scores > SAFE_MAX_SCORE (0.0)
         if score > SAFE_MAX_SCORE and self.verdict == Verdict.SAFE:
             raise ValueError(
                 f"Risk score {score:.1f} exceeds safe threshold ({SAFE_MAX_SCORE}); verdict cannot be 'safe'."
@@ -229,7 +230,7 @@ class ScanResponse(BaseModel):
                 f"Risk score {score:.1f} is in malicious range (> {SUSPICIOUS_MAX_SCORE}); verdict must be 'malicious'."
             )
 
-        # Rule 3: Malicious verdict cannot have a safe score (<= 29.9)
+        # Rule 3: Malicious verdict cannot have a safe score (<= SAFE_MAX_SCORE, 0.0)
         if score <= SAFE_MAX_SCORE and self.verdict == Verdict.MALICIOUS:
             raise ValueError(
                 f"Risk score {score:.1f} is in safe range (<= {SAFE_MAX_SCORE}); verdict cannot be 'malicious'."
@@ -241,10 +242,10 @@ class ScanResponse(BaseModel):
                 f"Risk score {score:.1f} is below 90.0; risk_level cannot be 'critical'."
             )
 
-        # Rule 5: Low risk level is only for safe scores (<= 29.9)
-        if score > SAFE_MAX_SCORE and self.risk_level == RiskLevel.LOW:
+        # Rule 5: Low risk level is only for low-risk scores (<= 29.9)
+        if score > LOW_RISK_MAX_SCORE and self.risk_level == RiskLevel.LOW:
             raise ValueError(
-                f"Risk score {score:.1f} exceeds safe threshold ({SAFE_MAX_SCORE}); risk_level cannot be 'low'."
+                f"Risk score {score:.1f} exceeds low-risk threshold ({LOW_RISK_MAX_SCORE}); risk_level cannot be 'low'."
             )
 
         return self

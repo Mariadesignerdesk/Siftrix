@@ -13,6 +13,7 @@ from app.schemas.common import (
     Verdict,
     RiskLevel,
     SAFE_MAX_SCORE,
+    LOW_RISK_MAX_SCORE,
     SUSPICIOUS_MAX_SCORE,
     HIGH_RISK_MAX_SCORE,
 )
@@ -31,13 +32,16 @@ def classify_risk(score: float) -> tuple[RiskLevel, Verdict]:
 
     Boundaries:
       0.0:          LOW    / SAFE
-      0.1 - 59.9:   MEDIUM / SUSPICIOUS
+      0.1 - 29.9:   LOW    / SUSPICIOUS
+      30.0 - 59.9:  MEDIUM / SUSPICIOUS
       60.0 - 69.9:  HIGH   / SUSPICIOUS
       70.0 - 89.9:  HIGH   / MALICIOUS
       90.0 - 100.0: CRITICAL / MALICIOUS
     """
     if score <= SAFE_MAX_SCORE:
         return RiskLevel.LOW, Verdict.SAFE
+    elif score <= LOW_RISK_MAX_SCORE:
+        return RiskLevel.LOW, Verdict.SUSPICIOUS
     elif score <= 59.9:
         return RiskLevel.MEDIUM, Verdict.SUSPICIOUS
     elif score <= SUSPICIOUS_MAX_SCORE:
