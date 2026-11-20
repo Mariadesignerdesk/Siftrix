@@ -273,7 +273,7 @@ export function ScanDetailsContent({
 
             <button
               type="button"
-              onClick={() => onNavigate('/', 'scan')}
+              onClick={() => onNavigate('/scanner')}
               className="px-5 py-2.5 rounded-xl siftrix-btn-light-neutral text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
             >
               Run New Scan

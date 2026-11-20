@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type AppRoute =
   | { page: 'home' }
+  | { page: 'scanner' }
   | { page: 'dashboard' }
   | { page: 'history' }
   | { page: 'scan-details'; scanId: string }
@@ -14,6 +15,7 @@ export type AppRoute =
 
 export type AppPath =
   | '/'
+  | '/scanner'
   | '/dashboard'
   | '/scans'
   | `/scans/${string}`
@@ -72,6 +74,10 @@ function safeDecodeSegment(segment: string): string {
  */
 export function parseRoutePath(pathname: string): AppRoute {
   const normalized = pathname.replace(/\/+$/, '') || '/'
+
+  if (normalized === '/scanner') {
+    return { page: 'scanner' }
+  }
 
   if (normalized === '/dashboard') {
     return { page: 'dashboard' }

@@ -155,15 +155,15 @@ describe('Phase 1 scannerConfig utilities and AI Cyber Command Center components
     vi.unstubAllGlobals()
   })
 
-  it('renders open floating Hero without enclosing dark container and keeps three real AI agent nodes', () => {
+  it('renders open floating Hero with updated heading, clean description, and security shield illustration', () => {
     const heroHtml = renderToStaticMarkup(<Hero />)
-    expect(heroHtml).toContain('URL Intelligence')
-    expect(heroHtml).toContain('Message Intelligence')
-    expect(heroHtml).toContain('Security Advisor')
+    expect(heroHtml).toContain('Stay One Step Ahead of')
+    expect(heroHtml).toContain('Online Scams.')
+    expect(heroHtml).toContain('Protect yourself from phishing attacks and online scams')
     expect(heroHtml).toContain('Start Scanning')
     expect(heroHtml).toContain('Explore Features')
     expect(heroHtml).toContain('Security shield illustration')
-    expect(heroHtml).toContain('Intelligence. Protection. Confidence.')
+    expect(heroHtml).not.toContain('URL Intelligence floating card')
     expect(heroHtml).not.toContain('3-Agent AI Command Mesh')
     expect(heroHtml).not.toContain('siftrix-card-charcoal')
   })
@@ -184,14 +184,20 @@ describe('Phase 1 scannerConfig utilities and AI Cyber Command Center components
     expect(scannerHtml).not.toContain('Illustrative Sample Format — Static Example')
   })
 
-  it('renders polished Navbar cleanly with active route markers and Get Started CTA', () => {
+  it('renders polished Navbar cleanly with all 7 requested navigation items and without Get Started CTA', () => {
     const navHtml = renderToStaticMarkup(
       <Navbar currentPage="home" onNavigate={vi.fn()} />
     )
     expect(navHtml).toContain('SIFTRIX')
     expect(navHtml).toContain('AI Command')
+    expect(navHtml).toContain('Home')
+    expect(navHtml).toContain('Scanner')
+    expect(navHtml).toContain('Dashboard')
     expect(navHtml).toContain('Scan History')
-    expect(navHtml).toContain('Get Started')
+    expect(navHtml).toContain('Rewards &amp; Leaderboard')
+    expect(navHtml).toContain('About Us')
+    expect(navHtml).toContain('Settings')
+    expect(navHtml).not.toContain('Get Started')
     expect(navHtml).toContain('aria-current="page"')
   })
 
@@ -233,9 +239,12 @@ describe('Phase 1 scannerConfig utilities and AI Cyber Command Center components
 
     const howHtml = renderToStaticMarkup(<HowItWorks onNavigate={nav} />)
     expect(howHtml).toContain('How SIFTRIX')
-    expect(howHtml).toContain('Paste Link or Message')
-    expect(howHtml).toContain('Multi-Agent Analysis')
-    expect(howHtml).toContain('Score &amp; Bilingual Guidance')
+    expect(howHtml).toContain('INTAKE &amp; VALIDATION')
+    expect(howHtml).toContain('Paste a Link or Message')
+    expect(howHtml).toContain('ORCHESTRATED AI INSPECTION')
+    expect(howHtml).toContain('Multi-Agent Threat Analysis')
+    expect(howHtml).toContain('ACTIONABLE CLARITY')
+    expect(howHtml).toContain('Threat Score &amp; Bilingual Guidance')
 
     const previewHtml = renderToStaticMarkup(<CommandCenterPreview onNavigate={nav} />)
     expect(previewHtml).toContain('Command Center Preview')

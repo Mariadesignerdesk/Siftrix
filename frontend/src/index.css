@@ -178,6 +178,37 @@ html {
   }
 }
 
+@keyframes siftrix-trail-flow {
+  0% {
+    stroke-dashoffset: 600;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes siftrix-particle-drift {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-9px) translateX(5px);
+    opacity: 0.85;
+  }
+}
+
+@keyframes siftrix-ping-slow {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.85;
+  }
+  75%, 100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
 @layer components {
   .font-editorial {
     font-family: var(--font-editorial);
@@ -274,6 +305,11 @@ html {
     color: #FAF6EF;
   }
 
+  html.dark .siftrix-card-charcoal .text-siftrix-pearl,
+  [data-theme="dark"] .siftrix-card-charcoal .text-siftrix-pearl {
+    color: #FAF6EF;
+  }
+
   html.dark .siftrix-card-charcoal .text-siftrix-charcoal,
   [data-theme="dark"] .siftrix-card-charcoal .text-siftrix-charcoal {
     color: #FAF6EF;
@@ -286,9 +322,22 @@ html {
 
   html.dark .siftrix-card-pearl,
   [data-theme="dark"] .siftrix-card-pearl {
+    background-color: #1A1922;
+    border-color: #383543;
+    color: #FAF6EF;
     box-shadow:
       inset 0 1px 0 rgba(216, 181, 109, 0.1),
       0 14px 32px -20px rgba(0, 0, 0, 0.45);
+  }
+
+  html.dark .siftrix-card-pearl .text-siftrix-charcoal,
+  [data-theme="dark"] .siftrix-card-pearl .text-siftrix-charcoal {
+    color: #FAF6EF;
+  }
+
+  html.dark .siftrix-card-pearl .text-siftrix-muted-dark,
+  [data-theme="dark"] .siftrix-card-pearl .text-siftrix-muted-dark {
+    color: #C9C2B7;
   }
 
   /* Compact Charcoal Glass card floating on light studio backgrounds */
@@ -374,6 +423,13 @@ html {
     transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 180ms ease;
   }
 
+  html.dark .siftrix-btn-charcoal,
+  [data-theme="dark"] .siftrix-btn-charcoal {
+    color: #FAF6EF;
+    background: linear-gradient(180deg, #2E2D34 0%, #25252A 100%);
+    border-color: rgba(216, 181, 109, 0.55);
+  }
+
   .siftrix-btn-charcoal:hover:not(:disabled) {
     background: linear-gradient(180deg, #35343C 0%, #29292F 100%);
     border-color: rgba(216, 181, 109, 0.75);
@@ -444,6 +500,38 @@ html {
     border-color: var(--color-siftrix-gold);
   }
 
+  /* High-contrast accessible text inputs & textareas in Dark Mode */
+  html.dark input,
+  html.dark textarea,
+  [data-theme="dark"] input,
+  [data-theme="dark"] textarea {
+    caret-color: #EBD49E;
+  }
+
+  html.dark textarea#scanner-input,
+  [data-theme="dark"] textarea#scanner-input {
+    color: #FAF6EF !important;
+    background-color: #1B1B20 !important;
+    caret-color: #EBD49E !important;
+  }
+
+  html.dark textarea#scanner-input::placeholder,
+  [data-theme="dark"] textarea#scanner-input::placeholder {
+    color: #9E978C !important;
+  }
+
+  html.dark #scanner-sender-hint,
+  [data-theme="dark"] #scanner-sender-hint {
+    color: #FAF6EF !important;
+    background-color: #1E1E26 !important;
+    border-color: rgba(197, 161, 93, 0.4) !important;
+  }
+
+  html.dark #scanner-sender-hint::placeholder,
+  [data-theme="dark"] #scanner-sender-hint::placeholder {
+    color: #8E887E !important;
+  }
+
   /* Subtle Warm Architectural Drafting Grid */
   .siftrix-cyber-grid {
     background-image:
@@ -458,6 +546,15 @@ html {
       linear-gradient(to right, rgba(216, 181, 109, 0.055) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(216, 181, 109, 0.055) 1px, transparent 1px);
     background-size: 52px 52px;
+  }
+
+  /* Utility to hide scrollbars on horizontal scroll strips */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   .animate-siftrix-enter {
@@ -503,6 +600,21 @@ html {
     animation: siftrix-intro-emblem 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  .animate-siftrix-trail-flow {
+    animation: siftrix-trail-flow 14s linear infinite;
+    will-change: stroke-dashoffset;
+  }
+
+  .animate-siftrix-particle-drift {
+    animation: siftrix-particle-drift 6.5s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  .animate-siftrix-ping-slow {
+    animation: siftrix-ping-slow 3.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+    will-change: transform, opacity;
+  }
+
   .siftrix-tabular {
     font-variant-numeric: tabular-nums;
   }
@@ -521,7 +633,10 @@ html {
   .animate-siftrix-pulse-slow,
   .animate-siftrix-radar,
   .animate-siftrix-gold-sweep,
-  .animate-siftrix-intro-emblem {
+  .animate-siftrix-intro-emblem,
+  .animate-siftrix-trail-flow,
+  .animate-siftrix-particle-drift,
+  .animate-siftrix-ping-slow {
     animation: none !important;
   }
 

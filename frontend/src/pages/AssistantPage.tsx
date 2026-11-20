@@ -107,8 +107,8 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
             Clear History
           </button>
           <a
-            href="/"
-            onClick={(e) => handleSpaLinkClick(e, onNavigate, '/', 'scan')}
+            href="/scanner"
+            onClick={(e) => handleSpaLinkClick(e, onNavigate, '/scanner')}
             className="siftrix-btn-gold px-4 py-2 rounded-xl text-xs font-semibold"
           >
             Threat Scanner →

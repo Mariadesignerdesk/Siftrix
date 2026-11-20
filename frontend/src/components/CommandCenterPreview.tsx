@@ -115,39 +115,42 @@ export default function CommandCenterPreview({
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b border-siftrix-charcoal-border">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="rounded-full border border-siftrix-gold/50 bg-[#1B1B20] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-siftrix-champagne">
-                Sample Layout Preview
+              <span
+                className="rounded-full border border-siftrix-gold/50 bg-[#1B1B20] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-siftrix-champagne"
+                aria-label="REAL-TIME THREAT INTELLIGENCE (Sample Layout Preview)"
+              >
+                REAL-TIME THREAT INTELLIGENCE
               </span>
               <span className="text-xs text-[#BEB7AC]">
-                Illustrative metrics showcase · Live data connects in Dashboard
+                AI-Powered Phishing Detection · Multi-Agent Security Analysis
               </span>
             </div>
 
             <span className="font-mono text-[11px] text-siftrix-champagne/90">
-              Endpoints: GET /api/history · GET /api/health
+              <span className="text-[#A59E92]">Endpoints:</span> Threat Detection · URL Analysis · Security Monitoring
             </span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* Gold-Accented Risk Trajectory Chart */}
+            {/* Gold-Accented Threat Detection Overview Chart */}
             <div className="min-w-0 lg:col-span-7 siftrix-panel-charcoal-inset rounded-2xl p-5 flex flex-col justify-between">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
-                  <h3 className="text-sm font-bold text-siftrix-white">
-                    Risk Index Trajectory (Blueprint Example)
+                  <h3 className="text-sm sm:text-base font-bold text-siftrix-white dark:text-[#FAF6EF]">
+                    Threat Detection Overview
                   </h3>
                   <p className="text-xs text-[#ACA69E] mt-0.5">
-                    0–100 AI threat severity plotted across scanned targets
+                    AI-powered risk assessment across suspicious links and messages
                   </p>
                 </div>
                 <span className="rounded-md bg-[#1B1B20] border border-siftrix-gold/40 px-2.5 py-1 text-[11px] font-semibold text-siftrix-champagne">
-                  Multi-Agent Scoring
+                  Multi-Agent AI Analysis
                 </span>
               </div>
 
               <svg
                 viewBox="0 0 510 165"
-                aria-label="Illustrative risk score trajectory blueprint chart"
+                aria-label="Threat Detection Overview AI risk assessment chart"
                 className="w-full h-auto min-h-[9.5rem]"
               >
                 <defs>
@@ -203,19 +206,41 @@ export default function CommandCenterPreview({
                   </g>
                 ))}
               </svg>
+
+              {/* Chart Categories Legend */}
+              <div className="flex flex-wrap items-center gap-3 pt-3 mt-3 border-t border-siftrix-charcoal-border/70 text-xs text-[#BFB8AC]">
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs" aria-hidden="true" />
+                  <span>Safe Links</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-2xs" aria-hidden="true" />
+                  <span>Suspicious Links</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-2xs" aria-hidden="true" />
+                  <span>Malicious Links</span>
+                </span>
+              </div>
             </div>
 
-            {/* Semantic Verdict Distribution + 3 Agent Orchestration Summary */}
+            {/* Threat Classification + Multi-Agent Threat Intelligence */}
             <div className="min-w-0 lg:col-span-5 flex flex-col justify-between gap-4">
               <div className="siftrix-panel-charcoal-inset rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-bold text-siftrix-white">
-                    Verdict Distribution
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-siftrix-white dark:text-[#FAF6EF]">
+                    Threat Classification
                   </h3>
-                  <span className="text-[11px] text-[#ACA69E]">Semantic Signal Key</span>
+                  <span className="text-[11px] text-[#ACA69E]">
+                    AI-based scan verdict distribution
+                  </span>
                 </div>
 
-                <div className="h-3 w-full rounded-full bg-[#1B1B20] border border-siftrix-charcoal-border overflow-hidden flex">
+                <div
+                  role="img"
+                  aria-label="Threat Classification: Safe 57%, Suspicious 29%, Malicious 14%"
+                  className="h-3 w-full rounded-full bg-[#1B1B20] border border-siftrix-charcoal-border overflow-hidden flex"
+                >
                   {BLUEPRINT_VERDICTS.map((item) => (
                     <div
                       key={item.label}
@@ -240,12 +265,13 @@ export default function CommandCenterPreview({
                 </div>
               </div>
 
+              {/* Bottom Information Section: Multi-Agent Threat Intelligence */}
               <div className="siftrix-panel-charcoal-inset rounded-2xl p-5 space-y-2.5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-siftrix-champagne">
-                  Live Session Intelligence
+                  MULTI-AGENT THREAT INTELLIGENCE
                 </p>
                 <p className="text-xs sm:text-sm text-[#D5CEC2] leading-relaxed">
-                  Your scans persist automatically per browser <code className="font-mono text-siftrix-champagne">X-Session-ID</code> and appear live in the Security Dashboard and Scan History pages.
+                  SIFTRIX uses multiple AI agents to analyze suspicious URLs, SMS, WhatsApp messages, and emails. Identify phishing attempts, detect malicious patterns, and assess threats before they compromise your security.
                 </p>
               </div>
             </div>

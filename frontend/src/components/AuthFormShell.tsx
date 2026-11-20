@@ -142,7 +142,7 @@ export default function AuthFormShell({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onNavigate('/', 'scan')}
+                  onClick={() => onNavigate('/scanner')}
                   className="siftrix-btn-secondary py-2.5 px-4 rounded-xl text-sm font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                 >
                   Open Threat Scanner

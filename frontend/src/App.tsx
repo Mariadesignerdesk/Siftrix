@@ -1,8 +1,8 @@
-import { useState } from 'react'
+ import { useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
-import Scanner from './components/Scanner'
+import ModernVisualShowcase from './components/ModernVisualShowcase'
 import HowItWorks from './components/HowItWorks'
 import CommandCenterPreview from './components/CommandCenterPreview'
 import About from './components/About'
@@ -12,6 +12,7 @@ import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import ScanDetailsPage from './pages/ScanDetailsPage'
 import ScanHistoryPage from './pages/ScanHistoryPage'
+import ScannerPage from './pages/ScannerPage'
 import SettingsPage from './pages/SettingsPage'
 import SignupPage from './pages/SignupPage'
 import AssistantPage from './pages/AssistantPage'
@@ -67,7 +68,9 @@ function App() {
           onSignOut={handleSignOut}
         />
         <main className="flex-1">
-          {route.page === 'dashboard' ? (
+          {route.page === 'scanner' ? (
+            <ScannerPage onNavigate={navigate} />
+          ) : route.page === 'dashboard' ? (
             <DashboardPage onNavigate={navigate} />
           ) : route.page === 'history' ? (
             <ScanHistoryPage onNavigate={navigate} />
@@ -103,9 +106,9 @@ function App() {
             <RewardsPage onNavigate={navigate} />
           ) : (
             <>
-              <Hero />
+              <Hero onNavigate={navigate} />
               <Features />
-              <Scanner />
+              <ModernVisualShowcase onNavigate={navigate} />
               <HowItWorks onNavigate={navigate} />
               <CommandCenterPreview onNavigate={navigate} />
               <About />

@@ -28,8 +28,15 @@ const NAV_ITEMS: ReadonlyArray<{
     href: '/#home',
     path: '/',
     sectionId: 'home',
-    ariaLabel: 'Navigate to Home section',
+    ariaLabel: 'Navigate to Home',
     isActive: (page) => page === 'home',
+  },
+  {
+    label: 'Scanner',
+    href: '/scanner',
+    path: '/scanner',
+    ariaLabel: 'Navigate to Dedicated Threat Scanner page',
+    isActive: (page) => page === 'scanner',
   },
   {
     label: 'Dashboard',
@@ -46,33 +53,18 @@ const NAV_ITEMS: ReadonlyArray<{
     isActive: (page) => page === 'history' || page === 'scan-details',
   },
   {
-    label: 'Leaderboard',
-    href: '/leaderboard',
-    path: '/leaderboard',
-    ariaLabel: 'Navigate to Threat Hunter Leaderboard',
-    isActive: (page) => page === 'leaderboard',
-  },
-  {
-    label: 'Rewards',
+    label: 'Rewards & Leaderboard',
     href: '/rewards',
     path: '/rewards',
-    ariaLabel: 'Navigate to Rewards and Badges Gallery',
-    isActive: (page) => page === 'rewards',
+    ariaLabel: 'Navigate to Rewards and Leaderboard',
+    isActive: (page) => page === 'rewards' || page === 'leaderboard',
   },
   {
-    label: 'Features',
-    href: '/#features',
-    path: '/',
-    sectionId: 'features',
-    ariaLabel: 'Navigate to Features section',
-    isActive: () => false,
-  },
-  {
-    label: 'About',
+    label: 'About Us',
     href: '/#about',
     path: '/',
     sectionId: 'about',
-    ariaLabel: 'Navigate to About section',
+    ariaLabel: 'Navigate to About Us section',
     isActive: () => false,
   },
   {
@@ -132,11 +124,6 @@ export default function Navbar({
     onNavigate(path, sectionId)
   }
 
-  const handleActionNavigate = (path: AppPath, sectionId?: string) => {
-    setIsMobileMenuOpen(false)
-    onNavigate(path, sectionId)
-  }
-
   const handleSignOutClick = () => {
     clearAuthPreviewSession()
     setIsMobileMenuOpen(false)
@@ -144,7 +131,7 @@ export default function Navbar({
   }
 
   const linkClassName = (isActive: boolean) =>
-    `rounded-lg px-2 xl:px-2.5 2xl:px-3.5 py-1.5 text-xs xl:text-[13px] 2xl:text-sm font-medium transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+    `rounded-lg px-1 md:px-1 lg:px-2 xl:px-2.5 2xl:px-3 py-1 lg:py-1.5 text-[10.5px] lg:text-xs xl:text-[13px] 2xl:text-sm font-medium transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
       isActive
         ? 'bg-siftrix-charcoal text-siftrix-pearl border border-siftrix-gold/45 shadow-2xs dark:bg-siftrix-sand dark:text-siftrix-champagne dark:border-siftrix-gold'
         : 'text-siftrix-muted-dark border border-transparent hover:text-siftrix-charcoal hover:bg-siftrix-white/85 hover:border-siftrix-border'
@@ -154,7 +141,7 @@ export default function Navbar({
     `flex items-center justify-between rounded-xl px-4 py-2.5 min-h-[44px] text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
       isActive
         ? 'bg-siftrix-charcoal text-siftrix-pearl border border-siftrix-gold/45 shadow-2xs dark:bg-siftrix-sand dark:text-siftrix-champagne dark:border-siftrix-gold'
-        : 'bg-siftrix-white/85 text-siftrix-graphite border border-siftrix-border hover:border-siftrix-gold/65 hover:text-siftrix-charcoal'
+        : 'bg-siftrix-white/85 dark:bg-[#23222A] text-siftrix-graphite dark:text-[#E2DDD3] border border-siftrix-border dark:border-siftrix-charcoal-border hover:border-siftrix-gold/65 hover:text-siftrix-charcoal dark:hover:text-[#FAF6EF]'
     }`
 
   return (
@@ -167,18 +154,18 @@ export default function Navbar({
 
       <nav
         aria-label="Main Navigation"
-        className="w-full max-w-[1440px] mx-auto flex items-center justify-between gap-1.5 sm:gap-2 lg:gap-2.5 xl:gap-3 px-3 sm:px-4 md:px-6 xl:px-8 py-2 lg:py-2.5"
+        className="w-full max-w-[1440px] mx-auto flex items-center justify-between gap-1 sm:gap-1.5 md:gap-1.5 lg:gap-2.5 xl:gap-3 px-2 sm:px-3 md:px-2 lg:px-6 xl:px-8 py-2 lg:py-2.5"
       >
         {/* Brand Wordmark + Precision Gold Emblem */}
         <a
           href="/"
           onClick={(e) => handleLinkClick(e, '/')}
-          className="inline-flex items-center gap-2 shrink-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold rounded-xl px-1 py-0.5 transition-colors"
+          className="inline-flex items-center gap-1.5 shrink-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold rounded-xl px-1 py-0.5 transition-colors"
           aria-label="SIFTRIX Home"
         >
-          <BrandMark className="h-8 w-8 sm:h-8.5 sm:w-8.5 shrink-0 shadow-2xs transition-transform duration-300 group-hover:scale-105" />
-          <div className="flex items-center gap-2">
-            <span className="text-lg sm:text-xl 2xl:text-2xl font-bold tracking-tight text-siftrix-charcoal">
+          <BrandMark className="h-7 w-7 sm:h-7.5 sm:w-7.5 lg:h-8 lg:w-8 shrink-0 shadow-2xs transition-transform duration-300 group-hover:scale-105" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-base sm:text-lg lg:text-xl 2xl:text-2xl font-bold tracking-tight text-siftrix-charcoal">
               SIFTRIX
             </span>
             <span className="hidden 2xl:inline-flex items-center rounded-full border border-siftrix-gold/45 bg-siftrix-white px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-siftrix-graphite shadow-2xs">
@@ -191,8 +178,8 @@ export default function Navbar({
           </div>
         </a>
 
-        {/* Desktop Center Navigation Links */}
-        <div className="hidden xl:flex items-center justify-center gap-1 2xl:gap-1.5 rounded-xl border border-siftrix-border/80 bg-siftrix-beige/85 p-1 shrink-0">
+        {/* Desktop & Tablet Center Navigation Links */}
+        <div className="hidden md:flex items-center justify-center gap-0.5 lg:gap-1 2xl:gap-1.5 rounded-xl border border-siftrix-border/80 bg-siftrix-beige/85 p-0.5 lg:p-1 shrink-0">
           {NAV_ITEMS.map((item) => {
             const active = item.isActive(currentPage)
             return (
@@ -210,8 +197,8 @@ export default function Navbar({
           })}
         </div>
 
-        {/* Desktop Auth + Utilities + Primary Action */}
-        <div className="hidden xl:flex items-center gap-2 shrink-0">
+        {/* Desktop & Tablet Auth + Utilities */}
+        <div className="hidden md:flex items-center gap-1 lg:gap-1.5 xl:gap-2 shrink-0">
           {/* Real-Time Notification Bell */}
           <NotificationBell onNavigate={onNavigate} />
 
@@ -221,7 +208,7 @@ export default function Navbar({
             onClick={handleToggleTheme}
             aria-label={`Switch theme (currently ${currentTheme})`}
             title={`Current theme: ${currentTheme}. Click to toggle.`}
-            className="h-9 w-9 xl:h-10 xl:w-10 rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs text-xs sm:text-sm"
+            className="h-8 w-8 lg:h-9 lg:w-9 xl:h-10 xl:w-10 rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs text-xs sm:text-sm"
           >
             {currentTheme === 'dark' ? '☀️' : '🌙'}
           </button>
@@ -231,7 +218,7 @@ export default function Navbar({
               <a
                 href="/settings"
                 onClick={(e) => handleLinkClick(e, '/settings')}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige px-2 xl:px-2.5 py-1.5 text-xs font-semibold text-siftrix-charcoal max-w-[7.5rem] xl:max-w-[9rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige px-2 xl:px-2.5 py-1 md:py-1 lg:py-1.5 text-xs font-semibold text-siftrix-charcoal max-w-[6.5rem] lg:max-w-[7.5rem] xl:max-w-[9rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
                 title={`UI Preview: ${authSession.email}`}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold shrink-0" aria-hidden="true" />
@@ -240,7 +227,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={handleSignOutClick}
-                className="rounded-xl border border-siftrix-border bg-siftrix-white px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-medium text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+                className="rounded-xl border border-siftrix-border bg-siftrix-white px-2 lg:px-2.5 xl:px-3 py-1 md:py-1 lg:py-1.5 text-xs xl:text-sm font-medium text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
               >
                 Sign Out
               </button>
@@ -251,7 +238,7 @@ export default function Navbar({
                 href="/login"
                 onClick={(e) => handleLinkClick(e, '/login')}
                 aria-current={currentPage === 'login' ? 'page' : undefined}
-                className={`rounded-xl px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                className={`rounded-xl px-2 lg:px-2.5 xl:px-3 py-1 md:py-1 lg:py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'login'
                     ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
                     : 'text-siftrix-muted-dark border border-siftrix-border/80 bg-siftrix-white hover:text-siftrix-charcoal hover:border-siftrix-gold'
@@ -264,7 +251,7 @@ export default function Navbar({
                 href="/signup"
                 onClick={(e) => handleLinkClick(e, '/signup')}
                 aria-current={currentPage === 'signup' ? 'page' : undefined}
-                className={`rounded-xl px-2.5 xl:px-3.5 py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                className={`hidden lg:inline-flex rounded-xl px-2 lg:px-2.5 xl:px-3.5 py-1 md:py-1 lg:py-1.5 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   currentPage === 'signup'
                     ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
                     : 'siftrix-btn-secondary'
@@ -275,83 +262,10 @@ export default function Navbar({
               </a>
             </>
           )}
-
-          <button
-            type="button"
-            onClick={() => handleActionNavigate('/', 'scan')}
-            className="hidden xl:inline-flex siftrix-btn-gold items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-pearl focus-visible:ring-siftrix-charcoal px-3 xl:px-4 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold cursor-pointer whitespace-nowrap"
-            aria-label="Get started by scrolling to the threat analysis tool"
-          >
-            <span>Get Started</span>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              className="h-3.5 w-3.5 xl:h-4 xl:w-4 text-siftrix-charcoal"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M4 10h11" />
-              <path d="M11 5l5 5-5 5" />
-            </svg>
-          </button>
         </div>
 
-        {/* Mobile & Tablet Compact Actions + Hamburger Menu Trigger */}
-        <div className="flex xl:hidden items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
-          {authSession ? (
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <span className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-siftrix-gold/45 bg-siftrix-beige px-2 py-1 text-xs font-semibold text-siftrix-charcoal max-w-[6.5rem] truncate">
-                <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold shrink-0" aria-hidden="true" />
-                <span className="truncate">{authSession.name}</span>
-              </span>
-              <button
-                type="button"
-                onClick={handleSignOutClick}
-                className="rounded-xl border border-siftrix-border bg-siftrix-white px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-siftrix-graphite hover:border-siftrix-gold hover:text-siftrix-charcoal whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <a
-                href="/login"
-                onClick={(e) => handleLinkClick(e, '/login')}
-                aria-current={currentPage === 'login' ? 'page' : undefined}
-                className={`rounded-xl px-2 sm:px-2.5 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
-                  currentPage === 'login'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
-                    : 'border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold'
-                }`}
-              >
-                Sign In
-              </a>
-              <a
-                href="/signup"
-                onClick={(e) => handleLinkClick(e, '/signup')}
-                aria-current={currentPage === 'signup' ? 'page' : undefined}
-                className={`hidden min-[360px]:inline-flex rounded-xl px-2 sm:px-2.5 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
-                  currentPage === 'signup'
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/55 shadow-2xs dark:bg-siftrix-sand dark:border-siftrix-gold'
-                    : 'siftrix-btn-secondary'
-                }`}
-              >
-                Sign Up
-              </a>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => handleActionNavigate('/', 'scan')}
-            className="hidden md:inline-flex siftrix-btn-gold items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-charcoal"
-          >
-            <span>Get Started</span>
-          </button>
-
+        {/* Mobile Phones Only Header Controls (Hamburger Menu Trigger) */}
+        <div className="flex md:hidden items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Mobile Notification Bell */}
           <NotificationBell onNavigate={onNavigate} />
 
@@ -361,18 +275,20 @@ export default function Navbar({
             onClick={handleToggleTheme}
             aria-label={`Switch theme (currently ${currentTheme})`}
             title={`Current theme: ${currentTheme}. Click to toggle.`}
-            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-colors cursor-pointer text-xs sm:text-sm"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-colors cursor-pointer text-xs sm:text-sm"
           >
             {currentTheme === 'dark' ? '☀️' : '🌙'}
           </button>
 
+          {/* Hamburger Menu Toggle (☰) */}
           <button
             type="button"
             aria-expanded={isMobileMenuOpen}
             aria-controls="siftrix-mobile-menu"
             aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            title={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-beige transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-beige transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
           >
             {isMobileMenuOpen ? (
               <svg
@@ -406,14 +322,14 @@ export default function Navbar({
         </div>
       </nav>
 
-      {/* Collapsible Mobile & Tablet Hamburger Drawer */}
+      {/* Collapsible Mobile Hamburger Drawer - Visible Only on Mobile Phones When Open */}
       {isMobileMenuOpen ? (
         <div
           id="siftrix-mobile-menu"
-          className="xl:hidden border-t border-siftrix-border bg-siftrix-pearl/98 px-4 sm:px-6 py-4 shadow-[0_14px_30px_-14px_rgba(37,37,42,0.22)] max-h-[calc(100dvh-4.25rem)] overflow-y-auto"
+          className="md:hidden border-t border-siftrix-border bg-siftrix-pearl/98 dark:bg-[#18181F]/98 backdrop-blur-lg px-4 sm:px-6 py-4 shadow-[0_14px_30px_-14px_rgba(37,37,42,0.22)] max-h-[calc(100dvh-4.25rem)] overflow-y-auto"
         >
-          <div className="max-w-7xl mx-auto space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="max-w-md mx-auto space-y-3">
+            <div className="grid grid-cols-1 gap-2">
               {NAV_ITEMS.map((item) => {
                 const active = item.isActive(currentPage)
                 return (
@@ -428,7 +344,7 @@ export default function Navbar({
                     <span>{item.label}</span>
                     <span
                       aria-hidden="true"
-                      className={active ? 'text-siftrix-champagne' : 'text-siftrix-antique-ink'}
+                      className={active ? 'text-siftrix-champagne font-bold' : 'text-siftrix-antique-ink'}
                     >
                       →
                     </span>
@@ -437,17 +353,17 @@ export default function Navbar({
               })}
             </div>
 
-            <div className="pt-3 border-t border-siftrix-border space-y-2.5">
+            <div className="pt-3 border-t border-siftrix-border dark:border-siftrix-charcoal-border space-y-2.5">
               {authSession ? (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige px-3.5 py-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige dark:bg-[#23222A] px-3.5 py-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink dark:text-siftrix-champagne/80">
                       UI Preview Session
                     </p>
-                    <p className="text-sm font-bold text-siftrix-charcoal truncate">
+                    <p className="text-sm font-bold text-siftrix-charcoal dark:text-[#FAF6EF] truncate">
                       {authSession.name}
                     </p>
-                    <p className="text-xs font-mono text-siftrix-muted-dark truncate">
+                    <p className="text-xs font-mono text-siftrix-muted-dark dark:text-[#A7A29A] truncate">
                       {authSession.email}
                     </p>
                   </div>
@@ -460,7 +376,7 @@ export default function Navbar({
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
                   <a
                     href="/login"
                     onClick={(e) => handleLinkClick(e, '/login')}
@@ -479,15 +395,6 @@ export default function Navbar({
                   </a>
                 </div>
               )}
-
-              <button
-                type="button"
-                onClick={() => handleActionNavigate('/', 'scan')}
-                className="w-full min-h-[44px] siftrix-btn-gold inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-charcoal"
-              >
-                <span>Get Started · Open Threat Scanner</span>
-                <span aria-hidden="true">→</span>
-              </button>
             </div>
           </div>
         </div>

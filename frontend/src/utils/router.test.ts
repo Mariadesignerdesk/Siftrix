@@ -10,6 +10,8 @@ describe('router and scan presentation utilities', () => {
   it('parses landing, dashboard, scan history, and scan details paths accurately', () => {
     expect(parseRoutePath('/')).toEqual({ page: 'home' })
     expect(parseRoutePath('')).toEqual({ page: 'home' })
+    expect(parseRoutePath('/scanner')).toEqual({ page: 'scanner' })
+    expect(parseRoutePath('/scanner/')).toEqual({ page: 'scanner' })
     expect(parseRoutePath('/dashboard')).toEqual({ page: 'dashboard' })
     expect(parseRoutePath('/dashboard/')).toEqual({ page: 'dashboard' })
     expect(parseRoutePath('/scans')).toEqual({ page: 'history' })
@@ -74,6 +76,24 @@ describe('router and scan presentation utilities', () => {
     )
     expect(preventDefault).toHaveBeenCalledTimes(1)
     expect(onNavigate).toHaveBeenCalledWith('/scans', undefined)
+
+    preventDefault.mockClear()
+    onNavigate.mockClear()
+
+    handleSpaLinkClick(
+      {
+        metaKey: false,
+        ctrlKey: false,
+        shiftKey: false,
+        altKey: false,
+        button: 0,
+        preventDefault,
+      },
+      onNavigate,
+      '/scanner'
+    )
+    expect(preventDefault).toHaveBeenCalledTimes(1)
+    expect(onNavigate).toHaveBeenCalledWith('/scanner', undefined)
 
     preventDefault.mockClear()
     onNavigate.mockClear()

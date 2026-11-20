@@ -290,7 +290,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
           <button
             type="button"
-            onClick={() => onNavigate('/', 'scan')}
+            onClick={() => onNavigate('/scanner')}
             className="siftrix-btn-gold px-5 py-2 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-charcoal focus-visible:ring-siftrix-champagne"
           >
             + New Scan
@@ -344,14 +344,14 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               <button
                 type="button"
                 onClick={() => onNavigate('/rewards')}
-                className="siftrix-btn-secondary px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                className="siftrix-btn-secondary px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer text-siftrix-graphite dark:text-[#FAF6EF] dark:bg-[#25242C] dark:border-siftrix-charcoal-border"
               >
                 🎖️ Rewards & Badges
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate('/leaderboard')}
-                className="siftrix-btn-charcoal px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                className="siftrix-btn-charcoal px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer text-siftrix-pearl dark:text-white"
               >
                 🏆 Leaderboard
               </button>
@@ -401,7 +401,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               <div className="flex items-center justify-between gap-2">
                 <span
                   className={`text-sm font-semibold ${
-                    isDark ? 'text-siftrix-pearl' : 'text-siftrix-muted-dark'
+                    isDark ? 'text-siftrix-pearl dark:text-white' : 'text-siftrix-muted-dark dark:text-white'
                   }`}
                 >
                   {card.label}
@@ -446,7 +446,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                   </p>
                   <p
                     className={`text-xs mt-1 ${
-                      isDark ? 'text-[#C8C1B6]' : 'text-siftrix-muted-dark'
+                      isDark ? 'text-[#C8C1B6] dark:text-[#D5CFC5]' : 'text-siftrix-muted-dark dark:text-[#D5CFC5]'
                     }`}
                   >
                     {card.subtext}
@@ -686,7 +686,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               </p>
               <button
                 type="button"
-                onClick={() => onNavigate('/', 'scan')}
+                onClick={() => onNavigate('/scanner')}
                 className="inline-block siftrix-btn-gold px-5 py-2.5 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-siftrix-charcoal"
               >
                 Run Your First Scan
@@ -769,18 +769,18 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               Submit suspicious links, SMS alerts, or phishing emails for real-time AI verdict scoring, bilingual summaries, and multi-agent inspection.
             </p>
 
-            <ul className="space-y-2 text-xs text-siftrix-pearl pt-2">
+            <ul className="space-y-2 text-xs text-siftrix-pearl dark:text-[#FAF6EF] pt-2">
               <li className="flex items-start gap-2">
-                <span className="text-siftrix-champagne font-bold">✓</span>
-                <span>Automatic URL, message, and email triage</span>
+                <span className="text-siftrix-champagne font-bold leading-tight select-none">✓</span>
+                <span className="leading-tight">Automatic URL, message, and email triage</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-siftrix-champagne font-bold">✓</span>
-                <span>English and Urdu (اردو) threat guidance</span>
+                <span className="text-siftrix-champagne font-bold leading-tight select-none">✓</span>
+                <span className="leading-tight">English and Urdu (اردو) threat guidance</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-siftrix-champagne font-bold">✓</span>
-                <span>URL, message, and security advisor signals</span>
+                <span className="text-siftrix-champagne font-bold leading-tight select-none">✓</span>
+                <span className="leading-tight">URL, message, and security advisor signals</span>
               </li>
             </ul>
           </div>
@@ -788,7 +788,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           <div className="space-y-2.5">
             <button
               type="button"
-              onClick={() => onNavigate('/', 'scan')}
+              onClick={() => onNavigate('/scanner')}
               className="w-full siftrix-btn-gold py-3 px-4 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-charcoal focus-visible:ring-siftrix-champagne"
             >
               Open Threat Scanner

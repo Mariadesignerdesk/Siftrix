@@ -7,22 +7,22 @@ interface HowItWorksProps {
 const WORKFLOW_STEPS = [
   {
     step: '01',
-    phase: 'Intake & Validation',
-    title: 'Paste Link or Message',
+    phase: 'INTAKE & VALIDATION',
+    title: 'Paste a Link or Message',
     description:
       'Auto-Detect classifies URLs versus SMS, WhatsApp, or phishing emails while applying client-side scheme and SSRF safety checks.',
   },
   {
     step: '02',
-    phase: 'Orchestrated AI Inspection',
-    title: 'Multi-Agent Analysis',
+    phase: 'ORCHESTRATED AI INSPECTION',
+    title: 'Multi-Agent Threat Analysis',
     description:
       'URL Intelligence and Message Intelligence inspect domain signals, obfuscation, social-engineering urgency, and credential lures via POST /api/scan.',
   },
   {
     step: '03',
-    phase: 'Actionable Clarity',
-    title: 'Score & Bilingual Guidance',
+    phase: 'ACTIONABLE CLARITY',
+    title: 'Threat Score & Bilingual Guidance',
     description:
       'Security Advisor compiles a 0–100 risk score, semantic verdict (Safe, Suspicious, Malicious), and mitigation steps in English and اردو.',
   },
@@ -75,9 +75,9 @@ export default function HowItWorks({ onNavigate }: HowItWorksProps) {
             {WORKFLOW_STEPS.map((item, idx) => (
               <li
                 key={item.step}
-                className="siftrix-card-pearl siftrix-card-hover relative rounded-2xl p-6 sm:p-7 flex flex-col justify-between"
+                className="siftrix-card-pearl siftrix-card-hover relative rounded-2xl p-6 sm:p-7 flex flex-col justify-between h-full"
               >
-                <div>
+                <div className="flex-1 flex flex-col">
                   <div className="flex items-center justify-between gap-3 mb-6">
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-siftrix-charcoal dark:bg-siftrix-sand text-siftrix-champagne font-mono text-sm font-bold border border-siftrix-gold/55 shadow-sm">
                       {item.step}
@@ -121,12 +121,12 @@ export default function HowItWorks({ onNavigate }: HowItWorksProps) {
             type="button"
             onClick={() => {
               if (onNavigate) {
-                onNavigate('/', 'scan')
+                onNavigate('/scanner')
               } else {
-                document.getElementById('scan')?.scrollIntoView({ behavior: 'smooth' })
+                window.location.href = '/scanner'
               }
             }}
-            className="siftrix-btn-charcoal px-6 py-2.5 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
+            className="siftrix-btn-charcoal px-6 py-2.5 rounded-xl text-sm font-semibold text-siftrix-pearl dark:text-[#FAF6EF] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
           >
             Try Live Threat Scanner
           </button>

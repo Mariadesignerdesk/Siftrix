@@ -82,7 +82,7 @@ export default function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate('/', 'scan')}
+            onClick={() => onNavigate('/scanner')}
             className="siftrix-btn-gold px-4.5 py-2 rounded-xl text-xs sm:text-sm font-semibold cursor-pointer"
           >
             + Investigate Threat

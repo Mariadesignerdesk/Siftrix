@@ -14,9 +14,9 @@ const PLATFORM_LINKS: ReadonlyArray<{
 }> = [
   { label: 'Home', href: '/#home', path: '/', sectionId: 'home' },
   { label: 'AI Capabilities', href: '/#features', path: '/', sectionId: 'features' },
-  { label: 'Threat Scanner', href: '/#scan', path: '/', sectionId: 'scan' },
+  { label: 'Threat Scanner', href: '/scanner', path: '/scanner' },
   { label: 'How It Works', href: '/#how-it-works', path: '/', sectionId: 'how-it-works' },
-  { label: 'About SIFTRIX', href: '/#about', path: '/', sectionId: 'about' },
+  { label: 'About Us', href: '/#about', path: '/', sectionId: 'about' },
 ]
 
 const WORKSPACE_LINKS: ReadonlyArray<{

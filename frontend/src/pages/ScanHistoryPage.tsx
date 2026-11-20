@@ -179,7 +179,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
 
           <button
             type="button"
-            onClick={() => onNavigate('/', 'scan')}
+            onClick={() => onNavigate('/scanner')}
             className="siftrix-btn-gold px-5 py-2 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-charcoal focus-visible:ring-siftrix-champagne"
           >
             + New Scan
@@ -422,7 +422,7 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
             </p>
             <button
               type="button"
-              onClick={() => onNavigate('/', 'scan')}
+              onClick={() => onNavigate('/scanner')}
               className="inline-block siftrix-btn-gold px-5 py-2.5 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-siftrix-charcoal"
             >
               Run Your First Scan
