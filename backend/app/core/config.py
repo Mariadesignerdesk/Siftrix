@@ -29,7 +29,10 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # CORS settings (configurable for local Vite and production deployment)
-    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     # PostgreSQL Database URL (Local & Railway)
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/siftrix"
