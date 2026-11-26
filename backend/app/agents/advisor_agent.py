@@ -35,6 +35,11 @@ INDICATOR_URDU_TRANSLATIONS: Dict[str, str] = {
     "URL passed static SSRF validation (Note: this does not guarantee the site is phishing-free)": "یو آر ایل نے بنیادی سیکیورٹی جانچ پاس کر لی ہے",
     "URL targeting internal or restricted network address (SSRF check blocked)": "یو آر ایل اندرونی نیٹ ورک ایڈریس کو نشانہ بنا رہا ہے (بلاک شدہ)",
     "Static URL validation service unavailable": "یو آر ایل کی تصدیقی سروس اس وقت دستیاب نہیں ہے",
+    # Dedicated translations for all calibrated risk-floor indicators
+    "Critical compound extortion pattern detected: credential harvesting and urgent payment coercion": "شدید نوعیت کا دھمکی آمیز مالی فراڈ: حساس معلومات چرانے کے ساتھ فوری رقم کا مطالبہ",
+    "Critical credential phishing attack pattern detected: brand impersonation, urgent credential harvesting, and external lure": "شدید فشنگ حملہ: معروف ادارے کی جعلی شناخت، حساس معلومات چرانے کی فوری کوشش اور مشکوک بیرونی لنک",
+    "Targeted credential phishing attack pattern detected: institutional impersonation and urgent credential harvesting": "کسی ادارے کی جعلی شناخت کے ذریعے حساس معلومات چرانے کی ہدفی فشنگ کوشش",
+    "Coercive payment fraud pattern detected: institutional impersonation with urgent financial demand": "ادارے کی جعلی شناخت کے ساتھ فوری رقم کا مطالبہ کرنے والا مالی فراڈ",
     "Critical credential phishing attack pattern detected: urgent credential harvesting via external link": "شدید نوعیت کا فشنگ حملہ: بیرونی لنک کے ذریعے پاس ورڈ یا حساس معلومات چوری کرنے کی کوشش",
 }
 
@@ -45,19 +50,24 @@ UNKNOWN_INDICATOR_URDU_FALLBACK = "مشکوک سرگرمی کا غیر متعی�
 
 def translate_indicator_to_urdu(clean_ind: str) -> str:
     """Translate an English indicator label to natural Urdu script.
-    
-    If the indicator is unknown or unmapped, returns a safe Urdu fallback
-    to prevent leaking raw English text into localized Urdu summaries.
+
+    1. Exact dictionary lookup (O(1)) for precise semantic matching.
+    2. Explicit prefix handling for dynamic VirusTotal engine detection labels.
+    3. Safe Urdu fallback for unknown or unmapped indicators to prevent
+       leaking raw English text into localized Urdu summaries.
     """
     if not clean_ind:
         return ""
+
+    # Exact dictionary lookup
     if clean_ind in INDICATOR_URDU_TRANSLATIONS:
         return INDICATOR_URDU_TRANSLATIONS[clean_ind]
+
+    # Explicit special case for VirusTotal engine count detections
     if clean_ind.startswith("VirusTotal detected"):
         return "وائرس ٹوٹل (VirusTotal) پر سیکیورٹی انجنوں نے اسے خطرناک قرار دیا ہے"
-    for en_key, ur_val in INDICATOR_URDU_TRANSLATIONS.items():
-        if en_key in clean_ind or clean_ind in en_key:
-            return ur_val
+
+    # Strict fallback for unknown indicators (no unconstrained bidirectional substring matching)
     return UNKNOWN_INDICATOR_URDU_FALLBACK
 
 
@@ -203,11 +213,20 @@ class SecurityAdvisorAgent(BaseAgent):
 
         # 2. Contextual Enrichment from Active Agent Findings
         detected_indicators: List[str] = []
+        floor_indicator: Optional[str] = None
+
         if message_finding and message_finding.indicators:
             for ind in message_finding.indicators:
                 clean_ind = ind.split(" (+")[0].strip()
-                if clean_ind and clean_ind not in detected_indicators:
+                if "pattern detected" in clean_ind or "fraud pattern" in clean_ind:
+                    floor_indicator = clean_ind
+                elif clean_ind and clean_ind not in detected_indicators:
                     detected_indicators.append(clean_ind)
+
+        # Prioritize calibrated risk floor indicator at the beginning if present
+        if floor_indicator:
+            detected_indicators.insert(0, floor_indicator)
+
         if url_finding and url_finding.indicators:
             for ind in url_finding.indicators:
                 clean_ind = ind.split(" (+")[0].strip()

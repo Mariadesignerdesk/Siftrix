@@ -67,10 +67,10 @@ async def test_message_indicator_exact_weights_and_deduplication():
     res_link = await agent.analyze("Please review our documentation at https://example.com/docs")
     assert res_link.risk_score == 10.0
 
-    # 7. Compound message: Credential (+30) + Urgency (+15) + Impersonation (+10) + Payment (+20) = 75.0
+    # 7. Compound message: Credential (+30) + Urgency (+15) + Impersonation (+10) + Payment (+20) = Base 75.0, elevated to 92.0 by compound extortion floor
     compound_text = "Urgent alert from HBL: your account will be blocked. Send money processing fee and share your OTP."
     res_compound = await agent.analyze(compound_text)
-    assert res_compound.risk_score == 75.0
+    assert res_compound.risk_score == 92.0
     assert res_compound.credential_harvesting_detected is True
     assert res_compound.urgency_detected is True
     assert res_compound.impersonation_detected is True
@@ -149,6 +149,77 @@ async def test_virustotal_mutually_exclusive_scoring():
             res_unavail = await agent.analyze("https://example.com/test")
             assert res_unavail.risk_score == 0.0
             assert res_unavail.virustotal_malicious_count == 0
+
+
+@pytest.mark.asyncio
+async def test_url_agent_status_propagation_matrix():
+    """Verify URLSecurityAgent propagates exact validation_status and reputation_status literals."""
+    agent = URLSecurityAgent()
+    mock_val_safe = {"is_valid": True, "is_safe_target": True}
+    mock_val_blocked = {"is_valid": False, "is_safe_target": False, "error": "Targeting private IP is forbidden"}
+    mock_val_error = {"is_error": True, "error": "Static validation service unreachable"}
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        # 1. validated + completed
+        instance.call_tool.side_effect = [
+            mock_val_safe,
+            {"status": "completed", "malicious": 0, "suspicious": 0},
+        ]
+        res_completed = await agent.analyze("https://example.com/clean")
+        assert res_completed.validation_status == "validated"
+        assert res_completed.reputation_status == "completed"
+
+        # 2. blocked + blocked (policy-blocked target skips VirusTotal call)
+        instance.call_tool.reset_mock()
+        instance.call_tool.side_effect = [mock_val_blocked]
+        res_blocked = await agent.analyze("http://192.168.1.1/admin")
+        assert res_blocked.validation_status == "blocked"
+        assert res_blocked.reputation_status == "blocked"
+        assert instance.call_tool.call_count == 1
+
+        # 3. unavailable validation + unavailable reputation (validation tool error skips VirusTotal call)
+        instance.call_tool.reset_mock()
+        instance.call_tool.side_effect = [mock_val_error]
+        res_unavail_val = await agent.analyze("https://example.com/unavail-val")
+        assert res_unavail_val.validation_status == "unavailable"
+        assert res_unavail_val.reputation_status == "unavailable"
+        assert instance.call_tool.call_count == 1
+
+        # 4. validated + unavailable reputation (VirusTotal tool returns error or unavailable)
+        instance.call_tool.reset_mock()
+        instance.call_tool.side_effect = [
+            mock_val_safe,
+            {"is_error": True, "error": "VirusTotal API gateway timeout"},
+        ]
+        res_unavail_rep = await agent.analyze("https://example.com/unavail-rep")
+        assert res_unavail_rep.validation_status == "validated"
+        assert res_unavail_rep.reputation_status == "unavailable"
+        assert instance.call_tool.call_count == 2
+
+        # 5. validated + pending (analysis queued/in-progress on VirusTotal)
+        instance.call_tool.reset_mock()
+        instance.call_tool.side_effect = [
+            mock_val_safe,
+            {"status": "pending", "malicious": None},
+        ]
+        res_pending = await agent.analyze("https://example.com/pending")
+        assert res_pending.validation_status == "validated"
+        assert res_pending.reputation_status == "pending"
+        assert instance.call_tool.call_count == 2
+
+        # 6. validated + rate_limited (HTTP 429 rate limit on VirusTotal)
+        instance.call_tool.reset_mock()
+        instance.call_tool.side_effect = [
+            mock_val_safe,
+            {"status": "rate_limited", "malicious": None},
+        ]
+        res_rate_limited = await agent.analyze("https://example.com/rate-limited")
+        assert res_rate_limited.validation_status == "validated"
+        assert res_rate_limited.reputation_status == "rate_limited"
+        assert instance.call_tool.call_count == 2
 
 
 # =====================================================================
@@ -1642,3 +1713,587 @@ def test_scan_response_low_risk_schema_validation():
     # 4. Score 10 with SAFE verdict is rejected
     with pytest.raises(ValueError):
         ScanResponse(**base_data, overall_risk_score=10.0, verdict=Verdict.SAFE, risk_level=RiskLevel.LOW)
+
+
+# =====================================================================
+# Phase 2: Message-Agent Brand Trust & Risk Floors Test Suite
+# =====================================================================
+
+def test_production_url_extraction_and_brand_trust_path():
+    """Verify production URL extraction and official brand trust path on deceptive targets."""
+    agent = MessageAnalysisAgent()
+    detected_brands = ["hbl"]
+
+    # 1. Deceptive user-info injection (@ symbol)
+    msg_userinfo = "HBL Alert: Verify at https://hbl.com@evil.com/login"
+    extracted_userinfo = agent.extract_urls(msg_userinfo)
+    assert extracted_userinfo == ["https://hbl.com@evil.com/login"]
+    assert agent.is_trusted_url_for_brand(extracted_userinfo[0], detected_brands) is False
+
+    # 2. Reverse subdomain / lookalike suffix
+    msg_suffix = "HBL Alert: Verify at https://hbl.com.evil.com/login"
+    extracted_suffix = agent.extract_urls(msg_suffix)
+    assert extracted_suffix == ["https://hbl.com.evil.com/login"]
+    assert agent.is_trusted_url_for_brand(extracted_suffix[0], detected_brands) is False
+
+    # 3. Legitimate subdomain
+    msg_subdomain = "HBL Alert: Verify at https://login.hbl.com/login"
+    extracted_subdomain = agent.extract_urls(msg_subdomain)
+    assert extracted_subdomain == ["https://login.hbl.com/login"]
+    assert agent.is_trusted_url_for_brand(extracted_subdomain[0], detected_brands) is True
+
+    # 4. Official domain with non-standard port
+    msg_port = "HBL Alert: Verify at https://hbl.com:8443/login"
+    extracted_port = agent.extract_urls(msg_port)
+    assert extracted_port == ["https://hbl.com:8443/login"]
+    assert agent.is_trusted_url_for_brand(extracted_port[0], detected_brands) is True
+
+
+@pytest.mark.asyncio
+async def test_message_risk_floors_calibrated_scoring():
+    """Verify calibrated risk floors: 75 vs 90 vs 92 vs 70 vs 10 defensive bypass."""
+    agent = MessageAnalysisAgent()
+
+    # Case 1: Official HBL domain -> Floor 90 is blocked, Floor 75 applied
+    msg_official = "HBL Alert: Your account is suspended. Enter your OTP immediately at https://hbl.com/verify to restore access."
+    res_official = await agent.analyze(msg_official)
+    assert res_official.impersonation_detected is True
+    assert res_official.credential_harvesting_detected is True
+    assert res_official.urgency_detected is True
+    # Base: imp(10) + cred(30) + urg(15) + link(10) = 65.0. Floor 75 applied.
+    assert res_official.risk_score == 75.0
+    assert any("floor 75" in ind for ind in res_official.indicators)
+    assert not any("floor 90" in ind for ind in res_official.indicators)
+
+    # Case 2: HBL lookalike domain -> Untrusted link triggers Floor 90
+    msg_lookalike = "HBL Alert: Your account is suspended. Enter your OTP immediately at https://hbl-login-portal.com to restore access."
+    res_lookalike = await agent.analyze(msg_lookalike)
+    assert res_lookalike.impersonation_detected is True
+    assert res_lookalike.credential_harvesting_detected is True
+    assert res_lookalike.urgency_detected is True
+    # Base: 65.0. Floor 90 applied.
+    assert res_lookalike.risk_score == 90.0
+    assert any("floor 90" in ind for ind in res_lookalike.indicators)
+
+    # Case 3: Compound extortion (State Bank) -> Floor 92 applied
+    msg_extortion = "State Bank of Pakistan Warning: Your account is frozen under AML inquiry. Transfer 15,000 PKR processing fee immediately and provide your OTP to avoid police action."
+    res_extortion = await agent.analyze(msg_extortion)
+    assert res_extortion.impersonation_detected is True
+    assert res_extortion.urgency_detected is True
+    assert res_extortion.credential_harvesting_detected is True
+    # Base: imp(10) + urg(15) + pay(20) + cred(30) = 75.0. Floor 92 applied.
+    assert res_extortion.risk_score == 92.0
+    assert any("floor 92" in ind for ind in res_extortion.indicators)
+
+    # Case 4: Defensive advisory -> Attack floors bypassed, score 10.0
+    msg_defensive = "HBL Security Advisory: HBL will never ask for your password or OTP. Beware of urgent calls claiming your account will be blocked. Visit https://hbl.com/security"
+    res_defensive = await agent.analyze(msg_defensive)
+    assert res_defensive.risk_score == 10.0
+    assert res_defensive.credential_harvesting_detected is False
+    assert not any("floor" in ind for ind in res_defensive.indicators)
+
+    # Case 5: Coercive payment without credentials -> Floor 70 applied
+    msg_coercive = "FBR Notice: Legal action and arrest warrant issued for tax evasion. Pay 25,000 PKR advance fee immediately to avoid police FIR."
+    res_coercive = await agent.analyze(msg_coercive)
+    assert res_coercive.impersonation_detected is True
+    assert res_coercive.urgency_detected is True
+    assert res_coercive.credential_harvesting_detected is False
+    # Base: imp(10) + urg(15) + pay(20) = 45.0. Floor 70 applied.
+    assert res_coercive.risk_score == 70.0
+    assert any("floor 70" in ind for ind in res_coercive.indicators)
+
+    # Case 6: Multiple Floor Precedence -> Critical 90 prevails over 75 and 70
+    msg_multi = "HBL Alert: Urgent! Your account will be blocked immediately. Enter your OTP and password at https://hbl-auth.com now."
+    res_multi = await agent.analyze(msg_multi)
+    assert res_multi.risk_score == 90.0
+    assert any("floor 90" in ind for ind in res_multi.indicators)
+    assert not any("floor 75" in ind for ind in res_multi.indicators)
+    assert not any("floor 70" in ind for ind in res_multi.indicators)
+
+    # Case 7: All 5 conditions simultaneously present -> Floor 92 takes precedence over Floor 90
+    # Conditions: credential harvesting + urgency + impersonation + untrusted URL + payment demand
+    msg_all_five = (
+        "HBL Security Alert: Urgent! Your account is suspended. Transfer 5,000 PKR processing fee "
+        "and verify your password and OTP immediately at https://hbl-fraud-portal.com to unblock access."
+    )
+    # Independently verify URL extraction and brand-trust classification using production helpers
+    detected_brands = agent.extract_detected_brands(msg_all_five)
+    assert detected_brands == ["hbl"]
+    extracted_urls = agent.extract_urls(msg_all_five)
+    assert extracted_urls == ["https://hbl-fraud-portal.com"]
+    assert agent.is_trusted_url_for_brand(extracted_urls[0], detected_brands) is False
+
+    res_all_five = await agent.analyze(msg_all_five)
+    assert res_all_five.impersonation_detected is True
+    assert res_all_five.urgency_detected is True
+    assert res_all_five.credential_harvesting_detected is True
+    assert any("Advance fee, transfer charge, or money request detected" in ind for ind in res_all_five.indicators)
+    assert res_all_five.risk_score == 92.0
+    assert any("floor 92" in ind for ind in res_all_five.indicators)
+    assert not any("floor 90" in ind for ind in res_all_five.indicators)
+
+
+# =====================================================================
+# Phase 3: Multi-URL Prioritization, Accounting & Isolation Tests
+# =====================================================================
+
+def test_calculate_url_priority_rules_and_stable_sorting():
+    """Verify calculate_url_priority heuristic ranking rules and stable tie-breaking."""
+    from app.agents.orchestrator import calculate_url_priority
+
+    brands = {"hbl"}
+    # 1. Authority @ symbol (+50)
+    p_at = calculate_url_priority("https://hbl.com@evil.com/login", brands)
+    # 2. IP host (+40)
+    p_ip = calculate_url_priority("http://192.168.1.1/admin", brands)
+    # 3. URL shortener (+30)
+    p_short = calculate_url_priority("https://bit.ly/secure-hbl", brands)
+    # 4. Untrusted brand lookalike (+25)
+    p_lookalike = calculate_url_priority("https://hbl-login-portal.com/auth", brands)
+    # 5. Suspicious TLD (+15)
+    p_tld = calculate_url_priority("https://portal.xyz", brands)
+    # 6. HTTP scheme (+5)
+    p_http = calculate_url_priority("http://example.com/test", brands)
+    # 7. Official brand domain (-10)
+    p_official = calculate_url_priority("https://login.hbl.com/auth", brands)
+
+    assert p_at > p_ip
+    assert p_ip > p_short
+    assert p_short > p_lookalike
+    assert p_lookalike > p_tld
+    assert p_tld > p_http
+    assert p_http > p_official
+
+    # Stable sort test for identical priorities
+    urls = [
+        "https://domain-a.com/page",
+        "https://domain-b.com/page",
+        "https://domain-c.com/page",
+    ]
+    sorted_urls = sorted(urls, key=lambda u: calculate_url_priority(u, set()), reverse=True)
+    assert sorted_urls == urls  # Preserves initial order when priorities are identical
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_multi_url_prioritization_and_accounting_equation():
+    """Verify multi-URL prioritization, capping at 3, and mutually exclusive accounting invariant."""
+    orchestrator = AIOrchestrator()
+
+    # Message contains:
+    # - 1 meeting URL (teams.microsoft.com) -> excluded
+    # - 1 duplicate URL (bit.ly/link1) -> deduplicated
+    # - 4 distinct external URLs (IP, shortener, lookalike, clean)
+    # Candidate cap = 3 top prioritized URLs. 1 remains unevaluated.
+    msg_content = (
+        "HBL Security Alert: Urgent verification required across multiple channels. "
+        "Meeting at https://teams.microsoft.com/l/meetup-join/123. "
+        "Visit link 1: https://bit.ly/link1. "
+        "Duplicate: https://bit.ly/link1. "
+        "Direct IP link: http://192.0.2.1/login. "
+        "Lookalike link: https://hbl-auth-portal.com/verify. "
+        "Generic link: https://example.com/info."
+    )
+
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+
+        # Setup mock returns for the 3 evaluated URLs:
+        # 1. Direct IP: validated + completed (VT 0 detections)
+        # 2. Shortener: validated + completed (VT 0 detections)
+        # 3. Lookalike: validated + completed (VT 0 detections)
+        mock_safe_val = {"is_valid": True, "is_safe_target": True}
+        mock_clean_rep = {"status": "completed", "malicious": 0, "suspicious": 0}
+        instance.call_tool.side_effect = [
+            mock_safe_val, mock_clean_rep,  # URL 1
+            mock_safe_val, mock_clean_rep,  # URL 2
+            mock_safe_val, mock_clean_rep,  # URL 3
+        ]
+
+        resp = await orchestrator.scan(content=msg_content, target_type=TargetType.MESSAGE)
+
+        meta = resp.agent_findings.raw_metadata
+        acct = meta["url_accounting"]
+
+        assert acct["duplicate_urls_count"] == 1
+        assert acct["excluded_meeting_urls_count"] == 1
+        assert acct["attempted_urls_count"] == 3
+        assert acct["fully_inspected_urls_count"] == 3
+        assert acct["unevaluated_external_urls_count"] == 1
+        assert acct["policy_blocked_urls_count"] == 0
+        assert acct["partially_inspected_urls_count"] == 0
+        assert acct["failed_url_evaluations_count"] == 0
+
+        # Verify exact accounting invariant:
+        # attempted (3) = fully_inspected (3) + policy_blocked (0) + partially_inspected (0) + failed (0)
+        assert acct["attempted_urls_count"] == (
+            acct["fully_inspected_urls_count"]
+            + acct["policy_blocked_urls_count"]
+            + acct["partially_inspected_urls_count"]
+            + acct["failed_url_evaluations_count"]
+        )
+
+        # Verify unevaluated link caution is appended in English and Urdu
+        assert any("1 link(s) remain uninspected" in r for r in resp.recommendations.en)
+        assert any("1 لنکس کی جانچ باقی ہے" in r for r in resp.recommendations.ur)
+        assert_urdu_script_purity(resp.summary.ur)
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_multi_url_failure_isolation():
+    """Verify operational failure on URL 1 does not crash orchestrator and allows URL 2 to be evaluated."""
+    orchestrator = AIOrchestrator()
+
+    msg_content = (
+        "Please inspect these updates: "
+        "Link 1: https://flakey-server.com/test. "
+        "Link 2: https://malicious-portal.com/login."
+    )
+
+    with patch.object(orchestrator.url_agent, "analyze") as mock_url_analyze:
+        # Link 1 raises asyncio.TimeoutError; Link 2 succeeds with malicious score 70.0
+        mock_finding_clean = URLAgentFinding(
+            risk_score=70.0,
+            domain="malicious-portal.com",
+            virustotal_malicious_count=5,
+            virustotal_suspicious_count=0,
+            is_typosquatting=False,
+            suspicious_tld=False,
+            redirect_count=0,
+            indicators=["VirusTotal detected 5 malicious security engines (+35)"],
+            validation_status="validated",
+            reputation_status="completed",
+        )
+        mock_url_analyze.side_effect = [
+            asyncio.TimeoutError("Gateway connection timed out"),
+            mock_finding_clean,
+        ]
+
+        resp = await orchestrator.scan(content=msg_content, target_type=TargetType.MESSAGE)
+
+        acct = resp.agent_findings.raw_metadata["url_accounting"]
+        assert acct["attempted_urls_count"] == 2
+        assert acct["failed_url_evaluations_count"] == 1
+        assert acct["fully_inspected_urls_count"] == 1
+
+        # The successful scan on URL 2 elevates the compound overall score to 70.0
+        assert resp.overall_risk_score == 70.0
+        assert resp.verdict == Verdict.MALICIOUS
+
+        # Caution for failed URL appended
+        assert any("temporary network or service timeout" in r for r in resp.recommendations.en)
+        assert any("عارضی خرابی" in r for r in resp.recommendations.ur)
+        assert_urdu_script_purity(resp.summary.ur)
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_multi_url_policy_blocked_warning():
+    """Verify policy-blocked SSRF URL is counted under policy_blocked_urls and appends specific warning."""
+    orchestrator = AIOrchestrator()
+
+    msg_content = "Internal admin portal: http://192.168.1.1/admin"
+
+    with patch.object(orchestrator.url_agent, "analyze") as mock_url_analyze:
+        mock_blocked = URLAgentFinding(
+            risk_score=0.0,
+            domain="192.168.1.1",
+            virustotal_malicious_count=0,
+            virustotal_suspicious_count=0,
+            is_typosquatting=False,
+            suspicious_tld=False,
+            redirect_count=0,
+            indicators=["URL targeting internal or restricted network address (SSRF check blocked)"],
+            validation_status="blocked",
+            reputation_status="blocked",
+        )
+        mock_url_analyze.return_value = mock_blocked
+
+        resp = await orchestrator.scan(content=msg_content, target_type=TargetType.MESSAGE)
+
+        acct = resp.agent_findings.raw_metadata["url_accounting"]
+        assert acct["policy_blocked_urls_count"] == 1
+        assert acct["fully_inspected_urls_count"] == 0
+        assert acct["failed_url_evaluations_count"] == 0
+
+        # Caution for policy-blocked URL appended
+        assert any("blocked by security policy" in r for r in resp.recommendations.en)
+        assert any("سیکیورٹی پالیسی کے تحت بلاک کر دیے گئے" in r for r in resp.recommendations.ur)
+        assert_urdu_script_purity(resp.summary.ur)
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_url_accounting_privacy_redaction_and_sensitive_tokens():
+    """Verify url_accounting and prioritized_urls strictly redact query strings, tokens, paths, and user-info."""
+    orchestrator = AIOrchestrator()
+
+    # Message contains URL with sensitive bearer token, user-info credentials, and deep path
+    msg_content = (
+        "Check your account portal: "
+        "https://admin:secret123@portal.example.com:8443/api/v1/auth/reset?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.secret&user=maria#fragment"
+    )
+
+    with patch.object(orchestrator.url_agent, "analyze") as mock_url_analyze:
+        mock_finding = URLAgentFinding(
+            risk_score=15.0,
+            domain="portal.example.com",
+            virustotal_malicious_count=0,
+            virustotal_suspicious_count=0,
+            is_typosquatting=False,
+            suspicious_tld=False,
+            redirect_count=0,
+            indicators=["URL authority contains embedded @ symbol credential lure (+15)"],
+            validation_status="validated",
+            reputation_status="completed",
+        )
+        mock_url_analyze.return_value = mock_finding
+
+        resp = await orchestrator.scan(content=msg_content, target_type=TargetType.MESSAGE)
+
+        acct = resp.agent_findings.raw_metadata["url_accounting"]
+        extracted = resp.agent_findings.raw_metadata["extracted_urls"]
+        prioritized = acct["prioritized_urls"]
+        evaluations = acct["evaluated_urls"]
+
+        # Assert extracted_urls contains only sanitized domain, NEVER full URL, user-info, query params, or paths
+        assert extracted == ["portal.example.com"]
+        for ext in extracted:
+            assert "secret" not in ext
+            assert "token" not in ext
+            assert "api" not in ext
+            assert "@" not in ext
+            assert "?" not in ext
+            assert "#" not in ext
+            assert "admin" not in ext
+
+        # Assert prioritized_urls contains only sanitized domain, NEVER full URL or sensitive params
+        assert prioritized == ["portal.example.com"]
+        for p in prioritized:
+            assert "secret" not in p
+            assert "token" not in p
+            assert "api" not in p
+            assert "@" not in p
+            assert "?" not in p
+            assert "#" not in p
+            assert "admin" not in p
+
+        # Assert evaluated_urls entries strictly contain sanitized domain, no sensitive tokens
+        assert len(evaluations) == 1
+        eval_entry = evaluations[0]
+        assert eval_entry["domain"] == "portal.example.com"
+        for val in eval_entry.values():
+            if isinstance(val, str):
+                assert "secret" not in val
+                assert "token" not in val
+                assert "?" not in val
+                assert "@" not in val
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_standalone_url_operational_timeout_accounting_and_warning():
+    """Verify standalone URL scan failure (timeout) increments failure counter to 1 and appends warning."""
+    orchestrator = AIOrchestrator()
+    standalone_target = "https://unresponsive-gateway.example.com/api/test?secret_token=abc123xyz"
+
+    with patch.object(orchestrator.url_agent, "analyze") as mock_url_analyze:
+        mock_url_analyze.side_effect = asyncio.TimeoutError("External connection timed out")
+
+        resp = await orchestrator.scan(content=standalone_target, target_type=TargetType.URL)
+
+        acct = resp.agent_findings.raw_metadata["url_accounting"]
+        assert acct["attempted_urls_count"] == 1
+        assert acct["failed_url_evaluations_count"] == 1
+        assert acct["fully_inspected_urls_count"] == 0
+        assert acct["policy_blocked_urls_count"] == 0
+        assert acct["partially_inspected_urls_count"] == 0
+        assert acct["unevaluated_external_urls_count"] == 0
+        assert acct["duplicate_urls_count"] == 0
+        assert acct["excluded_meeting_urls_count"] == 0
+
+        # Prioritized URLs and evaluated URLs strictly sanitized
+        assert acct["prioritized_urls"] == ["unresponsive-gateway.example.com"]
+        assert acct["evaluated_urls"] == [{
+            "domain": "unresponsive-gateway.example.com",
+            "status": "failed",
+            "error_type": "TimeoutError",
+        }]
+
+        # Verified accounting invariant: attempted (1) = failed (1) + fully (0) + policy (0) + partial (0)
+        assert acct["attempted_urls_count"] == (
+            acct["fully_inspected_urls_count"]
+            + acct["policy_blocked_urls_count"]
+            + acct["partially_inspected_urls_count"]
+            + acct["failed_url_evaluations_count"]
+        )
+
+        # Confirm operational failure does not report successful or safe inspection
+        assert any("temporary network or service timeout" in r for r in resp.recommendations.en)
+        assert any("عارضی خرابی" in r for r in resp.recommendations.ur)
+        assert_urdu_script_purity(resp.summary.ur)
+
+
+def test_sanitize_host_for_log_ipv6_and_privacy_stripping():
+    """Verify sanitize_host_for_log preserves valid IPv6 colons while stripping sensitive tokens."""
+    from app.agents.orchestrator import sanitize_host_for_log
+
+    # 1. Valid IPv6 address with port, path, and query parameter
+    ipv6_url = "http://[2001:db8::1]:8080/v1/auth?token=supersecret#frag"
+    assert sanitize_host_for_log(ipv6_url) == "2001:db8::1"
+
+    # 2. IPv6 loopback
+    ipv6_loopback = "https://[::1]:443/test"
+    assert sanitize_host_for_log(ipv6_loopback) == "::1"
+
+    # 3. User-info credentials with port and tokens
+    cred_url = "https://admin:pass1234@bank.example.com:8443/login?jwt=eyJhbGciOi..."
+    assert sanitize_host_for_log(cred_url) == "bank.example.com"
+
+
+# =====================================================================
+# Phase 4: Urdu Translation Quality & End-to-End Regression Tests
+# =====================================================================
+
+def test_phase4_all_risk_floor_urdu_translations_and_script_purity():
+    """Verify that all Phase 2 risk-floor labels return dedicated translations, pass script purity, and never use fallback."""
+    from app.agents.advisor_agent import (
+        translate_indicator_to_urdu,
+        UNKNOWN_INDICATOR_URDU_FALLBACK,
+        INDICATOR_URDU_TRANSLATIONS,
+    )
+
+    floor_labels = [
+        # Floor 92: Compound extortion
+        (
+            "Critical compound extortion pattern detected: credential harvesting and urgent payment coercion",
+            "شدید نوعیت کا دھمکی آمیز مالی فراڈ: حساس معلومات چرانے کے ساتھ فوری رقم کا مطالبہ",
+        ),
+        # Floor 90: Brand impersonation with external lure
+        (
+            "Critical credential phishing attack pattern detected: brand impersonation, urgent credential harvesting, and external lure",
+            "شدید فشنگ حملہ: معروف ادارے کی جعلی شناخت، حساس معلومات چرانے کی فوری کوشش اور مشکوک بیرونی لنک",
+        ),
+        # Floor 75: Targeted credential phishing
+        (
+            "Targeted credential phishing attack pattern detected: institutional impersonation and urgent credential harvesting",
+            "کسی ادارے کی جعلی شناخت کے ذریعے حساس معلومات چرانے کی ہدفی فشنگ کوشش",
+        ),
+        # Floor 70: Coercive payment fraud
+        (
+            "Coercive payment fraud pattern detected: institutional impersonation with urgent financial demand",
+            "ادارے کی جعلی شناخت کے ساتھ فوری رقم کا مطالبہ کرنے والا مالی فراڈ",
+        ),
+        # Existing critical external link phishing floor
+        (
+            "Critical credential phishing attack pattern detected: urgent credential harvesting via external link",
+            "شدید نوعیت کا فشنگ حملہ: بیرونی لنک کے ذریعے پاس ورڈ یا حساس معلومات چوری کرنے کی کوشش",
+        ),
+    ]
+
+    for en_label, expected_ur in floor_labels:
+        # 1. Assert exact dedicated translation is returned
+        actual_ur = translate_indicator_to_urdu(en_label)
+        assert actual_ur == expected_ur, f"Mismatch for '{en_label}'"
+
+        # 2. Assert does not return fallback
+        assert actual_ur != UNKNOWN_INDICATOR_URDU_FALLBACK
+
+        # 3. Assert script purity
+        assert_urdu_script_purity(actual_ur)
+
+
+def test_phase4_translation_lookup_semantics_and_fallbacks():
+    """Verify exact lookup semantics: existing indicators work, VT prefix works, unknown triggers fallback."""
+    from app.agents.advisor_agent import (
+        translate_indicator_to_urdu,
+        UNKNOWN_INDICATOR_URDU_FALLBACK,
+    )
+
+    # 1. Existing baseline indicators continue working
+    ur_cred = translate_indicator_to_urdu("Sensitive credential or personal identity data requested")
+    assert ur_cred == "حساس معلومات یا پاس ورڈ کی چوری کی کوشش"
+    assert_urdu_script_purity(ur_cred)
+
+    ur_urg = translate_indicator_to_urdu("Artificial urgency, deadline, or punitive threat detected")
+    assert ur_urg == "فوری کارروائی کا غیر حقیقی دباؤ یا اکاؤنٹ بندش کی دھمکی"
+    assert_urdu_script_purity(ur_urg)
+
+    # 2. VirusTotal engine detections special case continues working
+    ur_vt = translate_indicator_to_urdu("VirusTotal detected 3 malicious security engine(s)")
+    assert "وائرس ٹوٹل" in ur_vt
+    assert "VirusTotal" in ur_vt
+    assert_urdu_script_purity(ur_vt)
+
+    # 3. Unknown / unmapped indicators safely trigger fallback (never leaking raw English)
+    ur_unknown = translate_indicator_to_urdu("Unregistered novel zero-day attack vector")
+    assert ur_unknown == UNKNOWN_INDICATOR_URDU_FALLBACK
+    assert_urdu_script_purity(ur_unknown)
+
+    # 4. Empty indicator returns empty string
+    assert translate_indicator_to_urdu("") == ""
+
+
+@pytest.mark.asyncio
+async def test_phase4_end_to_end_scans_urdu_summary_dedicated_translations():
+    """Verify end-to-end orchestrator scans for 92-point and 90-point patterns generate dedicated Urdu summaries."""
+    orchestrator = AIOrchestrator()
+
+    # 1. 92-point Compound Extortion Scan
+    msg_92 = (
+        "State Bank of Pakistan Warning: Your account is frozen under AML inquiry. "
+        "Transfer 15,000 PKR processing fee immediately and provide your OTP to avoid police action."
+    )
+    resp_92 = await orchestrator.scan(content=msg_92, target_type=TargetType.MESSAGE)
+    assert resp_92.overall_risk_score == 92.0
+    assert resp_92.verdict == Verdict.MALICIOUS
+    assert resp_92.risk_level == RiskLevel.CRITICAL
+
+    # Assert dedicated 92-point translation appears in Urdu summary
+    assert "شدید نوعیت کا دھمکی آمیز مالی فراڈ" in resp_92.summary.ur
+    assert "حساس معلومات چرانے کے ساتھ فوری رقم کا مطالبہ" in resp_92.summary.ur
+    assert_urdu_script_purity(resp_92.summary.ur)
+
+    # 2. 90-point Critical Phishing with Untrusted Link Scan
+    msg_90 = (
+        "HBL Alert: Urgent! Your account will be blocked immediately. "
+        "Enter your OTP and password at https://hbl-auth-portal.com now to restore access."
+    )
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+        instance.call_tool.side_effect = [
+            {"is_valid": True, "is_safe_target": True},
+            {"status": "completed", "malicious": 0, "suspicious": 0},
+        ]
+        resp_90 = await orchestrator.scan(content=msg_90, target_type=TargetType.MESSAGE)
+        assert resp_90.overall_risk_score == 90.0
+        assert resp_90.verdict == Verdict.MALICIOUS
+        assert resp_90.risk_level == RiskLevel.CRITICAL
+
+        # Assert dedicated 90-point translation appears in Urdu summary
+        assert "شدید فشنگ حملہ" in resp_90.summary.ur
+        assert "معروف ادارے کی جعلی شناخت" in resp_90.summary.ur
+        assert "مشکوک بیرونی لنک" in resp_90.summary.ur
+        assert_urdu_script_purity(resp_90.summary.ur)
+
+    # 3. Defensive HBL advisory verification: remains unchanged, score <= 10.0, no threat floors triggered
+    msg_defensive = (
+        "HBL Security Advisory: HBL will never ask for your password or OTP. "
+        "Beware of urgent calls claiming your account will be blocked. Visit https://hbl.com/security"
+    )
+    with patch("app.agents.url_agent.SiftrixMCPClient") as mock_mcp:
+        instance = AsyncMock()
+        mock_mcp.return_value.__aenter__.return_value = instance
+        instance.call_tool.side_effect = [
+            {"is_valid": True, "is_safe_target": True},
+            {"status": "completed", "malicious": 0, "suspicious": 0},
+        ]
+        resp_def = await orchestrator.scan(content=msg_defensive, target_type=TargetType.MESSAGE)
+        assert resp_def.overall_risk_score == 10.0
+        assert resp_def.risk_level == RiskLevel.LOW
+        assert resp_def.verdict == Verdict.SUSPICIOUS
+        assert "No immediate threat detected" in resp_def.agent_findings.security_advisor.action_required
+        assert_urdu_script_purity(resp_def.summary.ur)
+
+
+
+
+

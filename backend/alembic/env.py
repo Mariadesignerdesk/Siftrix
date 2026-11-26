@@ -20,6 +20,7 @@ from app.core.database import Base
 # Import all models so Base.metadata is fully populated for migrations
 from app.models.scan import ScanRecord
 from app.models.user import User
+from app.models.gamification import GamificationProfile, NotificationRecord
 
 # Alembic Config object, which provides access to the values within the .ini file in use.
 config = context.config

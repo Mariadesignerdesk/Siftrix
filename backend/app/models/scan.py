@@ -41,6 +41,14 @@ class ScanRecord(Base):
     verdict = Column(String(20), nullable=False, default="safe", index=True)      # "safe", "suspicious", "malicious"
     risk_level = Column(String(20), nullable=False, default="low", index=True)   # "low", "medium", "high", "critical"
 
+    # Gamification Idempotency
+    xp_awarded_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+        doc="Timestamp when XP was awarded; null if not yet awarded.",
+    )
+
     # Bilingual Summaries (English & Roman Urdu)
     summary_en = Column(Text, nullable=True)                       # e.g., "Urgent banking credential lure detected."
     summary_ur = Column(Text, nullable=True)                       # e.g., "Yeh message ek farzi bank phishing scam hai..."

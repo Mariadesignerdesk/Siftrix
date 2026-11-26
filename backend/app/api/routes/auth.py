@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.auth import get_current_user, validate_uuid4, migrate_guest_scans
+from app.services.gamification_service import migrate_guest_gamification
 from app.models.user import User
 from app.schemas.auth import (
     UserRegisterRequest,
@@ -73,6 +74,11 @@ def register(
     # 5. Atomically migrate prior guest scans to the newly created user ID
     if guest_uuid is not None:
         migrated_count = migrate_guest_scans(
+            db=db,
+            guest_session_id=guest_uuid,
+            user_id=user.id,
+        )
+        migrate_guest_gamification(
             db=db,
             guest_session_id=guest_uuid,
             user_id=user.id,
@@ -148,9 +154,14 @@ def login(
             guest_session_id=guest_uuid,
             user_id=user.id,
         )
+        migrate_guest_gamification(
+            db=db,
+            guest_session_id=guest_uuid,
+            user_id=user.id,
+        )
+        db.commit()
+        db.refresh(user)
         if migrated_count > 0:
-            db.commit()
-            db.refresh(user)
             logger.info(f"Migrated {migrated_count} guest scans to logged-in user {user.id}")
 
     # 5. Issue signed JWT bearer access token

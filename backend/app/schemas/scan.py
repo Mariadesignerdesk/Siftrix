@@ -2,7 +2,7 @@ import ipaddress
 import re
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -141,6 +141,10 @@ class UnifiedScanRequest(BaseModel):
         return v
 
 
+ValidationStatusType = Literal["validated", "blocked", "unavailable"]
+ReputationStatusType = Literal["completed", "pending", "rate_limited", "blocked", "unavailable"]
+
+
 # --- Typed Agent Findings ---
 
 class MessageAgentFinding(BaseModel):
@@ -163,6 +167,8 @@ class URLAgentFinding(BaseModel):
     suspicious_tld: bool = False
     redirect_count: int = 0
     indicators: List[str] = Field(default_factory=list)
+    validation_status: ValidationStatusType = "unavailable"
+    reputation_status: ReputationStatusType = "unavailable"
 
 
 class AdvisorAgentFinding(BaseModel):

@@ -17,6 +17,7 @@ from app.schemas.scan import (
     ScanResponse,
 )
 from app.services.scan_repository import save_scan_record
+from app.services.gamification_service import award_scan_rewards
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +45,15 @@ async def _execute_and_persist_scan(
     )
 
     # 2. Persist to database with explicit owner enforcement and transaction safety
-    save_scan_record(db=db, scan_resp=scan_resp, owner_id=owner_id)
+    saved_record = save_scan_record(db=db, scan_resp=scan_resp, owner_id=owner_id)
 
-    # 3. Expose session token in response header only for unauthenticated guest requests
+    # 3. Award gamification XP and evaluate badge milestones
+    try:
+        award_scan_rewards(db=db, scan_record=saved_record, owner_id=owner_id)
+    except Exception as e:
+        logger.error(f"Error awarding gamification rewards for scan {saved_record.id}: {e}")
+
+    # 4. Expose session token in response header only for unauthenticated guest requests
     if current_user is None:
         response.headers["X-Session-ID"] = str(owner_id)
 

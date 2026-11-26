@@ -420,6 +420,8 @@ class URLSecurityAgent(BaseAgent):
             suspicious_tld=suspicious_tld,
             redirect_count=0,
             indicators=indicator_labels,
+            validation_status=val_status,
+            reputation_status=rep_status,
         )
 
 

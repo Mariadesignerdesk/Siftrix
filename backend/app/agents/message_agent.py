@@ -6,6 +6,7 @@ import urllib.parse
 from typing import List, Dict, Any, Optional
 
 from app.agents.base import BaseAgent, detect_prompt_injection, sanitize_and_quarantine
+from app.agents.url_agent import is_official_brand_domain, VERIFIED_OFFICIAL_BRAND_DOMAINS
 from app.schemas.scan import MessageAgentFinding
 from app.services.gemini import gemini_client
 
@@ -200,6 +201,42 @@ class MessageAnalysisAgent(BaseAgent):
 
         return True
 
+    @staticmethod
+    def extract_detected_brands(text: str) -> List[str]:
+        """Extract and normalize brand keys matching VERIFIED_OFFICIAL_BRAND_DOMAINS."""
+        detected = []
+        for match in INDICATOR_PATTERNS["impersonation"].finditer(text):
+            raw = match.group(0).lower().strip()
+            if "alfalah" in raw:
+                brand_key = "alfalah"
+            elif "google" in raw:
+                brand_key = "google"
+            elif "whatsapp" in raw:
+                brand_key = "whatsapp"
+            else:
+                brand_key = raw
+            if brand_key in VERIFIED_OFFICIAL_BRAND_DOMAINS and brand_key not in detected:
+                detected.append(brand_key)
+        return detected
+
+    @staticmethod
+    def is_trusted_url_for_brand(url_str: str, detected_brands: List[str]) -> bool:
+        """Check if the URL hostname strictly belongs to the verified official domain of any detected brand."""
+        if not detected_brands:
+            return False
+        try:
+            parsed = urllib.parse.urlparse(url_str if "://" in url_str else f"http://{url_str}")
+            hostname = (parsed.hostname or "").lower().strip(".")
+            if not hostname:
+                return False
+        except Exception:
+            return False
+
+        for brand in detected_brands:
+            if is_official_brand_domain(hostname, brand):
+                return True
+        return False
+
     async def analyze(self, content: str, sender: Optional[str] = None) -> MessageAgentFinding:
         """Execute deterministic indicator evaluation and optional Gemini enrichment."""
         content_text = content or ""
@@ -262,23 +299,49 @@ class MessageAnalysisAgent(BaseAgent):
         urgency_detected = "urgency_threat" in active_indicators
         impersonation_detected = "impersonation" in active_indicators
 
-        # Phase 3: Conditional Credential-Phishing Risk Floor
-        # Raise deterministic score to a minimum of 70.0 ONLY when ALL 4 conditions are met:
-        # 1. Credential harvesting is detected ("credential_request" in active_indicators)
-        # 2. Urgency/threat is detected ("urgency_threat" in active_indicators)
-        # 3. At least one external URL is extracted (excluding web conferencing URLs)
-        # 4. Message is not a defensive advisory or legitimate informational communication
-        has_external_url = bool(embedded_urls) and any(not self.is_meeting_url(u) for u in embedded_urls)
+        # Determine detected brands and untrusted URL presence
+        detected_brands = self.extract_detected_brands(combined_text)
+        has_untrusted_url = bool(embedded_urls) and any(
+            not self.is_meeting_url(u) and not self.is_trusted_url_for_brand(u, detected_brands)
+            for u in embedded_urls
+        )
+        has_meeting_only = bool(embedded_urls) and all(self.is_meeting_url(u) for u in embedded_urls)
 
         applied_phishing_floor = False
-        if (
-            credential_harvesting_detected
-            and urgency_detected
-            and has_external_url
-            and not is_defensive
-        ):
-            deterministic_score = max(deterministic_score, 70.0)
-            applied_phishing_floor = True
+        applied_floor_label = ""
+        applied_floor = 0.0
+
+        if not is_defensive:
+            payment_detected = "payment_transfer" in active_indicators
+
+            # Step 1: Evaluate Tier 3 (CRITICAL Floors: 90.0 - 92.0)
+            # 92.0 compound extortion takes precedence over 90.0 untrusted URL when both are present
+            if credential_harvesting_detected and urgency_detected and impersonation_detected and payment_detected:
+                applied_floor = 92.0
+                applied_floor_label = "Critical compound extortion pattern detected: credential harvesting and urgent payment coercion (+floor 92)"
+                applied_phishing_floor = True
+            elif credential_harvesting_detected and urgency_detected and impersonation_detected and has_untrusted_url:
+                applied_floor = 90.0
+                applied_floor_label = "Critical credential phishing attack pattern detected: brand impersonation, urgent credential harvesting, and external lure (+floor 90)"
+                applied_phishing_floor = True
+
+            # Step 2: Evaluate Tier 2 (MALICIOUS Floors: 70.0 - 75.0) [Only if Critical floor not applied]
+            elif credential_harvesting_detected and urgency_detected and impersonation_detected and not has_meeting_only:
+                applied_floor = 75.0
+                applied_floor_label = "Targeted credential phishing attack pattern detected: institutional impersonation and urgent credential harvesting (+floor 75)"
+                applied_phishing_floor = True
+            elif urgency_detected and payment_detected and impersonation_detected:
+                applied_floor = 70.0
+                applied_floor_label = "Coercive payment fraud pattern detected: institutional impersonation with urgent financial demand (+floor 70)"
+                applied_phishing_floor = True
+            elif credential_harvesting_detected and urgency_detected and has_untrusted_url:
+                applied_floor = 70.0
+                applied_floor_label = "Critical credential phishing attack pattern detected: urgent credential harvesting via external link (+floor 70)"
+                applied_phishing_floor = True
+
+            # Step 3: Enforce Monotonic Maximum Floor
+            if applied_floor > 0.0:
+                deterministic_score = max(deterministic_score, applied_floor)
 
         # Build descriptive indicator labels
         indicator_labels: List[str] = []
@@ -294,8 +357,8 @@ class MessageAnalysisAgent(BaseAgent):
             indicator_labels.append("Impersonation of trusted financial, government, or courier institution (+10)")
         if "suspicious_link" in active_indicators:
             indicator_labels.append("Embedded link or external call-to-action detected (+10)")
-        if applied_phishing_floor:
-            indicator_labels.append("Critical credential phishing attack pattern detected: urgent credential harvesting via external link (+floor 70)")
+        if applied_floor_label:
+            indicator_labels.append(applied_floor_label)
 
         if is_injection_detected:
             indicator_labels.append("Adversarial prompt injection attempt detected: text contains command override directives")

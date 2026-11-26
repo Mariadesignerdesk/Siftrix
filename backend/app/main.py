@@ -10,9 +10,9 @@ from app.api.routes.health import router as health_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.scans import router as scans_router
 from app.api.routes.history import router as history_router
-from app.api.routes.history import router as history_router
-from app.api.routes.history import router as history_router
 from app.api.routes.chat import router as chat_router
+from app.api.routes.gamification import router as gamification_router
+from app.api.routes.notifications import router as notifications_router
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,9 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(scans_router)
 app.include_router(history_router)
-app.include_router(history_router)
 app.include_router(chat_router)
+app.include_router(gamification_router)
+app.include_router(notifications_router)
 
 @app.get("/")
 async def root():
