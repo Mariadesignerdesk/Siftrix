@@ -322,7 +322,7 @@ def test_migration_0002_reconciles_pre_existing_railway_schema():
 
         # Check revision updated
         rev = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert rev == "0002_gamification_and_notifications"
+        assert rev == "0002_gamification_notifications"
 
         # Check gamification_profiles index reconciled
         gp_indexes = {idx["name"] for idx in inspector.get_indexes("gamification_profiles")}

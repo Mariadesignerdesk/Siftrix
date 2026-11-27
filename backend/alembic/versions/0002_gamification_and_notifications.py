@@ -1,6 +1,6 @@
 """Alembic migration: Safe reconciliation for Phase 7 gamification, notifications, and scan idempotency.
 
-Revision ID: 0002_gamification_and_notifications
+Revision ID: 0002_gamification_notifications
 Revises: 0001_initial_schema_and_users
 Create Date: 2026-11-26
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 logger = logging.getLogger("alembic.runtime.migration")
 
-revision: str = "0002_gamification_and_notifications"
+revision: str = "0002_gamification_notifications"
 down_revision: Union[str, None] = "0001_initial_schema_and_users"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
