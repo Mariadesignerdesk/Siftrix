@@ -48,7 +48,7 @@ export default function Footer({ onNavigate }: FooterProps) {
   return (
     <footer
       role="contentinfo"
-      className="relative bg-siftrix-charcoal dark:bg-[#0E0E12] border-t border-siftrix-charcoal-border text-siftrix-beige dark:text-[#EFE9DF] px-5 sm:px-6 md:px-10 pt-14 pb-10"
+      className="relative bg-siftrix-charcoal dark:bg-[#111217] border-t border-siftrix-charcoal-border dark:border-[#262732] text-siftrix-beige dark:text-[#E9E5DC] px-4 sm:px-6 md:px-10 pt-12 sm:pt-14 pb-8 sm:pb-10 transition-colors duration-500"
     >
       <div
         aria-hidden="true"
@@ -56,9 +56,9 @@ export default function Footer({ onNavigate }: FooterProps) {
       />
 
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-10 border-b border-siftrix-charcoal-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-8 sm:gap-10 pb-8 sm:pb-10 border-b border-siftrix-charcoal-border">
           {/* Brand Summary */}
-          <div className="md:col-span-5 space-y-4">
+          <div className="col-span-1 sm:col-span-2 md:col-span-5 space-y-3.5 sm:space-y-4">
             <div className="inline-flex items-center gap-3">
               <BrandMark className="h-9 w-9 shrink-0" />
               <div>
@@ -71,24 +71,24 @@ export default function Footer({ onNavigate }: FooterProps) {
               </div>
             </div>
 
-            <p className="text-sm text-[#C8C1B6] leading-relaxed max-w-sm">
+            <p className="text-sm text-[#D5CEC2] leading-relaxed max-w-sm">
               AI-Powered Cybersecurity for Everyone. Inspect suspicious URLs, SMS
               lures, and phishing emails with clear bilingual guidance.
             </p>
           </div>
 
           {/* Platform Navigation */}
-          <div className="md:col-span-3 space-y-3">
+          <div className="col-span-1 sm:col-span-1 md:col-span-3 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-siftrix-champagne">
               Platform
             </h3>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-2.5 text-sm">
               {PLATFORM_LINKS.map((item) => (
                 <li key={item.label}>
                   <a
                     href={item.href}
                     onClick={(e) => onAnchorClick(e, item.path, item.sectionId)}
-                    className="text-[#CFC9BF] hover:text-siftrix-champagne transition-colors"
+                    className="inline-block py-0.5 text-[#D6D0C5] hover:text-siftrix-champagne transition-colors"
                   >
                     {item.label}
                   </a>
@@ -98,17 +98,17 @@ export default function Footer({ onNavigate }: FooterProps) {
           </div>
 
           {/* Command Center Navigation */}
-          <div className="md:col-span-4 space-y-3">
+          <div className="col-span-1 sm:col-span-1 md:col-span-4 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-siftrix-champagne">
               Command Center
             </h3>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-2.5 text-sm">
               {WORKSPACE_LINKS.map((item) => (
                 <li key={item.label}>
                   <a
                     href={item.href}
                     onClick={(e) => onAnchorClick(e, item.path, item.sectionId)}
-                    className="text-[#CFC9BF] hover:text-siftrix-champagne transition-colors"
+                    className="inline-block py-0.5 text-[#D6D0C5] hover:text-siftrix-champagne transition-colors"
                   >
                     {item.label}
                   </a>
@@ -118,7 +118,7 @@ export default function Footer({ onNavigate }: FooterProps) {
           </div>
         </div>
 
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#AAA398]">
+        <div className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs text-[#AAA398]">
           <p>Intelligence Behind Every Scan.</p>
           <p>© 2026 SIFTRIX. All rights reserved.</p>
         </div>

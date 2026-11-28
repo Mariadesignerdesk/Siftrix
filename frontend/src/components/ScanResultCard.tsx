@@ -10,6 +10,7 @@ import {
   loadLanguagePreference,
   type LanguageView,
 } from '../utils/userPreferences'
+import { normalizeDisplayText } from '../utils/textSanitize'
 import RiskGaugeRing from './RiskGaugeRing'
 import { RiskLevelBadge, TargetTypeBadge, VerdictBadge } from './ScanBadges'
 import PersonalizedRecommendationBox from './recommendations/PersonalizedRecommendationBox'
@@ -35,6 +36,49 @@ const CORE_AGENTS: ReadonlyArray<{
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value))
+}
+
+/** Internal pipeline metadata that belongs in Technical Details, not the user-facing report. */
+const INTERNAL_METADATA_KEYS = new Set(['source', 'channel', 'scoring_engine', 'url_accounting'])
+
+function stripInternalMetadata(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripInternalMetadata(item))
+  }
+  if (isPlainRecord(value)) {
+    const cleaned: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(value)) {
+      if (!INTERNAL_METADATA_KEYS.has(key)) {
+        cleaned[key] = stripInternalMetadata(val)
+      }
+    }
+    return cleaned
+  }
+  return value
+}
+
+function extractInternalMetadata(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    const extractedItems = value
+      .map((item) => extractInternalMetadata(item))
+      .filter((item) => item !== undefined)
+    return extractedItems.length > 0 ? extractedItems : undefined
+  }
+  if (isPlainRecord(value)) {
+    const found: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(value)) {
+      if (INTERNAL_METADATA_KEYS.has(key)) {
+        found[key] = val
+      } else {
+        const nested = extractInternalMetadata(val)
+        if (nested !== undefined) {
+          found[key] = nested
+        }
+      }
+    }
+    return Object.keys(found).length > 0 ? found : undefined
+  }
+  return undefined
 }
 
 function getAgentStatus(value: unknown): {
@@ -158,24 +202,25 @@ function renderValue(value: unknown, depth = 0): ReactNode {
   }
 
   if (typeof value === 'string') {
-    return <span className="text-siftrix-graphite break-words">{value || '—'}</span>
+    return <span className="text-siftrix-graphite break-words">{normalizeDisplayText(value) || '—'}</span>
   }
 
   if (Array.isArray(value)) {
-    if (value.length === 0) {
+    const sanitizedItems = value.map((item) => stripInternalMetadata(item))
+    if (sanitizedItems.length === 0) {
       return <span className="text-siftrix-muted-dark italic">None</span>
     }
 
-    const allPrimitives = value.every(
+    const allPrimitives = sanitizedItems.every(
       (item) => typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean'
     )
 
     if (allPrimitives) {
       return (
         <ul className="list-disc list-inside space-y-1 text-siftrix-graphite">
-          {value.map((item, idx) => (
+          {sanitizedItems.map((item, idx) => (
             <li key={idx} className="break-words">
-              {String(item)}
+              {normalizeDisplayText(String(item))}
             </li>
           ))}
         </ul>
@@ -185,14 +230,14 @@ function renderValue(value: unknown, depth = 0): ReactNode {
     if (depth >= 2) {
       return (
         <pre className="text-xs bg-siftrix-white text-siftrix-graphite p-2 rounded border border-siftrix-border overflow-x-auto">
-          {JSON.stringify(value, null, 2)}
+          {JSON.stringify(sanitizedItems, null, 2)}
         </pre>
       )
     }
 
     return (
       <div className="space-y-2 mt-1">
-        {value.map((item, idx) => (
+        {sanitizedItems.map((item, idx) => (
           <div key={idx} className="bg-siftrix-white p-2.5 rounded-lg border border-siftrix-border text-xs">
             {renderValue(item, depth + 1)}
           </div>
@@ -203,6 +248,8 @@ function renderValue(value: unknown, depth = 0): ReactNode {
 
   if (isPlainRecord(value)) {
     const entries = Object.entries(value)
+      .filter(([k]) => !INTERNAL_METADATA_KEYS.has(k))
+      .map(([k, v]) => [k, stripInternalMetadata(v)] as const)
     if (entries.length === 0) {
       return <span className="text-siftrix-muted-dark italic">Empty</span>
     }
@@ -210,7 +257,7 @@ function renderValue(value: unknown, depth = 0): ReactNode {
     if (depth >= 2) {
       return (
         <pre className="text-xs bg-siftrix-white text-siftrix-graphite p-2 rounded border border-siftrix-border overflow-x-auto">
-          {JSON.stringify(value, null, 2)}
+          {JSON.stringify(Object.fromEntries(entries), null, 2)}
         </pre>
       )
     }
@@ -247,14 +294,16 @@ export default function ScanResultCard({
   const clampedScore = clampRiskScore(result.overall_risk_score)
   const verdictStyle = getVerdictStyle(result.verdict)
 
-  const enSummary = result.summary?.en?.trim() || ''
-  const urSummary = result.summary?.ur?.trim() || ''
-  const enRecommendations = Array.isArray(result.recommendations?.en)
+  const enSummary = normalizeDisplayText(result.summary?.en).trim()
+  const urSummary = normalizeDisplayText(result.summary?.ur).trim()
+  const enRecommendations = (Array.isArray(result.recommendations?.en)
     ? result.recommendations.en.filter((item) => typeof item === 'string' && item.trim())
     : []
-  const urRecommendations = Array.isArray(result.recommendations?.ur)
+  ).map(normalizeDisplayText)
+  const urRecommendations = (Array.isArray(result.recommendations?.ur)
     ? result.recommendations.ur.filter((item) => typeof item === 'string' && item.trim())
     : []
+  ).map(normalizeDisplayText)
 
   const incompleteNotices = detectIncompleteProviders(result)
   const findingsRecord = isPlainRecord(result.agent_findings) ? result.agent_findings : {}
@@ -285,6 +334,18 @@ export default function ScanResultCard({
     (!isPlainRecord(findingsRecord.raw_metadata) ||
       Object.keys(findingsRecord.raw_metadata).length > 0)
 
+  // Collect internal pipeline fields (source, channel, scoring_engine, url_accounting)
+  // recursively from each agent panel so they stay available under Technical Details.
+  const internalByPanel: Record<string, unknown> = {}
+  for (const panel of agentPanels) {
+    const internal = extractInternalMetadata(panel.data)
+    if (internal !== undefined) internalByPanel[panel.title] = internal
+  }
+  const technicalDetails: Record<string, unknown> = {}
+  if (Object.keys(internalByPanel).length > 0) technicalDetails.agent_internal = internalByPanel
+  if (hasRawMetadata) technicalDetails.raw_metadata = findingsRecord.raw_metadata
+  const hasTechnicalDetails = Object.keys(technicalDetails).length > 0
+
   return (
     <div
       role="region"
@@ -305,24 +366,36 @@ export default function ScanResultCard({
           {/* Header: Verdict, Risk Level, Circular Risk Dial */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-siftrix-border">
             <div className="space-y-3 min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <VerdictBadge verdict={result.verdict} />
-                <RiskLevelBadge riskLevel={result.risk_level} />
-                <TargetTypeBadge targetType={result.target_type} />
+              <div className="flex flex-wrap items-center gap-2" role="list" aria-label="Scan classification">
+                <span role="listitem"><VerdictBadge verdict={result.verdict} /></span>
+                <span role="listitem"><RiskLevelBadge riskLevel={result.risk_level} /></span>
+                <span role="listitem"><TargetTypeBadge targetType={result.target_type} /></span>
+                <span
+                  role="listitem"
+                  className="px-2.5 py-1 rounded-full text-xs font-medium bg-siftrix-beige text-siftrix-graphite border border-siftrix-border whitespace-nowrap"
+                >
+                  {`Risk Score: ${clampedScore}/100`}
+                </span>
               </div>
 
-              <div className="space-y-1">
-                <h3 className="text-lg sm:text-xl font-bold text-siftrix-charcoal">
+              <div className="space-y-1.5">
+                <h3 className="text-lg sm:text-xl font-bold text-siftrix-charcoal leading-tight">
                   Threat Analysis Report
                 </h3>
-                <p className="text-xs text-siftrix-muted-dark">
-                  Analyzed on {formatTimestamp(result.created_at)}
+                <p className="text-xs text-siftrix-muted-dark flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span>Analyzed on {formatTimestamp(result.created_at)}</span>
                   {result.id ? (
-                    <span className="ml-2 font-mono text-[11px] text-siftrix-muted-dark">
+                    <span className="font-mono text-[11px] text-siftrix-muted-dark">
                       ID: {result.id.slice(0, 8)}
                     </span>
                   ) : null}
                 </p>
+                {result.target_type === 'url' && result.verdict === 'safe' ? (
+                  <p className="text-[11px] text-siftrix-muted-dark leading-relaxed max-w-xl">
+                    Note: passing static URL/SSRF validation does not prove a website is legitimate or
+                    free of phishing. Always verify the destination before entering credentials.
+                  </p>
+                ) : null}
               </div>
 
               {/* Analyzed Target Preview inside Dark Obsidian Strip */}
@@ -523,6 +596,7 @@ export default function ScanResultCard({
         <div className="grid grid-cols-1 gap-3">
           {agentPanels.map((panel) => {
             const status = getAgentStatus(panel.data)
+            const visibleData = stripInternalMetadata(panel.data)
             const statusBadgeClass =
               status.tone === 'ok'
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60'
@@ -530,10 +604,14 @@ export default function ScanResultCard({
                   ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60'
                   : 'bg-siftrix-sand text-siftrix-graphite border-siftrix-border'
             const hasExtraFields =
-              isPlainRecord(panel.data) &&
-              Object.keys(panel.data).some(
+              isPlainRecord(visibleData) &&
+              Object.keys(visibleData).some(
                 (key) => key !== 'status' && key !== 'error' && key !== 'message'
               )
+            const hasVisibleContent =
+              visibleData !== null &&
+              visibleData !== undefined &&
+              (!isPlainRecord(visibleData) || Object.keys(visibleData).length > 0)
 
             return (
               <div
@@ -561,8 +639,8 @@ export default function ScanResultCard({
                   </p>
                 ) : null}
 
-                {status.tone === 'ok' || hasExtraFields ? (
-                  <div className="text-xs text-siftrix-graphite">{renderValue(panel.data)}</div>
+                {(status.tone === 'ok' || hasExtraFields) && hasVisibleContent ? (
+                  <div className="text-xs text-siftrix-graphite">{renderValue(visibleData)}</div>
                 ) : null}
               </div>
             )
@@ -570,16 +648,21 @@ export default function ScanResultCard({
         </div>
 
         {/* Raw Metadata Disclosure */}
-        {hasRawMetadata ? (
+        {hasTechnicalDetails ? (
           <details
             open={defaultOpenMetadata ? true : undefined}
             className="rounded-xl siftrix-panel-inset p-3.5"
           >
             <summary className="text-xs font-semibold text-siftrix-charcoal hover:text-siftrix-antique-ink underline decoration-siftrix-gold/65 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold rounded">
-              Raw Metadata
+              Technical Details (Raw Metadata)
             </summary>
+            <p className="mt-2 text-[11px] text-siftrix-muted-dark">
+              Internal diagnostic fields for support and debugging. Not part of the risk assessment above.
+            </p>
             <pre className="mt-3 text-xs text-siftrix-pearl bg-[#1B1B20] p-3.5 rounded-lg border border-siftrix-charcoal-border overflow-x-auto max-h-64 font-mono">
-              {JSON.stringify(findingsRecord.raw_metadata, null, 2)}
+              {JSON.stringify(technicalDetails.raw_metadata !== undefined && !technicalDetails.agent_internal
+                ? technicalDetails.raw_metadata
+                : technicalDetails, null, 2)}
             </pre>
           </details>
         ) : !showOverview ? (

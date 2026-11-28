@@ -113,8 +113,12 @@ export default function Theme4CyberBackground({ variant = 'hero' }: Theme4CyberB
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden select-none z-0"
     >
-      {/* Layer 1: Matte Charcoal Black Base with Sophisticated Radial Highlights */}
-      <div className="absolute inset-0 bg-[#F7F3EC] dark:bg-[#0A0A0E] transition-colors duration-500" />
+      {/* Layer 1: Charcoal Base with Sophisticated Radial Highlights */}
+      <div
+        className={`absolute inset-0 ${
+          isFeatures ? 'bg-transparent' : 'bg-[#F7F3EC] dark:bg-[#111217]'
+        } transition-colors duration-500`}
+      />
 
       {isFeatures ? (
         <>
@@ -124,33 +128,6 @@ export default function Theme4CyberBackground({ variant = 'hero' }: Theme4CyberB
             style={{
               background:
                 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(216, 181, 109, 0.18) 0%, rgba(197, 161, 93, 0.05) 50%, transparent 80%)',
-            }}
-          />
-
-          {/* Features Variant: Left Column Spotlight (Behind AI Detection Card) */}
-          <div
-            className="absolute top-1/4 left-[8%] w-[38rem] h-[38rem] opacity-45 dark:opacity-35"
-            style={{
-              background:
-                'radial-gradient(circle 380px at 40% 50%, rgba(216, 181, 109, 0.15) 0%, rgba(197, 161, 93, 0.04) 50%, transparent 75%)',
-            }}
-          />
-
-          {/* Features Variant: Center Column Spotlight (Behind Threat Analysis & Center Globe) */}
-          <div
-            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[48rem] h-[48rem] opacity-65 dark:opacity-55"
-            style={{
-              background:
-                'radial-gradient(circle 480px at 50% 50%, rgba(216, 181, 109, 0.20) 0%, rgba(197, 161, 93, 0.06) 55%, transparent 75%)',
-            }}
-          />
-
-          {/* Features Variant: Right Column Spotlight (Behind Bilingual Security Guidance Card) */}
-          <div
-            className="absolute top-1/4 right-[8%] w-[38rem] h-[38rem] opacity-45 dark:opacity-35"
-            style={{
-              background:
-                'radial-gradient(circle 380px at 60% 50%, rgba(216, 181, 109, 0.15) 0%, rgba(197, 161, 93, 0.04) 50%, transparent 75%)',
             }}
           />
         </>
@@ -266,116 +243,9 @@ export default function Theme4CyberBackground({ variant = 'hero' }: Theme4CyberB
         </g>
 
         {/* ============================================================== */}
-        {/* ELEMENT 3: SUBTLE GOLDEN DIGITAL GLOBE                         */}
+        {/* ELEMENT 3: SUBTLE GOLDEN DIGITAL GLOBE (Hero only)             */}
         {/* ============================================================== */}
-        {isFeatures ? (
-          /* Features Variant: Digital Globe Centered Behind 3 Cards (cx: 720, cy: 500, r: 270) */
-          <g transform="translate(720, 500) rotate(-14)" opacity="0.82">
-            {/* Globe Atmosphere / Volumetric Glow */}
-            <circle
-              r="270"
-              fill={`url(#${idPrefix}globeAtmosphere)`}
-              stroke={`url(#${idPrefix}globeRingGrad)`}
-              strokeWidth="1.2"
-            />
-
-            {/* Faint Outer Orbital Axis Ring */}
-            <ellipse
-              rx="360"
-              ry="100"
-              stroke="rgba(216, 181, 109, 0.28)"
-              strokeWidth="1"
-              strokeDasharray="6 8"
-              fill="none"
-              transform="rotate(-6)"
-            />
-
-            {/* Latitude Parallels */}
-            <ellipse
-              rx="270"
-              ry="90"
-              stroke="rgba(216, 181, 109, 0.45)"
-              strokeWidth="1"
-              strokeDasharray="4 6"
-              fill="none"
-            />
-            <ellipse
-              cy="-90"
-              rx="245"
-              ry="74"
-              stroke="rgba(216, 181, 109, 0.30)"
-              strokeWidth="0.9"
-              strokeDasharray="3 5"
-              fill="none"
-            />
-            <ellipse
-              cy="90"
-              rx="245"
-              ry="74"
-              stroke="rgba(216, 181, 109, 0.30)"
-              strokeWidth="0.9"
-              strokeDasharray="3 5"
-              fill="none"
-            />
-            <ellipse
-              cy="-175"
-              rx="175"
-              ry="48"
-              stroke="rgba(216, 181, 109, 0.22)"
-              strokeWidth="0.8"
-              strokeDasharray="2 4"
-              fill="none"
-            />
-            <ellipse
-              cy="175"
-              rx="175"
-              ry="48"
-              stroke="rgba(216, 181, 109, 0.22)"
-              strokeWidth="0.8"
-              strokeDasharray="2 4"
-              fill="none"
-            />
-
-            {/* Longitude Meridians */}
-            <ellipse
-              rx="80"
-              ry="270"
-              stroke="rgba(216, 181, 109, 0.38)"
-              strokeWidth="0.9"
-              strokeDasharray="4 6"
-              fill="none"
-            />
-            <ellipse
-              rx="165"
-              ry="270"
-              stroke="rgba(216, 181, 109, 0.28)"
-              strokeWidth="0.8"
-              strokeDasharray="3 5"
-              fill="none"
-            />
-            <ellipse
-              rx="230"
-              ry="270"
-              stroke="rgba(216, 181, 109, 0.22)"
-              strokeWidth="0.8"
-              strokeDasharray="2 5"
-              fill="none"
-            />
-
-            {/* Glowing Intersection Coordinate Nodes */}
-            <circle cx="0" cy="0" r="2.5" fill="#FAF6EF" className="animate-pulse" />
-            <circle cx="-80" cy="0" r="2" fill="#D8B56D" />
-            <circle cx="80" cy="0" r="2" fill="#D8B56D" />
-            <circle cx="-165" cy="0" r="1.8" fill="#C5A15D" />
-            <circle cx="165" cy="0" r="1.8" fill="#C5A15D" />
-            <circle cx="0" cy="-90" r="2" fill="#D8B56D" />
-            <circle cx="0" cy="90" r="2" fill="#D8B56D" />
-            <circle cx="-70" cy="-85" r="1.8" fill="#E8CC8E" />
-            <circle cx="70" cy="-85" r="1.8" fill="#E8CC8E" />
-            <circle cx="-70" cy="85" r="1.8" fill="#E8CC8E" />
-            <circle cx="70" cy="85" r="1.8" fill="#E8CC8E" />
-          </g>
-        ) : (
+        {!isFeatures && (
           /* Hero Variant: Positioned on the right (cx: 1040, cy: 380, r: 230) behind Shield */
           <g transform="translate(1040, 380) rotate(-18)" opacity="0.85">
             {/* Globe Atmosphere / Volumetric Glow */}
@@ -654,14 +524,18 @@ export default function Theme4CyberBackground({ variant = 'hero' }: Theme4CyberB
 
       {/* Layer 3: Smooth Bottom Edge Vignette to blend into subsequent sections */}
       <div
-        className="absolute inset-x-0 bottom-0 h-36 pointer-events-none hidden dark:block"
+        className={`absolute inset-x-0 bottom-0 h-36 pointer-events-none ${
+          isFeatures ? 'hidden' : 'hidden dark:block'
+        }`}
         style={{
           background:
-            'linear-gradient(to bottom, transparent 0%, rgba(10, 10, 14, 0.4) 60%, rgba(10, 10, 14, 0.85) 100%)',
+            'linear-gradient(to bottom, transparent 0%, rgba(27, 28, 35, 0.4) 60%, rgba(27, 28, 35, 0.9) 100%)',
         }}
       />
       <div
-        className="absolute inset-x-0 bottom-0 h-36 pointer-events-none block dark:hidden"
+        className={`absolute inset-x-0 bottom-0 h-36 pointer-events-none ${
+          isFeatures ? 'hidden' : 'block dark:hidden'
+        }`}
         style={{
           background:
             'linear-gradient(to bottom, transparent 0%, rgba(232, 224, 210, 0.35) 60%, rgba(232, 224, 210, 0.85) 100%)',

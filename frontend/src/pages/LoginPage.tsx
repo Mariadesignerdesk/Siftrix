@@ -1,14 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import AuthFormShell from '../components/AuthFormShell'
 import {
   evaluatePasswordStrength,
-  mockLogin,
+  loginUser,
   type AuthUser,
 } from '../services/authService'
-import {
-  saveAuthPreviewSession,
-  type AuthPreviewSession,
-} from '../utils/authPreview'
+import type { AuthPreviewSession } from '../utils/authPreview'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
 
 interface LoginPageProps {
@@ -31,14 +28,21 @@ export default function LoginPage({
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
-  const passwordStrength = evaluatePasswordStrength(password)
+  const isMountedRef = useRef(true)
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const handleFillDemo = () => {
-    setEmail('analyst.sarah@siftrix.cyber')
-    setPassword('CyberGuard#2026')
-    setErrorMessage('')
-    setSuccessMessage('')
-  }
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (redirectTimerRef.current !== null) {
+        clearTimeout(redirectTimerRef.current)
+        redirectTimerRef.current = null
+      }
+    }
+  }, [])
+
+  const passwordStrength = evaluatePasswordStrength(password)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -47,34 +51,50 @@ export default function LoginPage({
     setIsLoading(true)
 
     try {
-      const response = await mockLogin({
+      const response = await loginUser({
         email,
         password,
         rememberMe,
       })
 
+      if (!isMountedRef.current) {
+        return
+      }
+
       if (!response.success || !response.user) {
-        setErrorMessage(response.error || 'Authentication failed. Please check credentials.')
+        setErrorMessage(
+          response.error || 'Authentication failed. Please check credentials.'
+        )
         return
       }
 
       const user: AuthUser = response.user
-      const previewSession: AuthPreviewSession = {
+      const authenticatedSession: AuthPreviewSession = {
+        id: user.id,
         name: user.name,
         email: user.email,
         mode: 'signin',
         createdAt: user.createdAt,
       }
 
-      saveAuthPreviewSession(previewSession)
-      setSuccessMessage(`Welcome back, ${user.name}! Redirecting to Security Dashboard...`)
-      onAuthChange?.(previewSession)
+      setSuccessMessage(
+        `Welcome back, ${user.name}! Redirecting to Security Dashboard...`
+      )
+      onAuthChange?.(authenticatedSession)
 
-      setTimeout(() => {
-        onNavigate('/dashboard')
+      if (redirectTimerRef.current !== null) {
+        clearTimeout(redirectTimerRef.current)
+      }
+      redirectTimerRef.current = setTimeout(() => {
+        redirectTimerRef.current = null
+        if (isMountedRef.current) {
+          onNavigate('/dashboard')
+        }
       }, 750)
     } finally {
-      setIsLoading(false)
+      if (isMountedRef.current) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -83,7 +103,7 @@ export default function LoginPage({
       badgeLabel="Account Access"
       title="Sign In to SIFTRIX"
       subtitle="Access your cybersecurity workspace layout, display preferences, and multi-agent threat triage."
-      previewNotice="This sign-in screen validates inputs and simulates full analyst onboarding locally. Real backend JWT/session verification will activate once backend authentication endpoints are connected."
+      previewNotice="Sign in with your registered SIFTRIX analyst credentials for JWT-authenticated access. Any guest scans from this browser session are automatically migrated to your account."
       authSession={authSession}
       onSignOut={() => onAuthChange?.(null)}
       onNavigate={onNavigate}
@@ -95,17 +115,9 @@ export default function LoginPage({
               Sign In
             </h2>
             <p className="text-xs sm:text-sm text-siftrix-muted-dark">
-              Enter your analyst credentials to access the security command center.
+              Enter your registered analyst credentials to access the security command center.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleFillDemo}
-            disabled={isLoading}
-            className="self-start sm:self-auto px-2.5 py-1 rounded-lg border border-siftrix-gold/50 bg-[#FAF4E7] dark:bg-siftrix-sand dark:text-siftrix-champagne text-xs font-semibold text-siftrix-charcoal hover:bg-siftrix-gold/20 transition-colors cursor-pointer"
-          >
-            ⚡ Demo Analyst
-          </button>
         </div>
 
         <div className="space-y-1.5">
@@ -210,7 +222,7 @@ export default function LoginPage({
             role="status"
             className="rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2.5 text-xs text-siftrix-graphite leading-relaxed"
           >
-            Password recovery is simulated for demonstration. Use the &quot;⚡ Demo Analyst&quot; button above to log in instantly. Real password reset tokens require backend email delivery.
+            Automated password reset email delivery is not enabled on this deployment. If you do not yet have a registered account, select &quot;Create an Account&quot; below to register.
           </p>
         ) : null}
 

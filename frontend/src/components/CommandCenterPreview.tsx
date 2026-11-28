@@ -55,7 +55,7 @@ export default function CommandCenterPreview({
     <section
       id="command-center"
       aria-label="Command Center Preview"
-      className="relative overflow-hidden bg-siftrix-charcoal dark:bg-[#141419] text-siftrix-pearl dark:text-[#EFE9DF] px-5 sm:px-6 md:px-10 py-18 md:py-22 border-b border-siftrix-charcoal-border"
+      className="relative overflow-hidden bg-siftrix-charcoal dark:bg-[#111217] text-siftrix-pearl dark:text-[#E9E5DC] px-4 sm:px-6 md:px-10 py-14 sm:py-18 md:py-22 border-b border-siftrix-charcoal-border dark:border-[#262732] transition-colors duration-500"
     >
       <div
         aria-hidden="true"
@@ -66,10 +66,10 @@ export default function CommandCenterPreview({
         className="pointer-events-none absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-siftrix-gold/12 blur-3xl"
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto space-y-10">
+      <div className="relative z-10 max-w-7xl mx-auto space-y-8 sm:space-y-10">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/45 bg-[#1D1D22] px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-siftrix-champagne mb-4">
+            <span className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/45 bg-[#1D1D22] dark:bg-[#1B1C23] px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-siftrix-champagne mb-4">
               <span className="h-1.5 w-1.5 rounded-full bg-siftrix-champagne" aria-hidden="true" />
               Command Center Preview
             </span>
@@ -87,11 +87,11 @@ export default function CommandCenterPreview({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => onNavigate('/scans')}
-              className="siftrix-btn-charcoal-outline px-5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
+              className="siftrix-btn-charcoal-outline w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne text-center"
             >
               View Scan History
             </button>
@@ -99,7 +99,7 @@ export default function CommandCenterPreview({
             <button
               type="button"
               onClick={() => onNavigate('/dashboard')}
-              className="siftrix-btn-gold px-6 py-2.5 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-charcoal focus-visible:ring-siftrix-champagne"
+              className="siftrix-btn-gold w-full sm:w-auto px-6 py-2.5 rounded-xl text-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-siftrix-charcoal focus-visible:ring-siftrix-champagne text-center"
             >
               Open Live Dashboard →
             </button>
@@ -107,7 +107,7 @@ export default function CommandCenterPreview({
         </div>
 
         {/* Executive Command Preview Panel (Explicitly Labeled Blueprint Architecture) */}
-        <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-5 sm:p-7">
+        <div className="siftrix-card-charcoal relative overflow-hidden rounded-2xl p-4 sm:p-5 md:p-7">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-siftrix-champagne/70 to-transparent"
@@ -126,14 +126,14 @@ export default function CommandCenterPreview({
               </span>
             </div>
 
-            <span className="font-mono text-[11px] text-siftrix-champagne/90">
+            <span className="font-mono text-[11px] text-siftrix-champagne/90 break-words">
               <span className="text-[#A59E92]">Endpoints:</span> Threat Detection · URL Analysis · Security Monitoring
             </span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
             {/* Gold-Accented Threat Detection Overview Chart */}
-            <div className="min-w-0 lg:col-span-7 siftrix-panel-charcoal-inset rounded-2xl p-5 flex flex-col justify-between">
+            <div className="min-w-0 lg:col-span-7 siftrix-panel-charcoal-inset rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-siftrix-white dark:text-[#FAF6EF]">
@@ -151,7 +151,7 @@ export default function CommandCenterPreview({
               <svg
                 viewBox="0 0 510 165"
                 aria-label="Threat Detection Overview AI risk assessment chart"
-                className="w-full h-auto min-h-[9.5rem]"
+                className="w-full h-auto min-h-[7.5rem] sm:min-h-[9.5rem] overflow-visible"
               >
                 <defs>
                   <linearGradient id="cmd-preview-area" x1="0" y1="0" x2="0" y2="1">
@@ -208,7 +208,7 @@ export default function CommandCenterPreview({
               </svg>
 
               {/* Chart Categories Legend */}
-              <div className="flex flex-wrap items-center gap-3 pt-3 mt-3 border-t border-siftrix-charcoal-border/70 text-xs text-[#BFB8AC]">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-3 mt-3 border-t border-siftrix-charcoal-border/70 text-xs text-[#BFB8AC]">
                 <span className="inline-flex items-center gap-1.5 font-medium">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs" aria-hidden="true" />
                   <span>Safe Links</span>
@@ -226,7 +226,7 @@ export default function CommandCenterPreview({
 
             {/* Threat Classification + Multi-Agent Threat Intelligence */}
             <div className="min-w-0 lg:col-span-5 flex flex-col justify-between gap-4">
-              <div className="siftrix-panel-charcoal-inset rounded-2xl p-5 space-y-4">
+              <div className="siftrix-panel-charcoal-inset rounded-2xl p-4 sm:p-5 space-y-4 overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm sm:text-base font-bold text-siftrix-white dark:text-[#FAF6EF]">
                     Threat Classification
@@ -250,7 +250,7 @@ export default function CommandCenterPreview({
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                <div className="grid grid-cols-1 min-[360px]:grid-cols-3 sm:grid-cols-3 gap-2 pt-1">
                   {BLUEPRINT_VERDICTS.map((item) => (
                     <div
                       key={item.label}
@@ -266,7 +266,7 @@ export default function CommandCenterPreview({
               </div>
 
               {/* Bottom Information Section: Multi-Agent Threat Intelligence */}
-              <div className="siftrix-panel-charcoal-inset rounded-2xl p-5 space-y-2.5">
+              <div className="siftrix-panel-charcoal-inset rounded-2xl p-4 sm:p-5 space-y-2.5 overflow-hidden">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-siftrix-champagne">
                   MULTI-AGENT THREAT INTELLIGENCE
                 </p>

@@ -1,6 +1,7 @@
 export type AuthPreviewMode = 'signin' | 'signup'
 
 export interface AuthPreviewSession {
+  id?: string
   name: string
   email: string
   mode: AuthPreviewMode
@@ -129,6 +130,9 @@ export function loadAuthPreviewSession(
       typeof parsed.createdAt === 'string'
     ) {
       return {
+        ...(typeof parsed.id === 'string' && parsed.id.trim()
+          ? { id: parsed.id.trim() }
+          : {}),
         name: parsed.name,
         email: parsed.email,
         mode: parsed.mode,

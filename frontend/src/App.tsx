@@ -1,4 +1,4 @@
- import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
@@ -21,22 +21,104 @@ import RewardsPage from './pages/RewardsPage'
 import CyberAssistant from './components/chat/CyberAssistant'
 import PwaInstallBanner from './components/pwa/PwaInstallBanner'
 import {
-  clearAuthPreviewSession,
-  loadAuthPreviewSession,
-  type AuthPreviewSession,
-} from './utils/authPreview'
+  getAuthenticatedSession,
+  logoutUser,
+  syncCrossTabAuthStorageEvent,
+  verifyCurrentSession,
+} from './services/authService'
+import type { AuthPreviewSession } from './utils/authPreview'
 import { useAppRouter } from './utils/router'
+
+function areAuthSessionsEqual(
+  a: AuthPreviewSession | null,
+  b: AuthPreviewSession | null
+): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  return (
+    a.id === b.id &&
+    a.name === b.name &&
+    a.email === b.email &&
+    a.mode === b.mode &&
+    a.createdAt === b.createdAt
+  )
+}
 
 function App() {
   const { route, navigate } = useAppRouter()
   const [authSession, setAuthSession] = useState<AuthPreviewSession | null>(
-    () => loadAuthPreviewSession()
+    () => getAuthenticatedSession()
   )
 
+  const handleAuthSessionChange = useCallback(
+    (nextSession: AuthPreviewSession | null) => {
+      setAuthSession((prev) =>
+        areAuthSessionsEqual(prev, nextSession) ? prev : nextSession
+      )
+    },
+    []
+  )
+
+  const syncAuthSessionFromStorage = useCallback(() => {
+    setAuthSession((prev) => {
+      const next = getAuthenticatedSession(prev?.mode ?? 'signin')
+      return areAuthSessionsEqual(prev, next) ? prev : next
+    })
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function verifyStartupAuth() {
+      await verifyCurrentSession()
+      if (!isMounted) {
+        return
+      }
+      syncAuthSessionFromStorage()
+    }
+
+    void verifyStartupAuth()
+
+    return () => {
+      isMounted = false
+    }
+  }, [syncAuthSessionFromStorage])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const handleAuthChange = () => {
+      syncAuthSessionFromStorage()
+    }
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (!syncCrossTabAuthStorageEvent(event)) {
+        return
+      }
+      syncAuthSessionFromStorage()
+    }
+
+    window.addEventListener('siftrix:auth-change', handleAuthChange)
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('siftrix:auth-change', handleAuthChange)
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [syncAuthSessionFromStorage])
+
   const handleSignOut = () => {
-    clearAuthPreviewSession()
-    setAuthSession(null)
+    logoutUser()
+    handleAuthSessionChange(null)
   }
+
+  const sessionScopeKey = authSession?.id
+    ? `auth:${authSession.id}`
+    : authSession?.email
+      ? `auth:${authSession.email}`
+      : 'guest'
 
   return (
     <div
@@ -69,14 +151,14 @@ function App() {
         />
         <main className="flex-1">
           {route.page === 'scanner' ? (
-            <ScannerPage onNavigate={navigate} />
+            <ScannerPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'dashboard' ? (
-            <DashboardPage onNavigate={navigate} />
+            <DashboardPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'history' ? (
-            <ScanHistoryPage onNavigate={navigate} />
+            <ScanHistoryPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'scan-details' ? (
             <ScanDetailsPage
-              key={route.scanId}
+              key={`${sessionScopeKey}:${route.scanId}`}
               scanId={route.scanId}
               onNavigate={navigate}
             />
@@ -89,21 +171,21 @@ function App() {
           ) : route.page === 'login' ? (
             <LoginPage
               authSession={authSession}
-              onAuthChange={setAuthSession}
+              onAuthChange={handleAuthSessionChange}
               onNavigate={navigate}
             />
           ) : route.page === 'signup' ? (
             <SignupPage
               authSession={authSession}
-              onAuthChange={setAuthSession}
+              onAuthChange={handleAuthSessionChange}
               onNavigate={navigate}
             />
           ) : route.page === 'assistant' ? (
-            <AssistantPage onNavigate={navigate} />
+            <AssistantPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'leaderboard' ? (
-            <LeaderboardPage onNavigate={navigate} />
+            <LeaderboardPage key={sessionScopeKey} onNavigate={navigate} />
           ) : route.page === 'rewards' ? (
-            <RewardsPage onNavigate={navigate} />
+            <RewardsPage key={sessionScopeKey} onNavigate={navigate} />
           ) : (
             <>
               <Hero onNavigate={navigate} />
@@ -119,7 +201,7 @@ function App() {
       </div>
 
       {/* Persistent Floating AI Cyber Assistant Launcher */}
-      <CyberAssistant />
+      <CyberAssistant key={sessionScopeKey} />
     </div>
   )
 }

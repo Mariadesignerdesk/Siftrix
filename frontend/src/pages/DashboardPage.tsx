@@ -1,150 +1,67 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { checkBackendHealth, fetchScans, type ScanResponse } from '../services/api'
 import { getUserGamificationProfile } from '../services/gamificationService'
-import { getMockScanHistory } from '../services/scanHistoryService'
-import { isMissingSessionUnauthorized } from '../utils/session'
+import {
+  computeStats,
+  getPercent,
+  getPointStrokeColor,
+  resolveDashboardData,
+  sortRecentScans,
+  Y_AXIS_LEVELS,
+  type BackendHealthState,
+  type DemoPreviewReason,
+} from '../utils/dashboardUtils'
 import { clampRiskScore, formatTimestamp } from '../utils/scanPresentation'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
 import { RiskLevelBadge, TargetTypeBadge, VerdictBadge } from '../components/ScanBadges'
 
-interface DashboardPageProps {
+export interface DashboardPageProps {
   onNavigate: NavigateFn
 }
 
-type BackendHealthState = 'checking' | 'online' | 'offline'
-
-interface DashboardStats {
-  total: number
-  safe: number
-  suspicious: number
-  malicious: number
-  averageScore: number
-  targetCounts: {
-    url: number
-    message: number
-    email: number
-  }
-}
-
-function computeStats(scans: ScanResponse[]): DashboardStats {
-  let safe = 0
-  let suspicious = 0
-  let malicious = 0
-  let totalScore = 0
-  let url = 0
-  let message = 0
-  let email = 0
-
-  for (const scan of scans) {
-    if (scan.verdict === 'safe') safe += 1
-    else if (scan.verdict === 'suspicious') suspicious += 1
-    else if (scan.verdict === 'malicious') malicious += 1
-
-    totalScore += clampRiskScore(scan.overall_risk_score)
-
-    if (scan.target_type === 'url') url += 1
-    else if (scan.target_type === 'email') email += 1
-    else message += 1
-  }
-
-  return {
-    total: scans.length,
-    safe,
-    suspicious,
-    malicious,
-    averageScore: scans.length > 0 ? Math.round(totalScore / scans.length) : 0,
-    targetCounts: { url, message, email },
-  }
-}
-
-function getPercent(count: number, total: number): number {
-  if (total <= 0) return 0
-  return Math.round((count / total) * 100)
-}
-
-function sortRecentScans(scans: ScanResponse[]): ScanResponse[] {
-  return [...scans].sort((a, b) => {
-    const timeA = Date.parse(a.created_at || '')
-    const timeB = Date.parse(b.created_at || '')
-    if (Number.isNaN(timeA) && Number.isNaN(timeB)) return 0
-    if (Number.isNaN(timeA)) return 1
-    if (Number.isNaN(timeB)) return -1
-    return timeB - timeA
-  })
-}
-
-function getPointStrokeColor(verdict: ScanResponse['verdict']): string {
-  if (verdict === 'safe') return '#10B981'
-  if (verdict === 'suspicious') return '#F59E0B'
-  return '#EF4444'
-}
-
-export default function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const [scans, setScans] = useState<ScanResponse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [healthState, setHealthState] = useState<BackendHealthState>('checking')
-
-  const applyDashboardResponses = useCallback(
-    (
-      scansRes: Awaited<ReturnType<typeof fetchScans>>,
-      healthRes: Awaited<ReturnType<typeof checkBackendHealth>>
-    ) => {
-      setHealthState(healthRes.ok ? 'online' : 'offline')
-
-      if (!scansRes.ok || !scansRes.data || scansRes.data.length === 0) {
-        // Fall back to 20 realistic telemetry entries so evaluators see charts and activity
-        const fallbackData = getMockScanHistory()
-        setScans(fallbackData)
-        if (isMissingSessionUnauthorized(scansRes.status)) {
-          setErrorMessage('')
-        } else if (!healthRes.ok) {
-          setErrorMessage('FastAPI backend offline — displaying realistic telemetry dataset.')
-        } else {
-          setErrorMessage('')
-        }
-      } else {
-        setScans(scansRes.data)
-        setErrorMessage('')
-      }
-      setIsLoading(false)
-    },
-    []
-  )
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadInitialDashboard() {
-      const [scansRes, healthRes] = await Promise.all([
-        fetchScans(),
-        checkBackendHealth(),
-      ])
-
-      if (cancelled) return
-      applyDashboardResponses(scansRes, healthRes)
+function formatShortTime(isoString?: string): string {
+  if (!isoString) return ''
+  try {
+    const d = new Date(isoString)
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
-
-    void loadInitialDashboard()
-
-    return () => {
-      cancelled = true
-    }
-  }, [applyDashboardResponses])
-
-  const handleRefresh = async () => {
-    if (isLoading) return
-    setIsLoading(true)
-    setHealthState('checking')
-    setErrorMessage('')
-
-    const [scansRes, healthRes] = await Promise.all([
-      fetchScans(),
-      checkBackendHealth(),
-    ])
-    applyDashboardResponses(scansRes, healthRes)
+  } catch {
+    // fallback
   }
+  return ''
+}
 
+export interface DashboardContentProps {
+  scans: ScanResponse[]
+  isLoading: boolean
+  hasError: boolean
+  errorMessage: string
+  healthState: BackendHealthState
+  isDemoPreview: boolean
+  demoPreviewReason?: DemoPreviewReason
+  onNavigate: NavigateFn
+  onRefresh: () => void
+}
+
+export function DashboardContent({
+  scans,
+  isLoading,
+  hasError,
+  errorMessage,
+  healthState,
+  isDemoPreview,
+  demoPreviewReason,
+  onNavigate,
+  onRefresh,
+}: DashboardContentProps) {
+  const effectiveDemoReason: DemoPreviewReason = !isDemoPreview
+    ? 'none'
+    : demoPreviewReason && demoPreviewReason !== 'none'
+    ? demoPreviewReason
+    : hasError
+    ? 'api_failure'
+    : 'empty_history'
   const stats = useMemo(() => computeStats(scans), [scans])
   const sortedScans = useMemo(() => sortRecentScans(scans), [scans])
   const recentScans = useMemo(() => sortedScans.slice(0, 5), [sortedScans])
@@ -153,8 +70,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     const windowScans = sortedScans.slice(0, 10).reverse()
     if (windowScans.length === 0) return []
     const width = 460
-    const leftPad = 24
-    const usableWidth = width - leftPad * 2
+    const leftPad = 48
+    const rightPad = 24
+    const usableWidth = width - leftPad - rightPad
     const minY = 26
     const maxY = 138
     const spanY = maxY - minY
@@ -162,7 +80,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     return windowScans.map((scan, index) => {
       const x =
         windowScans.length === 1
-          ? width / 2
+          ? leftPad + usableWidth / 2
           : leftPad + (index / (windowScans.length - 1)) * usableWidth
       const score = clampRiskScore(scan.overall_risk_score)
       const y = maxY - (score / 100) * spanY
@@ -172,17 +90,21 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         y: Math.round(y),
         score,
         color: getPointStrokeColor(scan.verdict),
+        timeLabel: formatShortTime(scan.created_at),
+        scanIndex: index + 1,
       }
     })
   }, [sortedScans])
-
-  const hasError = Boolean(errorMessage)
 
   const statCards = [
     {
       label: 'Total Scans',
       value: stats.total,
-      subtext: stats.total === 1 ? '1 recorded analysis' : `${stats.total} recorded analyses`,
+      subtext: isDemoPreview
+        ? `${stats.total} sample analyses (Demo)`
+        : stats.total === 1
+        ? '1 recorded analysis'
+        : `${stats.total} recorded analyses`,
       surface: 'dark' as const,
       accentClass: 'text-siftrix-champagne',
       dotClass: 'bg-siftrix-champagne',
@@ -190,7 +112,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     {
       label: 'Safe',
       value: stats.safe,
-      subtext: `${getPercent(stats.safe, stats.total)}% of total scans`,
+      subtext: isDemoPreview
+        ? `${getPercent(stats.safe, stats.total)}% sample distribution`
+        : `${getPercent(stats.safe, stats.total)}% of total scans`,
       surface: 'light' as const,
       accentClass: 'text-emerald-700 dark:text-emerald-400',
       dotClass: 'bg-emerald-600',
@@ -198,7 +122,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     {
       label: 'Suspicious',
       value: stats.suspicious,
-      subtext: `${getPercent(stats.suspicious, stats.total)}% of total scans`,
+      subtext: isDemoPreview
+        ? `${getPercent(stats.suspicious, stats.total)}% sample distribution`
+        : `${getPercent(stats.suspicious, stats.total)}% of total scans`,
       surface: 'light' as const,
       accentClass: 'text-amber-700 dark:text-amber-400',
       dotClass: 'bg-amber-500',
@@ -206,7 +132,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     {
       label: 'Malicious',
       value: stats.malicious,
-      subtext: `${getPercent(stats.malicious, stats.total)}% of total scans`,
+      subtext: isDemoPreview
+        ? `${getPercent(stats.malicious, stats.total)}% sample distribution`
+        : `${getPercent(stats.malicious, stats.total)}% of total scans`,
       surface: 'dark' as const,
       accentClass: 'text-red-400',
       dotClass: 'bg-red-500',
@@ -281,7 +209,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           <button
             type="button"
             disabled={isLoading}
-            onClick={() => void handleRefresh()}
+            onClick={onRefresh}
             aria-label="Refresh dashboard scan data"
             className="px-4 py-2 rounded-xl siftrix-btn-charcoal-outline disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
           >
@@ -297,6 +225,67 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           </button>
         </div>
       </div>
+
+      {/* Premium Champagne-Gold Demo Banner (distinguishes empty history, missing session, and API failure) */}
+      {!isLoading && isDemoPreview ? (
+        <div
+          role="region"
+          aria-label="Demo Telemetry Preview"
+          className="rounded-2xl border border-siftrix-gold/60 bg-gradient-to-r from-[#242329] via-[#1E1D22] to-[#242329] dark:from-[#17161C] dark:via-[#131217] dark:to-[#17161C] p-5 sm:p-6 shadow-md text-siftrix-pearl relative overflow-hidden animate-siftrix-enter"
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-siftrix-gold to-transparent"
+          />
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-siftrix-gold/20 border border-siftrix-gold/50 text-siftrix-champagne text-[11px] font-bold uppercase tracking-wider">
+                  <span className="h-2 w-2 rounded-full bg-siftrix-gold animate-pulse" />
+                  Illustrative Preview
+                </span>
+                <span className="text-xs text-[#ACA69E]">
+                  {effectiveDemoReason === 'empty_history'
+                    ? '0 recorded scans found'
+                    : effectiveDemoReason === 'missing_session'
+                    ? 'No active scan session'
+                    : 'Actual scan history unavailable'}
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight">
+                {effectiveDemoReason === 'empty_history'
+                  ? 'DEMO PREVIEW — These are illustrative sample analytics, not your actual scan history.'
+                  : effectiveDemoReason === 'missing_session'
+                  ? 'Illustrative preview — sample data, not your actual scan history.'
+                  : 'DEMO PREVIEW — Sample analytics are being displayed because actual scan history could not be loaded.'}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#C8C1B6] max-w-3xl leading-relaxed">
+                {effectiveDemoReason === 'empty_history'
+                  ? 'You have not performed any scans yet. Explore this live telemetry preview to see how real-time risk trajectories, verdict distributions, and multi-agent intelligence will appear once you scan suspicious links or messages.'
+                  : effectiveDemoReason === 'missing_session'
+                  ? 'No active scan session is initialized in this browser yet. Explore these sample telemetry charts, or run a scan to initialize your session history.'
+                  : 'Actual scan history could not be loaded from the backend. Illustrative sample analytics are shown below as a preview alongside the error notice.'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 self-start lg:self-center">
+              <button
+                type="button"
+                onClick={() => onNavigate('/scanner')}
+                className="siftrix-btn-gold px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne flex items-center gap-2"
+              >
+                <span>
+                  {effectiveDemoReason === 'empty_history'
+                    ? 'Run Your First Scan'
+                    : 'Open Threat Scanner'}
+                </span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Gamification Level & XP Progress Banner */}
       {(() => {
@@ -346,7 +335,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 onClick={() => onNavigate('/rewards')}
                 className="siftrix-btn-secondary px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer text-siftrix-graphite dark:text-[#FAF6EF] dark:bg-[#25242C] dark:border-siftrix-charcoal-border"
               >
-                🎖️ Rewards & Badges
+                🎖️ Rewards &amp; Badges
               </button>
               <button
                 type="button"
@@ -372,7 +361,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           </div>
           <button
             type="button"
-            onClick={() => void handleRefresh()}
+            onClick={onRefresh}
             className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer shrink-0 self-start sm:self-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >
             Retry Connection
@@ -399,13 +388,20 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               ) : null}
 
               <div className="flex items-center justify-between gap-2">
-                <span
-                  className={`text-sm font-semibold ${
-                    isDark ? 'text-siftrix-pearl dark:text-white' : 'text-siftrix-muted-dark dark:text-white'
-                  }`}
-                >
-                  {card.label}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={`text-sm font-semibold ${
+                      isDark ? 'text-siftrix-pearl dark:text-white' : 'text-siftrix-muted-dark dark:text-white'
+                    }`}
+                  >
+                    {card.label}
+                  </span>
+                  {isDemoPreview ? (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-siftrix-gold/20 text-siftrix-champagne border border-siftrix-gold/40">
+                      Sample
+                    </span>
+                  ) : null}
+                </div>
                 <span className={`w-2.5 h-2.5 rounded-full ${card.dotClass}`} />
               </div>
 
@@ -422,7 +418,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                     }`}
                   />
                 </div>
-              ) : hasError ? (
+              ) : hasError && !isDemoPreview ? (
                 <div className="mt-4">
                   <p
                     className={`text-3xl font-bold ${
@@ -458,29 +454,43 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         })}
       </div>
 
-      {/* Gold-Accented Analytics & Verdict Distribution (Rendered Only When Real Scans Exist) */}
-      {!isLoading && !hasError && stats.total > 0 ? (
+      {/* Gold-Accented Analytics & Verdict Distribution (Rendered for Real Scans or Demo Preview) */}
+      {!isLoading && (stats.total > 0 || isDemoPreview) ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Champagne Gold Trajectory Area Chart from Real Recorded Scans */}
+          {/* Champagne Gold Trajectory Area Chart */}
           <div className="min-w-0 lg:col-span-7 siftrix-card-charcoal rounded-2xl p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-siftrix-charcoal-border">
-              <div>
-                <h3 className="text-base font-bold text-siftrix-white dark:text-[#FAF6EF]">
-                  Recent Risk Trajectory
-                </h3>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base font-bold text-siftrix-white dark:text-[#FAF6EF]">
+                    Recent Risk Trajectory
+                  </h3>
+                  {isDemoPreview ? (
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-siftrix-gold/20 text-siftrix-champagne border border-siftrix-gold/40">
+                      Sample Data
+                    </span>
+                  ) : null}
+                </div>
                 <p className="text-xs text-[#BFB8AC]">
-                  Latest {trajectoryPoints.length} recorded {trajectoryPoints.length === 1 ? 'scan' : 'scans'} scored 0–100
+                  {isDemoPreview
+                    ? 'Demonstrating 10 sample threat scans scored 0–100'
+                    : trajectoryPoints.length < 3
+                    ? `Showing ${trajectoryPoints.length} recorded ${
+                        trajectoryPoints.length === 1 ? 'scan' : 'scans'
+                      }. Risk trends will become clearer as more targets are analyzed.`
+                    : `Latest ${trajectoryPoints.length} recorded scans scored 0–100`}
                 </p>
               </div>
               <span className="rounded-lg bg-[#1B1B20] border border-siftrix-gold/45 px-3 py-1 text-xs font-semibold text-siftrix-champagne siftrix-tabular">
-                Avg Risk: {stats.averageScore}/100
+                {isDemoPreview ? 'Sample Avg Risk: ' : 'Avg Risk: '}
+                {stats.averageScore}/100
               </span>
             </div>
 
             <svg
-              viewBox="0 0 460 160"
+              viewBox="0 0 460 172"
               aria-label="Recent recorded scan risk score chart"
-              className="w-full h-auto"
+              className="w-full h-auto select-none"
             >
               <defs>
                 <linearGradient id="dash-risk-area" x1="0" y1="0" x2="0" y2="1">
@@ -489,19 +499,47 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 </linearGradient>
               </defs>
 
-              {[26, 63, 100, 138].map((y) => (
+              {/* Exact Y-Axis Gridlines & Aligned Labels (100, 75, 50, 25, 0) */}
+              {Y_AXIS_LEVELS.map(({ score, y }) => (
+                <g key={score}>
+                  <text
+                    x="28"
+                    y={y + 3}
+                    textAnchor="end"
+                    fill="#8E897F"
+                    fontSize="8.5"
+                    fontFamily="monospace"
+                  >
+                    {score}
+                  </text>
+                  <line
+                    x1="36"
+                    y1={y}
+                    x2="442"
+                    y2={y}
+                    stroke="#3E3C44"
+                    strokeDasharray="3 4"
+                    strokeWidth="1"
+                  />
+                </g>
+              ))}
+
+              {/* Subtle Vertical Dashed Drop-Stems from Each Scan Point to Baseline */}
+              {trajectoryPoints.map((point) => (
                 <line
-                  key={y}
-                  x1="18"
-                  y1={y}
-                  x2="442"
-                  y2={y}
-                  stroke="#3E3C44"
-                  strokeDasharray="3 4"
+                  key={`stem-${point.id}`}
+                  x1={point.x}
+                  y1={point.y}
+                  x2={point.x}
+                  y2={138}
+                  stroke="#D8B56D"
                   strokeWidth="1"
+                  strokeDasharray="2 3"
+                  opacity="0.45"
                 />
               ))}
 
+              {/* Shaded Area and Polyline connecting points */}
               {trajectoryPoints.length > 1 ? (
                 <>
                   <path
@@ -521,26 +559,82 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 </>
               ) : null}
 
-              {trajectoryPoints.map((point) => (
+              {/* Circular Markers with Subtle Gold Halo / Outline and Score text */}
+              {trajectoryPoints.map((point, index) => (
                 <g key={point.id}>
+                  {/* Subtle Gold Outer Halo/Glow */}
                   <circle
                     cx={point.x}
                     cy={point.y}
-                    r="5"
-                    fill="#1B1B20"
-                    stroke={point.color}
-                    strokeWidth="2.25"
+                    r="8.5"
+                    fill="none"
+                    stroke="#D8B56D"
+                    strokeWidth="1"
+                    opacity="0.45"
                   />
+                  {/* Main Marker Circle */}
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="5.5"
+                    fill="#15141A"
+                    stroke={point.color}
+                    strokeWidth="2.5"
+                  />
+                  {/* Inner Solid Center */}
+                  <circle cx={point.x} cy={point.y} r="2" fill={point.color} />
+
+                  {/* Score Label Above Point */}
                   <text
                     x={point.x}
-                    y={point.y - 10}
+                    y={point.y - 11}
                     textAnchor="middle"
-                    fill="#EDE6DA"
+                    fill="#FAF6EF"
                     fontSize="9.5"
+                    fontWeight="bold"
                     fontFamily="monospace"
                   >
                     {point.score}
                   </text>
+
+                  {/* Short Scan Identifier / Timestamp Beneath Baseline */}
+                  {trajectoryPoints.length <= 4 ? (
+                    <>
+                      <text
+                        x={point.x}
+                        y="152"
+                        textAnchor="middle"
+                        fill="#C8C1B6"
+                        fontSize="8.5"
+                        fontFamily="monospace"
+                      >
+                        Scan #{point.scanIndex}
+                      </text>
+                      {point.timeLabel ? (
+                        <text
+                          x={point.x}
+                          y="163"
+                          textAnchor="middle"
+                          fill="#8E897F"
+                          fontSize="7.5"
+                          fontFamily="monospace"
+                        >
+                          {point.timeLabel}
+                        </text>
+                      ) : null}
+                    </>
+                  ) : (
+                    <text
+                      x={point.x}
+                      y="154"
+                      textAnchor="middle"
+                      fill="#8E897F"
+                      fontSize="8"
+                      fontFamily="monospace"
+                    >
+                      {point.timeLabel || `#${index + 1}`}
+                    </text>
+                  )}
                 </g>
               ))}
             </svg>
@@ -550,14 +644,19 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           <div className="min-w-0 lg:col-span-5 siftrix-card p-6 rounded-2xl flex flex-col justify-between space-y-5">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="h-3.5 w-1 rounded-full bg-siftrix-gold" aria-hidden="true" />
                   <h3 className="text-base font-bold text-siftrix-charcoal">
                     Verdict Distribution
                   </h3>
+                  {isDemoPreview ? (
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-siftrix-gold/20 text-siftrix-antique-ink dark:text-siftrix-champagne border border-siftrix-gold/40">
+                      Sample Preview
+                    </span>
+                  ) : null}
                 </div>
                 <span className="text-xs text-siftrix-muted-dark siftrix-tabular">
-                  {stats.total} total
+                  {stats.total} {isDemoPreview ? 'sample targets' : 'total'}
                 </span>
               </div>
 
@@ -604,9 +703,16 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
             {/* Target Vector Breakdown */}
             <div className="pt-4 border-t border-siftrix-border space-y-2.5">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink">
-                Target Mix
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink">
+                  Target Mix
+                </p>
+                {isDemoPreview ? (
+                  <span className="text-[10px] font-medium text-siftrix-muted">
+                    Illustrative breakdown
+                  </span>
+                ) : null}
+              </div>
               {(
                 [
                   { label: 'URL Scans', count: stats.targetCounts.url },
@@ -639,13 +745,41 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         {/* Recent Scans */}
         <div className="min-w-0 lg:col-span-2 siftrix-card p-6 rounded-2xl space-y-4">
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-siftrix-border">
-            <h3 className="text-lg font-bold text-siftrix-charcoal">Recent Scans</h3>
-            {!isLoading && !hasError && scans.length > 0 ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-bold text-siftrix-charcoal">Recent Scans</h3>
+              {isDemoPreview ? (
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/40">
+                  Sample Data Feed
+                </span>
+              ) : null}
+            </div>
+            {!isLoading && scans.length > 0 ? (
               <span className="text-xs font-medium text-siftrix-muted-dark bg-siftrix-pearl px-2.5 py-0.5 rounded-md border border-siftrix-border">
-                Showing {recentScans.length} of {scans.length}
+                {isDemoPreview
+                  ? `Sample Preview: Showing ${recentScans.length} of ${scans.length}`
+                  : `Showing ${recentScans.length} of ${scans.length}`}
               </span>
             ) : null}
           </div>
+
+          {/* Sample Data Feed Notice in Demo Mode */}
+          {isDemoPreview && !isLoading ? (
+            <div className="p-3.5 rounded-xl bg-siftrix-sand/30 dark:bg-[#1E1D24] border border-siftrix-gold/40 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-siftrix-champagne text-sm" aria-hidden="true">ℹ️</span>
+                <span className="text-siftrix-graphite dark:text-[#E8E2D8] font-medium">
+                  Showing simulated threat intelligence fixtures. Your scans will appear here automatically.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('/scanner')}
+                className="text-xs font-bold text-siftrix-antique-ink dark:text-siftrix-champagne hover:underline shrink-0 text-left cursor-pointer"
+              >
+                Run Live Scan →
+              </button>
+            </div>
+          ) : null}
 
           {isLoading ? (
             <div className="space-y-3" aria-busy="true">
@@ -663,7 +797,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 </div>
               ))}
             </div>
-          ) : hasError ? (
+          ) : hasError && !isDemoPreview ? (
             <div className="py-10 text-center space-y-2">
               <p className="text-sm font-semibold text-siftrix-graphite">
                 Recent scans are unavailable
@@ -730,7 +864,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                       <div className="flex items-center gap-3">
                         <span>{formatTimestamp(scan.created_at)}</span>
                         <span className="font-mono text-siftrix-muted-dark">
-                          ID: {scan.id.slice(0, 8)}
+                          ID: {scan.id.slice(0, 8)} {isDemoPreview ? '(Sample)' : ''}
                         </span>
                       </div>
 
@@ -805,5 +939,79 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         </aside>
       </div>
     </section>
+  )
+}
+
+export default function DashboardPage({ onNavigate }: DashboardPageProps) {
+  const [scans, setScans] = useState<ScanResponse[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [healthState, setHealthState] = useState<BackendHealthState>('checking')
+  const [isDemoPreview, setIsDemoPreview] = useState(false)
+  const [demoPreviewReason, setDemoPreviewReason] = useState<DemoPreviewReason>('none')
+
+  const applyDashboardResponses = useCallback(
+    (
+      scansRes: Awaited<ReturnType<typeof fetchScans>>,
+      healthRes: Awaited<ReturnType<typeof checkBackendHealth>>
+    ) => {
+      const resolved = resolveDashboardData(scansRes, healthRes)
+      setHealthState(resolved.healthState)
+      setScans(resolved.scans)
+      setIsDemoPreview(resolved.isDemoPreview)
+      setDemoPreviewReason(resolved.demoPreviewReason)
+      setErrorMessage(resolved.errorMessage)
+      setIsLoading(false)
+    },
+    []
+  )
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadInitialDashboard() {
+      const [scansRes, healthRes] = await Promise.all([
+        fetchScans(),
+        checkBackendHealth(),
+      ])
+
+      if (cancelled) return
+      applyDashboardResponses(scansRes, healthRes)
+    }
+
+    void loadInitialDashboard()
+
+    return () => {
+      cancelled = true
+    }
+  }, [applyDashboardResponses])
+
+  const handleRefresh = async () => {
+    if (isLoading) return
+    setIsLoading(true)
+    setHealthState('checking')
+    setErrorMessage('')
+
+    const [scansRes, healthRes] = await Promise.all([
+      fetchScans(),
+      checkBackendHealth(),
+    ])
+    applyDashboardResponses(scansRes, healthRes)
+  }
+
+  const hasError = Boolean(errorMessage)
+
+  return (
+    <DashboardContent
+      scans={scans}
+      isLoading={isLoading}
+      hasError={hasError}
+      errorMessage={errorMessage}
+      healthState={healthState}
+      isDemoPreview={isDemoPreview}
+      demoPreviewReason={demoPreviewReason}
+      onNavigate={onNavigate}
+      onRefresh={() => void handleRefresh()}
+    />
   )
 }

@@ -25,8 +25,34 @@ export default function NotificationBell({ onNavigate }: NotificationBellProps) 
     const unsubscribe = subscribeNotifications((items) => {
       setNotifications(items)
     })
-    return unsubscribe
+
+    const handleSync = () => {
+      setNotifications(getNotifications())
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('siftrix:auth-change', handleSync)
+      window.addEventListener('storage', handleSync)
+    }
+
+    return () => {
+      unsubscribe()
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('siftrix:auth-change', handleSync)
+        window.removeEventListener('storage', handleSync)
+      }
+    }
   }, [])
+
+  const handleToggleOpen = () => {
+    setIsOpen((prev) => {
+      const next = !prev
+      if (next) {
+        setNotifications(getNotifications())
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -96,7 +122,7 @@ export default function NotificationBell({ onNavigate }: NotificationBellProps) 
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleToggleOpen}
         aria-expanded={isOpen}
         aria-label={`Security alerts and notifications (${unreadCount} unread)`}
         className="relative inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-siftrix-border bg-siftrix-white text-siftrix-charcoal hover:border-siftrix-gold hover:bg-siftrix-pearl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold shadow-2xs"

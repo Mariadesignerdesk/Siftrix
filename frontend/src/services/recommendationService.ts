@@ -25,11 +25,11 @@ const RECOMMENDATIONS_DATA: Record<ScanRiskLevel, RecommendationPlan> = {
   low: {
     riskLevel: 'low',
     title: 'Routine Cyber Hygiene & Verification Protocol',
-    subtitle: 'Threat score below 20 — Legitimate infrastructure confirmed',
+    subtitle: 'Threat score below 20 — No high-risk indicators detected in this scan',
     description:
-      'The inspected target demonstrates high trust reputation, valid cryptographic credentials, and no indicator of malicious payload delivery.',
+      'No strong malicious indicators were found by the checks that ran. This is not a guarantee: passing static URL or SSRF validation does not prove a website is legitimate or free of phishing, so stay cautious with logins and downloads.',
     threatSummary:
-      'Verified clean by SIFTRIX multi-agent intelligence. Standard enterprise baseline procedures apply.',
+      'Low risk based on the signals SIFTRIX analyzed. Continue to verify the sender and destination before sharing credentials.',
     checklist: [
       {
         id: 'chk_low_1',

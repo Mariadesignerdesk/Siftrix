@@ -206,7 +206,8 @@ describe('userPreferences, backend diagnostics, and SettingsPage', () => {
     expect(initialHtml).toContain(`${API_CONFIG.TIMEOUT_MS} ms`)
     expect(initialHtml).toContain('Checking...')
     expect(initialHtml).toContain('Account Profile')
-    expect(initialHtml).toContain('Not Configured')
+    expect(initialHtml).toContain('Guest Session')
+    expect(initialHtml).toContain('currently browsing as a guest')
 
     const connectedConfirmHtml = renderToStaticMarkup(
       <SettingsContent

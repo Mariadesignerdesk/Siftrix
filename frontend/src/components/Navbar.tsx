@@ -1,8 +1,6 @@
 import { useEffect, useState, type MouseEvent } from 'react'
-import {
-  clearAuthPreviewSession,
-  type AuthPreviewSession,
-} from '../utils/authPreview'
+import { logoutUser } from '../services/authService'
+import type { AuthPreviewSession } from '../utils/authPreview'
 import type { AppPath, AppRoute, NavigateFn } from '../utils/router'
 import { getStoredThemePreference, toggleTheme } from '../services/themeService'
 import BrandMark from './BrandMark'
@@ -84,6 +82,7 @@ export default function Navbar({
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [currentTheme, setCurrentTheme] = useState(() => getStoredThemePreference())
+  const isRealAuthSession = Boolean(authSession?.id?.trim())
 
   const handleToggleTheme = () => {
     const next = toggleTheme()
@@ -125,7 +124,7 @@ export default function Navbar({
   }
 
   const handleSignOutClick = () => {
-    clearAuthPreviewSession()
+    logoutUser()
     setIsMobileMenuOpen(false)
     onSignOut?.()
   }
@@ -219,7 +218,11 @@ export default function Navbar({
                 href="/settings"
                 onClick={(e) => handleLinkClick(e, '/settings')}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige px-2 xl:px-2.5 py-1 md:py-1 lg:py-1.5 text-xs font-semibold text-siftrix-charcoal max-w-[6.5rem] lg:max-w-[7.5rem] xl:max-w-[9rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold"
-                title={`UI Preview: ${authSession.email}`}
+                title={
+                  isRealAuthSession
+                    ? `Signed in as ${authSession.email}`
+                    : `UI Preview: ${authSession.email}`
+                }
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold shrink-0" aria-hidden="true" />
                 <span className="truncate">{authSession.name}</span>
@@ -358,7 +361,7 @@ export default function Navbar({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-siftrix-gold/45 bg-siftrix-beige dark:bg-[#23222A] px-3.5 py-3">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-siftrix-antique-ink dark:text-siftrix-champagne/80">
-                      UI Preview Session
+                      {isRealAuthSession ? 'Authenticated Account' : 'UI Preview Session'}
                     </p>
                     <p className="text-sm font-bold text-siftrix-charcoal dark:text-[#FAF6EF] truncate">
                       {authSession.name}

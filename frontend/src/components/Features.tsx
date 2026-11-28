@@ -54,70 +54,67 @@ export default function Features() {
   return (
     <section
       id="features"
-      className="relative overflow-hidden px-5 sm:px-6 md:px-10 py-18 md:py-24 bg-[#FAF6EF] dark:bg-[#0A0A0E] text-siftrix-charcoal dark:text-siftrix-pearl border-b border-siftrix-border dark:border-[#2D2A35] transition-colors duration-500"
+      className="relative overflow-hidden px-4 sm:px-6 md:px-10 py-14 sm:py-18 md:py-24 border-b border-[#875E1C]/35 transition-colors duration-500"
+      style={{
+        background: 'linear-gradient(135deg, #EBD49E 0%, #D8B56D 50%, #A77B32 100%)',
+      }}
     >
-      {/* Theme 4: Minimal Elegant Dark + Gold Background (Features Variant) */}
+      {/* Theme 4: Minimal Elegant Cyber Elements (World Map & Light Trails over Section Base) */}
       <Theme4CyberBackground variant="features" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 pb-8 border-b border-siftrix-border/80 dark:border-siftrix-charcoal-border/90">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 sm:mb-12 pb-6 sm:pb-8 border-b border-[#875E1C]/35">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/45 bg-[#1D1D22] px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-siftrix-champagne mb-4">
-              <span className="h-1.5 w-1.5 rounded-full bg-siftrix-champagne" aria-hidden="true" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#8F6621]/60 bg-[#17171B] px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#EBD49E] shadow-sm mb-4">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#EBD49E]" aria-hidden="true" />
               AI Capabilities
             </span>
 
-            <h2 className="text-3xl sm:text-4xl font-bold text-siftrix-charcoal dark:text-[#FAF6EF] tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#17171B] tracking-tight">
               Why Choose{' '}
-              <span className="font-editorial italic font-bold siftrix-gold-text pr-1">
+              <span className="font-editorial italic font-bold text-[#3B2807] pr-1">
                 SIFTRIX?
               </span>
             </h2>
 
-            <p className="text-siftrix-muted-dark dark:text-[#CBC4B9] mt-3 text-base sm:text-lg leading-relaxed">
+            <p className="text-[#383126] mt-3 text-base sm:text-lg leading-relaxed font-medium">
               Smart protection for a safer digital world — precision threat
               classification engineered for real-world clarity.
             </p>
           </div>
 
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-siftrix-graphite dark:text-siftrix-champagne/90">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#3B2807]">
             Intelligence · Protection · Confidence
           </p>
         </div>
 
-        {/* 3-Column Visual Feature Cards with Real High-Quality Imagery */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        {/* 3-Column Solid Cards: #101014 in Dark Mode, #FFFFFF in Light Mode */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
           {FEATURE_CARDS.map((card) => (
             <article
               key={card.id}
-              className="siftrix-card-charcoal group relative overflow-hidden rounded-2xl p-5 sm:p-6 flex flex-col justify-between border border-siftrix-charcoal-border hover:border-siftrix-champagne/60 hover:-translate-y-1 transition-all duration-300 shadow-md"
+              className="group relative overflow-hidden rounded-2xl p-4 sm:p-5 md:p-6 flex flex-col justify-between bg-[#FFFFFF] dark:bg-[#101014] border border-[#D7CFC2] dark:border-[#29272D] hover:border-[#A77B32]/70 dark:hover:border-[#D5B36B]/60 hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_24px_-6px_rgba(48,46,43,0.08),0_12px_32px_-12px_rgba(48,46,43,0.1)] dark:shadow-[0_14px_36px_-12px_rgba(0,0,0,0.65)]"
             >
-              {/* Top Accent Light Highlight */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-siftrix-champagne/50 to-transparent group-hover:via-siftrix-champagne transition-all"
-              />
-
               <div className="space-y-4">
-                {/* Visual Image Container with Dark Gradient Mask & Badges */}
-                <div className="relative h-48 w-full overflow-hidden rounded-xl border border-siftrix-charcoal-border bg-[#101014] group-hover:border-siftrix-gold/50 transition-all duration-300">
+                {/* Visual Image Container with Balanced Border & Badges */}
+                <div className="relative h-44 sm:h-48 w-full overflow-hidden rounded-xl border border-[#E2DBCF] dark:border-[#29272D] bg-[#F7F3EC] dark:bg-[#0A0A0D] group-hover:border-[#A77B32]/60 dark:group-hover:border-[#D5B36B]/50 transition-all duration-300">
                   <img
                     src={card.image}
                     alt={card.imageAlt}
-                    className="w-full h-full object-cover object-center filter brightness-90 contrast-105 transition-transform duration-700 ease-out group-hover:scale-105"
+                    className="w-full h-full object-cover object-center filter brightness-95 contrast-105 transition-transform duration-700 ease-out group-hover:scale-105"
                     loading="lazy"
                   />
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1A1A20] via-black/35 to-transparent"
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent"
                   />
 
                   {/* Floating Badges */}
                   <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 backdrop-blur-md text-siftrix-champagne font-mono text-xs font-bold border border-siftrix-gold/45 shadow-sm">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 dark:bg-[#0A0A0D]/90 text-[#242424] dark:text-[#D5B36B] font-mono text-xs font-bold border border-[#A77B32]/50 dark:border-[#D5B36B]/40 shadow-sm backdrop-blur-md">
                       {card.index}
                     </span>
-                    <span className="rounded-full bg-black/70 backdrop-blur-md border border-siftrix-gold/40 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-siftrix-champagne">
+                    <span className="rounded-full bg-white/95 dark:bg-[#0A0A0D]/90 border border-[#A77B32]/50 dark:border-[#D5B36B]/40 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#242424] dark:text-[#D5B36B] shadow-sm backdrop-blur-md">
                       {card.tag}
                     </span>
                   </div>
@@ -125,20 +122,20 @@ export default function Features() {
 
                 {/* Card Title & Description */}
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight group-hover:text-siftrix-champagne transition-colors">
+                  <h3 className="text-lg sm:text-xl font-bold text-[#242424] dark:text-[#F5F0E5] tracking-tight group-hover:text-[#A77B32] dark:group-hover:text-[#D5B36B] transition-colors">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-[#CBC4B9] leading-relaxed mt-2">
+                  <p className="text-sm text-[#514B40] dark:text-[#D6D0C5] leading-relaxed mt-2 font-normal">
                     {card.description}
                   </p>
                 </div>
               </div>
 
               {/* Sub-capability bullet list */}
-              <div className="pt-4 mt-4 border-t border-siftrix-charcoal-border/70 space-y-1.5">
+              <div className="pt-4 mt-4 border-t border-[#EAE3D6] dark:border-[#29272D] space-y-1.5">
                 {card.features.map((feat) => (
-                  <div key={feat} className="flex items-center gap-2 text-xs text-[#BEB7AC]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold/80 shrink-0" aria-hidden="true" />
+                  <div key={feat} className="flex items-center gap-2 text-xs text-[#514B40] dark:text-[#D6D0C5] font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#A77B32] dark:bg-[#D5B36B] shrink-0" aria-hidden="true" />
                     <span>{feat}</span>
                   </div>
                 ))}

@@ -1,14 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import AuthFormShell from '../components/AuthFormShell'
 import {
   evaluatePasswordStrength,
-  mockSignup,
+  registerUser,
   type AuthUser,
 } from '../services/authService'
-import {
-  saveAuthPreviewSession,
-  type AuthPreviewSession,
-} from '../utils/authPreview'
+import type { AuthPreviewSession } from '../utils/authPreview'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
 
 interface SignupPageProps {
@@ -33,6 +30,20 @@ export default function SignupPage({
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
+  const isMountedRef = useRef(true)
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (redirectTimerRef.current !== null) {
+        clearTimeout(redirectTimerRef.current)
+        redirectTimerRef.current = null
+      }
+    }
+  }, [])
+
   const passwordStrength = evaluatePasswordStrength(password)
 
   const handleFillDemo = () => {
@@ -53,14 +64,18 @@ export default function SignupPage({
     setIsLoading(true)
 
     try {
-      const response = await mockSignup({
+      const response = await registerUser({
         fullName,
         email,
-        organization,
         password,
         confirmPassword,
+        organization,
         agreeToTerms,
       })
+
+      if (!isMountedRef.current) {
+        return
+      }
 
       if (!response.success || !response.user) {
         setErrorMessage(
@@ -70,22 +85,32 @@ export default function SignupPage({
       }
 
       const user: AuthUser = response.user
-      const previewSession: AuthPreviewSession = {
+      const authenticatedSession: AuthPreviewSession = {
+        id: user.id,
         name: user.name,
         email: user.email,
         mode: 'signup',
         createdAt: user.createdAt,
       }
 
-      saveAuthPreviewSession(previewSession)
-      setSuccessMessage(`Account created successfully for ${user.name}! Welcome to SIFTRIX.`)
-      onAuthChange?.(previewSession)
+      setSuccessMessage(
+        `Account created successfully for ${user.name}! Welcome to SIFTRIX.`
+      )
+      onAuthChange?.(authenticatedSession)
 
-      setTimeout(() => {
-        onNavigate('/dashboard')
+      if (redirectTimerRef.current !== null) {
+        clearTimeout(redirectTimerRef.current)
+      }
+      redirectTimerRef.current = setTimeout(() => {
+        redirectTimerRef.current = null
+        if (isMountedRef.current) {
+          onNavigate('/dashboard')
+        }
       }, 750)
     } finally {
-      setIsLoading(false)
+      if (isMountedRef.current) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -93,8 +118,8 @@ export default function SignupPage({
     <AuthFormShell
       badgeLabel="New Workspace Registration"
       title="Create Your SIFTRIX Account"
-      subtitle="Preview the upcoming SIFTRIX analyst registration experience with clean form validation and responsive layout."
-      previewNotice="Account creation is currently a frontend-only demo preview stored in temporary browser storage until backend authentication endpoints are connected."
+      subtitle="Register a verified SIFTRIX analyst account with secure password hashing and JWT session protection."
+      previewNotice="Creates a real backend analyst account (email, full name, and hashed password) and automatically migrates any guest scans from this browser session."
       authSession={authSession}
       onSignOut={() => onAuthChange?.(null)}
       onNavigate={onNavigate}
@@ -147,7 +172,7 @@ export default function SignupPage({
               htmlFor="signup-org"
               className="block text-xs font-semibold uppercase tracking-[0.1em] text-siftrix-antique-ink"
             >
-              Organization <span className="font-normal text-siftrix-muted">(optional)</span>
+              Organization <span className="font-normal text-siftrix-muted">(optional · local note)</span>
             </label>
             <input
               id="signup-org"

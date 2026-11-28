@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchScans, type ScanResponse } from '../services/api'
-import { isMissingSessionUnauthorized } from '../utils/session'
 import {
   DEFAULT_SCAN_FILTERS,
   filterScans,
   hasActiveScanFilters,
   paginateItems,
+  resolveScanHistoryState,
   sortScansByField,
   type ScanHistoryFilters,
+  type ScanHistoryResolvedState,
   type ScanRiskFilter,
   type ScanSortField,
   type ScanTargetFilter,
@@ -20,14 +21,20 @@ import { RiskLevelBadge, TargetTypeBadge, VerdictBadge } from '../components/Sca
 
 interface ScanHistoryPageProps {
   onNavigate: NavigateFn
+  initialState?: ScanHistoryResolvedState
 }
 
 const PAGE_SIZE = 10
 
-export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
-  const [scans, setScans] = useState<ScanResponse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+export default function ScanHistoryPage({
+  onNavigate,
+  initialState,
+}: ScanHistoryPageProps) {
+  const [scans, setScans] = useState<ScanResponse[]>(() => initialState?.scans ?? [])
+  const [isLoading, setIsLoading] = useState<boolean>(() => initialState === undefined)
+  const [errorMessage, setErrorMessage] = useState<string>(
+    () => initialState?.errorMessage ?? ''
+  )
   const [isUsingMockData, setIsUsingMockData] = useState(false)
 
   const [filters, setFilters] = useState<ScanHistoryFilters>(DEFAULT_SCAN_FILTERS)
@@ -37,23 +44,10 @@ export default function ScanHistoryPage({ onNavigate }: ScanHistoryPageProps) {
 
   const applyScanResponse = useCallback(
     (response: Awaited<ReturnType<typeof fetchScans>>) => {
-      if (!response.ok || !response.data) {
-        if (isMissingSessionUnauthorized(response.status)) {
-          setScans([])
-          setIsUsingMockData(false)
-          setErrorMessage('')
-        } else {
-          setScans([])
-          setIsUsingMockData(false)
-          setErrorMessage(
-            response.error || 'Live backend unreachable. Ensure the SIFTRIX FastAPI backend is running.'
-          )
-        }
-      } else {
-        setScans(response.data)
-        setIsUsingMockData(false)
-        setErrorMessage('')
-      }
+      const resolved = resolveScanHistoryState(response)
+      setScans(resolved.scans)
+      setIsUsingMockData(false)
+      setErrorMessage(resolved.errorMessage)
       setIsLoading(false)
     },
     []

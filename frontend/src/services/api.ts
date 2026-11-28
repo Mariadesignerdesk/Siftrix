@@ -1,10 +1,13 @@
 import { API_CONFIG } from './config'
 import { apiGet, apiPost } from './apiClient'
 import type { ApiResponse } from './apiClient'
+import { logoutUser } from './authService'
 import {
+  AUTHORIZATION_HEADER,
   SESSION_ID_HEADER,
   clearSessionId,
   getSessionHeaders,
+  hasSavedAuthToken,
   normalizeSessionId,
   saveSessionId,
 } from '../utils/session'
@@ -63,6 +66,16 @@ function isInvalidSessionError(status: number, error: string | null): boolean {
   return status === 400 && Boolean(error && error.toLowerCase().includes('x-session-id'))
 }
 
+function shouldLogoutOnUnauthorized(
+  status: number,
+  sentAuthHeader: string | undefined
+): boolean {
+  if (status !== 401 || !sentAuthHeader) {
+    return false
+  }
+  return getSessionHeaders()[AUTHORIZATION_HEADER] === sentAuthHeader
+}
+
 /**
  * Checks whether the FastAPI backend health endpoint is reachable.
  */
@@ -74,9 +87,14 @@ export async function checkBackendHealth(
 
 /**
  * Submits a validated URL, message, or email payload to POST /api/scan
- * for multi-agent threat analysis, persisting any returned X-Session-ID header.
+ * for multi-agent threat analysis. Sends Authorization Bearer when authenticated
+ * or X-Session-ID for guests, persisting returned X-Session-ID only for guest requests.
  */
 export async function submitScan(payload: ScanRequest): Promise<ApiResponse<ScanResponse>> {
+  const requestHeaders = getSessionHeaders()
+  const sentAuthHeader = requestHeaders[AUTHORIZATION_HEADER]
+  const usedAuthToken = Boolean(sentAuthHeader)
+
   const response = await apiPost<ScanResponse>(
     '/api/scan',
     {
@@ -85,18 +103,22 @@ export async function submitScan(payload: ScanRequest): Promise<ApiResponse<Scan
       metadata: payload.metadata ?? {},
     },
     {
-      headers: getSessionHeaders(),
+      headers: requestHeaders,
     }
   )
 
   if (response.ok) {
-    const responseSessionId = normalizeSessionId(
-      response.headers?.get(SESSION_ID_HEADER)
-    )
-    if (responseSessionId) {
-      saveSessionId(responseSessionId)
+    if (!usedAuthToken && !hasSavedAuthToken()) {
+      const responseSessionId = normalizeSessionId(
+        response.headers?.get(SESSION_ID_HEADER)
+      )
+      if (responseSessionId) {
+        saveSessionId(responseSessionId)
+      }
     }
-  } else if (isInvalidSessionError(response.status, response.error)) {
+  } else if (shouldLogoutOnUnauthorized(response.status, sentAuthHeader)) {
+    logoutUser()
+  } else if (!usedAuthToken && isInvalidSessionError(response.status, response.error)) {
     clearSessionId()
   }
 
@@ -196,19 +218,22 @@ function parseHistoryPageResponse(
 
 /**
  * Fetches complete scan history across all backend pages from GET /api/history,
- * attaching any saved X-Session-ID header.
+ * attaching Authorization Bearer when authenticated or X-Session-ID for guests.
  */
 export async function fetchScans(): Promise<ApiResponse<ScanResponse[]>> {
   const collected: ScanResponse[] = []
   const seenIds = new Set<string>()
   let lastStatus = 200
   let lastHeaders: Headers | undefined
+  const requestHeaders = getSessionHeaders()
+  const sentAuthHeader = requestHeaders[AUTHORIZATION_HEADER]
+  const usedAuthToken = Boolean(sentAuthHeader)
 
   for (let page = 1; page <= MAX_HISTORY_PAGES; page += 1) {
     const response = await apiGet<unknown>(
       `/api/history?page=${page}&page_size=${HISTORY_PAGE_SIZE}`,
       {
-        headers: getSessionHeaders(),
+        headers: requestHeaders,
       }
     )
 
@@ -216,7 +241,9 @@ export async function fetchScans(): Promise<ApiResponse<ScanResponse[]>> {
     lastHeaders = response.headers
 
     if (!response.ok) {
-      if (isInvalidSessionError(response.status, response.error)) {
+      if (shouldLogoutOnUnauthorized(response.status, sentAuthHeader)) {
+        logoutUser()
+      } else if (!usedAuthToken && isInvalidSessionError(response.status, response.error)) {
         clearSessionId()
       }
 
@@ -263,18 +290,24 @@ export async function fetchScans(): Promise<ApiResponse<ScanResponse[]>> {
 
 /**
  * Fetches a single scan record by ID from GET /api/history/{scan_id},
- * attaching any saved X-Session-ID header.
+ * attaching Authorization Bearer when authenticated or X-Session-ID for guests.
  */
 export async function fetchScanById(scanId: string): Promise<ApiResponse<ScanResponse>> {
+  const requestHeaders = getSessionHeaders()
+  const sentAuthHeader = requestHeaders[AUTHORIZATION_HEADER]
+  const usedAuthToken = Boolean(sentAuthHeader)
+
   const response = await apiGet<unknown>(
     `/api/history/${encodeURIComponent(scanId)}`,
     {
-      headers: getSessionHeaders(),
+      headers: requestHeaders,
     }
   )
 
   if (!response.ok) {
-    if (isInvalidSessionError(response.status, response.error)) {
+    if (shouldLogoutOnUnauthorized(response.status, sentAuthHeader)) {
+      logoutUser()
+    } else if (!usedAuthToken && isInvalidSessionError(response.status, response.error)) {
       clearSessionId()
     }
 

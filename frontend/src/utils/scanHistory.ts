@@ -1,5 +1,42 @@
-import type { ScanResponse, ScanRiskLevel, ScanVerdict } from '../services/api'
+import type { ApiResponse, ScanResponse, ScanRiskLevel, ScanVerdict } from '../services/api'
 import { clampRiskScore } from './scanPresentation'
+import { isMissingSessionUnauthorized, type SessionStorageLike } from './session'
+
+export interface ScanHistoryResolvedState {
+  scans: ScanResponse[]
+  errorMessage: string
+}
+
+/**
+ * Resolves a GET /api/history response into ScanHistoryPage view state, treating a
+ * first-time guest 401 caused solely by an uninitialized X-Session-ID as an empty history
+ * state while surfacing genuine authentication and API failures.
+ */
+export function resolveScanHistoryState(
+  response: ApiResponse<ScanResponse[]>,
+  sessionStorage?: SessionStorageLike | null
+): ScanHistoryResolvedState {
+  if (response.ok && Array.isArray(response.data)) {
+    return {
+      scans: response.data,
+      errorMessage: '',
+    }
+  }
+
+  if (isMissingSessionUnauthorized(response.status, sessionStorage, response.error)) {
+    return {
+      scans: [],
+      errorMessage: '',
+    }
+  }
+
+  return {
+    scans: [],
+    errorMessage:
+      response.error ||
+      'Live backend unreachable. Ensure the SIFTRIX FastAPI backend is running.',
+  }
+}
 
 export type ScanVerdictFilter = 'all' | ScanVerdict
 export type ScanRiskFilter = 'all' | ScanRiskLevel

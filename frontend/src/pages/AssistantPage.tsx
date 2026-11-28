@@ -1,75 +1,63 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type FormEvent, type KeyboardEvent, type RefObject } from 'react'
 import {
-  clearChatHistory,
-  createUserMessage,
   DEFAULT_SUGGESTED_QUESTIONS,
-  loadChatHistory,
-  saveChatHistory,
-  sendChatMessage,
   type ChatMessage,
 } from '../services/chatService'
+import {
+  useSyncedChat,
+  type SyncedChatController,
+} from '../hooks/useSyncedChat'
+import MarkdownMessage, { VerifiedSources } from '../components/MarkdownMessage'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
 
 interface AssistantPageProps {
   onNavigate: NavigateFn
+  controller?: SyncedChatController
 }
 
-export default function AssistantPage({ onNavigate }: AssistantPageProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(() => loadChatHistory())
-  const [inputText, setInputText] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+export interface AssistantPageContentProps {
+  messages: ChatMessage[]
+  inputText: string
+  isTyping: boolean
+  onInputChange: (value: string) => void
+  onSend: (textToSend?: string) => void | Promise<void>
+  onClear: () => void
+  onNavigate: NavigateFn
+  messagesEndRef?: RefObject<HTMLDivElement | null>
+  inputRef?: RefObject<HTMLInputElement | null>
+}
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping])
-
-  const handleSend = async (textToSend?: string) => {
-    const text = (textToSend || inputText).trim()
-    if (!text || isTyping) return
-
-    const userMessage = createUserMessage(text)
-
-    const nextHistory = [...messages, userMessage]
-    setMessages(nextHistory)
-    saveChatHistory(nextHistory)
-    setInputText('')
-    setIsTyping(true)
-
-    try {
-      const assistantMessage = await sendChatMessage(text, nextHistory)
-      setMessages((prev) => [...prev, assistantMessage])
-    } finally {
-      setIsTyping(false)
-    }
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return ''
   }
+}
 
+export function AssistantPageContent({
+  messages,
+  inputText,
+  isTyping,
+  onInputChange,
+  onSend,
+  onClear,
+  onNavigate,
+  messagesEndRef,
+  inputRef,
+}: AssistantPageContentProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    void handleSend()
+    void onSend()
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      void handleSend()
-    }
-  }
-
-  const handleClear = () => {
-    const fresh = clearChatHistory()
-    setMessages(fresh)
-  }
-
-  const formatTime = (iso: string) => {
-    try {
-      return new Date(iso).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    } catch {
-      return ''
+      void onSend()
     }
   }
 
@@ -101,7 +89,7 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={handleClear}
+            onClick={onClear}
             className="px-3.5 py-2 rounded-xl siftrix-btn-charcoal-outline text-xs font-semibold cursor-pointer"
           >
             Clear History
@@ -148,8 +136,8 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
                   key={q}
                   type="button"
                   disabled={isTyping}
-                  onClick={() => void handleSend(q)}
-                  className="w-full text-left p-2.5 rounded-xl border border-siftrix-border bg-siftrix-pearl hover:bg-white hover:border-siftrix-gold text-xs text-siftrix-graphite transition-all cursor-pointer shadow-2xs"
+                  onClick={() => void onSend(q)}
+                  className="w-full text-left p-2.5 rounded-xl border border-siftrix-border bg-siftrix-pearl hover:bg-white hover:border-siftrix-gold text-xs text-siftrix-graphite transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
                 >
                   <span className="font-semibold text-siftrix-antique-ink">💡 </span>
                   <span>{q}</span>
@@ -201,27 +189,23 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
                         : 'bg-white border border-siftrix-border text-siftrix-charcoal rounded-tl-xs'
                     }`}
                   >
-                    <div
-                      className="whitespace-pre-wrap break-words prose prose-sm max-w-none text-xs sm:text-sm leading-relaxed"
-                      dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
-                    >
-                      {msg.content}
-                    </div>
+                    {isUser ? (
+                      <div
+                        className="whitespace-pre-wrap break-words max-w-none text-xs sm:text-sm leading-relaxed"
+                        dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
+                      >
+                        {msg.content}
+                      </div>
+                    ) : (
+                      <MarkdownMessage
+                        content={msg.content}
+                        dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
+                        className="text-xs sm:text-sm leading-relaxed"
+                      />
+                    )}
 
                     {msg.citations && msg.citations.length > 0 ? (
-                      <div className="pt-2 border-t border-siftrix-border/60 flex flex-wrap gap-1.5 text-[10px] text-siftrix-muted-dark">
-                        <span className="font-semibold text-siftrix-antique-ink">
-                          Verified Sources:
-                        </span>
-                        {msg.citations.map((cite) => (
-                          <span
-                            key={cite}
-                            className="rounded bg-siftrix-pearl px-2 py-0.5 border border-siftrix-border"
-                          >
-                            {cite}
-                          </span>
-                        ))}
-                      </div>
+                      <VerifiedSources citations={msg.citations} />
                     ) : null}
 
                     <span className="block text-[10px] text-siftrix-muted-dark text-right pt-1">
@@ -235,8 +219,9 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
                         <button
                           key={prompt}
                           type="button"
-                          onClick={() => void handleSend(prompt)}
-                          className="text-xs font-medium text-siftrix-graphite bg-white hover:bg-siftrix-pearl border border-siftrix-gold/50 rounded-full px-3 py-1 text-left transition-colors cursor-pointer shadow-2xs"
+                          disabled={isTyping}
+                          onClick={() => void onSend(prompt)}
+                          className="text-xs font-medium text-siftrix-graphite bg-white hover:bg-siftrix-pearl border border-siftrix-gold/50 rounded-full px-3 py-1 text-left transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
                         >
                           💡 {prompt}
                         </button>
@@ -271,7 +256,7 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
               type="text"
               value={inputText}
               disabled={isTyping}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask a question about phishing, suspicious URLs, SMS lures, or incident response..."
               className="flex-1 rounded-xl border border-siftrix-border bg-siftrix-pearl px-4 py-3 text-xs sm:text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
@@ -288,5 +273,33 @@ export default function AssistantPage({ onNavigate }: AssistantPageProps) {
         </div>
       </div>
     </section>
+  )
+}
+
+export default function AssistantPage({
+  onNavigate,
+  controller,
+}: AssistantPageProps) {
+  const { messages, inputText, isTyping, setInputText, sendMessage, clearHistory } =
+    useSyncedChat(controller)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isTyping])
+
+  return (
+    <AssistantPageContent
+      messages={messages}
+      inputText={inputText}
+      isTyping={isTyping}
+      onInputChange={setInputText}
+      onSend={sendMessage}
+      onClear={clearHistory}
+      onNavigate={onNavigate}
+      messagesEndRef={messagesEndRef}
+      inputRef={inputRef}
+    />
   )
 }

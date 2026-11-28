@@ -27,28 +27,28 @@
 
 html.dark,
 [data-theme="dark"] {
-  --color-siftrix-beige: #111115;
-  --color-siftrix-pearl: #18181F;
-  --color-siftrix-sand: #23222B;
-  --color-siftrix-white: #1E1D25;
+  --color-siftrix-beige: #111217;
+  --color-siftrix-pearl: #1B1C23;
+  --color-siftrix-sand: #23242E;
+  --color-siftrix-white: #292A32;
   --color-siftrix-charcoal: #FAF6EF;
   --color-siftrix-charcoal-soft: #EDE6DC;
-  --color-siftrix-obsidian: #0A0A0D;
-  --color-siftrix-charcoal-border: #4D4A57;
-  --color-siftrix-gold: #D8B56D;
-  --color-siftrix-champagne: #E8CC8E;
+  --color-siftrix-obsidian: #0D0E12;
+  --color-siftrix-charcoal-border: #3A3B47;
+  --color-siftrix-gold: #D5B36B;
+  --color-siftrix-champagne: #E2C88A;
   --color-siftrix-antique: #C5A15D;
   --color-siftrix-antique-ink: #FAF6EF;
-  --color-siftrix-graphite: #EFE9DF;
-  --color-siftrix-muted: #A6A097;
-  --color-siftrix-muted-dark: #C9C2B7;
-  --color-siftrix-border: #383543;
+  --color-siftrix-graphite: #E9E5DC;
+  --color-siftrix-muted: #A8A299;
+  --color-siftrix-muted-dark: #C5BFB4;
+  --color-siftrix-border: #2E2F3B;
   color-scheme: dark;
 }
 
 html.dark select option,
 [data-theme="dark"] select option {
-  background-color: #1E1D25;
+  background-color: #292A32;
   color: #FAF6EF;
 }
 
@@ -290,12 +290,12 @@ html {
   html.dark .siftrix-card-charcoal,
   [data-theme="dark"] .siftrix-card-charcoal {
     background:
-      radial-gradient(ellipse 85% 55% at 50% 0%, rgba(216, 181, 109, 0.12), transparent 65%),
-      #17161D;
+      radial-gradient(ellipse 85% 55% at 50% 0%, rgba(213, 179, 107, 0.1), transparent 65%),
+      #1B1C23;
     color: #FAF6EF;
-    border-color: rgba(216, 181, 109, 0.32);
+    border-color: rgba(213, 179, 107, 0.3);
     box-shadow:
-      inset 0 1px 0 rgba(216, 181, 109, 0.14),
+      inset 0 1px 0 rgba(213, 179, 107, 0.14),
       0 2px 8px rgba(0, 0, 0, 0.35),
       0 26px 48px -22px rgba(0, 0, 0, 0.65);
   }
@@ -322,11 +322,11 @@ html {
 
   html.dark .siftrix-card-pearl,
   [data-theme="dark"] .siftrix-card-pearl {
-    background-color: #1A1922;
-    border-color: #383543;
+    background-color: #292A32;
+    border-color: #3A3B47;
     color: #FAF6EF;
     box-shadow:
-      inset 0 1px 0 rgba(216, 181, 109, 0.1),
+      inset 0 1px 0 rgba(213, 179, 107, 0.1),
       0 14px 32px -20px rgba(0, 0, 0, 0.45);
   }
 

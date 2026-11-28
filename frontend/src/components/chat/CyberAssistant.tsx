@@ -1,75 +1,77 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import {
-  clearChatHistory,
-  createUserMessage,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react'
+import MarkdownMessage, { VerifiedSources } from '../MarkdownMessage'
+import {
   DEFAULT_SUGGESTED_QUESTIONS,
-  loadChatHistory,
-  saveChatHistory,
-  sendChatMessage,
   type ChatMessage,
 } from '../../services/chatService'
+import {
+  useSyncedChat,
+  type SyncedChatController,
+} from '../../hooks/useSyncedChat'
 
-export default function CyberAssistant() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>(() => loadChatHistory())
-  const [inputText, setInputText] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+interface CyberAssistantProps {
+  controller?: SyncedChatController
+  defaultOpen?: boolean
+}
 
-  useEffect(() => {
-    if (isOpen && !isMinimized) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      inputRef.current?.focus()
-    }
-  }, [isOpen, isMinimized, messages, isTyping])
+export interface CyberAssistantContentProps {
+  isOpen: boolean
+  isMinimized: boolean
+  messages: ChatMessage[]
+  inputText: string
+  isTyping: boolean
+  onOpen: () => void
+  onClose: () => void
+  onToggleMinimize: () => void
+  onInputChange: (value: string) => void
+  onSend: (textToSend?: string) => void | Promise<void>
+  onClear: () => void
+  messagesEndRef?: RefObject<HTMLDivElement | null>
+  inputRef?: RefObject<HTMLInputElement | null>
+}
 
-  const handleSend = async (textToSend?: string) => {
-    const text = (textToSend || inputText).trim()
-    if (!text || isTyping) return
-
-    const userMessage = createUserMessage(text)
-
-    const nextHistory = [...messages, userMessage]
-    setMessages(nextHistory)
-    saveChatHistory(nextHistory)
-    setInputText('')
-    setIsTyping(true)
-
-    try {
-      const assistantMessage = await sendChatMessage(text, nextHistory)
-      setMessages((prev) => [...prev, assistantMessage])
-    } finally {
-      setIsTyping(false)
-    }
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return ''
   }
+}
 
+export function CyberAssistantContent({
+  isOpen,
+  isMinimized,
+  messages,
+  inputText,
+  isTyping,
+  onOpen,
+  onClose,
+  onToggleMinimize,
+  onInputChange,
+  onSend,
+  onClear,
+  messagesEndRef,
+  inputRef,
+}: CyberAssistantContentProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    void handleSend()
+    void onSend()
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      void handleSend()
-    }
-  }
-
-  const handleClear = () => {
-    const fresh = clearChatHistory()
-    setMessages(fresh)
-  }
-
-  const formatTime = (iso: string) => {
-    try {
-      return new Date(iso).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    } catch {
-      return ''
+      void onSend()
     }
   }
 
@@ -80,10 +82,7 @@ export default function CyberAssistant() {
         {!isOpen ? (
           <button
             type="button"
-            onClick={() => {
-              setIsOpen(true)
-              setIsMinimized(false)
-            }}
+            onClick={onOpen}
             aria-label="Open AI Assistant"
             title="Open AI Assistant"
             className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-siftrix-charcoal border border-siftrix-gold text-siftrix-champagne shadow-[0_12px_32px_rgba(25,25,30,0.45)] hover:scale-105 hover:bg-[#202025] hover:text-white transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne"
@@ -136,7 +135,7 @@ export default function CyberAssistant() {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={handleClear}
+                onClick={onClear}
                 title="Clear chat history"
                 aria-label="Clear chat history"
                 className="p-1.5 rounded-lg text-white/90 dark:text-[#FAF6EF] hover:text-red-300 dark:hover:text-red-300 hover:bg-white/10 dark:hover:bg-white/10 active:text-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer text-xs"
@@ -145,7 +144,7 @@ export default function CyberAssistant() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsMinimized((prev) => !prev)}
+                onClick={onToggleMinimize}
                 title={isMinimized ? 'Expand chat' : 'Minimize chat'}
                 aria-label={isMinimized ? 'Expand chat' : 'Minimize chat'}
                 className="p-1.5 rounded-lg text-white/90 dark:text-[#FAF6EF] hover:text-siftrix-champagne dark:hover:text-siftrix-champagne hover:bg-white/10 dark:hover:bg-white/10 active:text-siftrix-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer"
@@ -154,7 +153,7 @@ export default function CyberAssistant() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 title="Close chat"
                 aria-label="Close chat"
                 className="p-1.5 rounded-lg text-white/90 dark:text-[#FAF6EF] hover:text-white hover:bg-white/10 dark:hover:bg-white/10 active:text-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-champagne transition-colors cursor-pointer font-bold"
@@ -184,27 +183,23 @@ export default function CyberAssistant() {
                             : 'bg-white dark:bg-siftrix-white border border-siftrix-border text-siftrix-charcoal rounded-tl-xs'
                         }`}
                       >
-                        <div
-                          className="whitespace-pre-wrap break-words prose prose-sm max-w-none text-xs leading-relaxed"
-                          dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
-                        >
-                          {msg.content}
-                        </div>
+                        {isUser ? (
+                          <div
+                            className="whitespace-pre-wrap break-words max-w-none text-xs leading-relaxed"
+                            dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
+                          >
+                            {msg.content}
+                          </div>
+                        ) : (
+                          <MarkdownMessage
+                            content={msg.content}
+                            dir={msg.language === 'ur' ? 'rtl' : 'ltr'}
+                            className="text-xs leading-relaxed"
+                          />
+                        )}
 
                         {msg.citations && msg.citations.length > 0 ? (
-                          <div className="pt-2 border-t border-siftrix-border/60 flex flex-wrap gap-1 text-[10px] text-siftrix-muted-dark">
-                            <span className="font-semibold text-siftrix-antique-ink">
-                              Sources:
-                            </span>
-                            {msg.citations.map((cite) => (
-                              <span
-                                key={cite}
-                                className="rounded bg-siftrix-pearl px-1.5 py-0.5 border border-siftrix-border"
-                              >
-                                {cite}
-                              </span>
-                            ))}
-                          </div>
+                          <VerifiedSources citations={msg.citations} label="Sources" compact />
                         ) : null}
 
                         <span className="block text-[9px] text-siftrix-muted-dark text-right pt-0.5">
@@ -219,8 +214,9 @@ export default function CyberAssistant() {
                             <button
                               key={prompt}
                               type="button"
-                              onClick={() => void handleSend(prompt)}
-                              className="text-[11px] font-medium text-siftrix-graphite bg-white dark:bg-siftrix-white hover:bg-siftrix-pearl dark:hover:bg-siftrix-sand border border-siftrix-gold/50 rounded-full px-2.5 py-1 text-left transition-colors cursor-pointer shadow-2xs"
+                              disabled={isTyping}
+                              onClick={() => void onSend(prompt)}
+                              className="text-[11px] font-medium text-siftrix-graphite bg-white dark:bg-siftrix-white hover:bg-siftrix-pearl dark:hover:bg-siftrix-sand border border-siftrix-gold/50 rounded-full px-2.5 py-1 text-left transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
                             >
                               💡 {prompt}
                             </button>
@@ -254,8 +250,8 @@ export default function CyberAssistant() {
                       key={q}
                       type="button"
                       disabled={isTyping}
-                      onClick={() => void handleSend(q)}
-                      className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white dark:bg-siftrix-white border border-siftrix-border hover:border-siftrix-gold dark:hover:bg-siftrix-sand text-[11px] text-siftrix-graphite cursor-pointer transition-colors shrink-0"
+                      onClick={() => void onSend(q)}
+                      className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white dark:bg-siftrix-white border border-siftrix-border hover:border-siftrix-gold dark:hover:bg-siftrix-sand text-[11px] text-siftrix-graphite cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                     >
                       {q}
                     </button>
@@ -273,7 +269,7 @@ export default function CyberAssistant() {
                   type="text"
                   value={inputText}
                   disabled={isTyping}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => onInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about suspicious links, smishing, or SSRF..."
                   className="flex-1 rounded-xl border border-siftrix-border bg-siftrix-pearl px-3.5 py-2 text-xs sm:text-sm text-siftrix-charcoal placeholder:text-siftrix-muted outline-none focus:bg-white dark:focus:bg-siftrix-white focus:border-siftrix-gold focus:ring-1 focus:ring-siftrix-gold disabled:opacity-60"
@@ -293,5 +289,63 @@ export default function CyberAssistant() {
         </div>
       ) : null}
     </>
+  )
+}
+
+export default function CyberAssistant({
+  controller,
+  defaultOpen = false,
+}: CyberAssistantProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  const [isMinimized, setIsMinimized] = useState(false)
+  const {
+    messages,
+    inputText,
+    isTyping,
+    setInputText,
+    sendMessage,
+    clearHistory,
+    reconcileScope,
+  } = useSyncedChat(controller)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isOpen && !isMinimized) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      inputRef.current?.focus()
+    }
+  }, [isOpen, isMinimized, messages, isTyping])
+
+  const handleOpen = () => {
+    reconcileScope()
+    setIsOpen(true)
+    setIsMinimized(false)
+  }
+
+  const handleClose = () => {
+    setIsOpen(false)
+  }
+
+  const handleToggleMinimize = () => {
+    setIsMinimized((prev) => !prev)
+  }
+
+  return (
+    <CyberAssistantContent
+      isOpen={isOpen}
+      isMinimized={isMinimized}
+      messages={messages}
+      inputText={inputText}
+      isTyping={isTyping}
+      onOpen={handleOpen}
+      onClose={handleClose}
+      onToggleMinimize={handleToggleMinimize}
+      onInputChange={setInputText}
+      onSend={sendMessage}
+      onClear={clearHistory}
+      messagesEndRef={messagesEndRef}
+      inputRef={inputRef}
+    />
   )
 }

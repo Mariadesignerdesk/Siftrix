@@ -42,8 +42,8 @@ export function TargetTypeBadge({
   targetType: ScanTargetType | string | undefined
 }) {
   return (
-    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-siftrix-beige text-siftrix-graphite border border-siftrix-border uppercase">
-      {targetType || 'unknown'}
+    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-siftrix-beige text-siftrix-graphite border border-siftrix-border whitespace-nowrap">
+      {`Scan Type: ${String(targetType || 'unknown').toUpperCase()}`}
     </span>
   )
 }

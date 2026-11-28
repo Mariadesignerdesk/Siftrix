@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState, type KeyboardEvent, type MutableRefObject } from 'react'
 import showcaseInfraImg from '../assets/features/showcase-infrastructure.jpg'
 import showcaseTelemetryImg from '../assets/features/showcase-telemetry.jpg'
 import type { NavigateFn } from '../utils/router'
 
-interface ModernVisualShowcaseProps {
+export interface ModernVisualShowcaseProps {
   onNavigate?: NavigateFn
+  defaultTabId?: string
 }
 
 interface ShowcaseCategory {
@@ -86,17 +87,62 @@ const SHOWCASE_CATEGORIES: ReadonlyArray<ShowcaseCategory> = [
   },
 ]
 
-export default function ModernVisualShowcase({ onNavigate }: ModernVisualShowcaseProps) {
-  const [activeTabId, setActiveTabId] = useState<string>('url-intelligence')
+function getShowcaseTabId(categoryId: string): string {
+  return `showcase-tab-${categoryId}`
+}
 
+function getShowcasePanelId(categoryId: string): string {
+  return `showcase-panel-${categoryId}`
+}
+
+export interface ModernVisualShowcaseContentProps {
+  activeTabId: string
+  onSelectTab: (tabId: string) => void
+  onNavigate?: NavigateFn
+  tabRefs?: MutableRefObject<Array<HTMLButtonElement | null>>
+}
+
+export function ModernVisualShowcaseContent({
+  activeTabId,
+  onSelectTab,
+  onNavigate,
+  tabRefs,
+}: ModernVisualShowcaseContentProps) {
   const activeCategory =
     SHOWCASE_CATEGORIES.find((cat) => cat.id === activeTabId) ?? SHOWCASE_CATEGORIES[0]
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const count = SHOWCASE_CATEGORIES.length
+    let nextIndex: number
+
+    switch (event.key) {
+      case 'ArrowRight':
+        nextIndex = (index + 1) % count
+        break
+      case 'ArrowLeft':
+        nextIndex = (index - 1 + count) % count
+        break
+      case 'Home':
+        nextIndex = 0
+        break
+      case 'End':
+        nextIndex = count - 1
+        break
+      default:
+        return
+    }
+
+    event.preventDefault()
+    const nextCategory = SHOWCASE_CATEGORIES[nextIndex]
+    onSelectTab(nextCategory.id)
+    tabRefs?.current[nextIndex]?.focus()
+  }
 
   return (
     <section
       id="modern-showcase"
       aria-label="SIFTRIX Threat Defense Platform Showcase"
-      className="relative overflow-hidden bg-siftrix-pearl dark:bg-[#111115] px-4 sm:px-6 md:px-10 py-18 md:py-24 border-b border-siftrix-border"
+      className="relative overflow-hidden bg-siftrix-pearl dark:bg-[#111217] px-4 sm:px-6 md:px-10 py-18 md:py-24 border-b border-siftrix-border dark:border-[#262732] transition-colors duration-500"
     >
       {/* Background Soft Studio Radiance */}
       <div
@@ -111,7 +157,7 @@ export default function ModernVisualShowcase({ onNavigate }: ModernVisualShowcas
       <div className="relative z-10 max-w-7xl mx-auto space-y-12">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/50 bg-siftrix-white dark:bg-[#1C1C22] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-siftrix-graphite dark:text-siftrix-champagne shadow-2xs">
+          <div className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/50 bg-siftrix-white dark:bg-[#1B1C23] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-siftrix-graphite dark:text-siftrix-champagne shadow-2xs">
             <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
             Threat Defense Platform
           </div>
@@ -129,20 +175,33 @@ export default function ModernVisualShowcase({ onNavigate }: ModernVisualShowcas
         </div>
 
         {/* Category Navigation Tabs */}
-        <div className="flex items-center justify-start sm:justify-center overflow-x-auto pb-2 scrollbar-none gap-2 sm:gap-3">
-          {SHOWCASE_CATEGORIES.map((tab) => {
+        <div
+          role="tablist"
+          aria-label="Threat defense platform capabilities"
+          className="grid grid-cols-1 min-[360px]:grid-cols-2 md:flex md:items-center md:justify-center gap-2 sm:gap-3"
+        >
+          {SHOWCASE_CATEGORIES.map((tab, index) => {
             const isActive = tab.id === activeCategory.id
             return (
               <button
                 key={tab.id}
+                ref={(el) => {
+                  if (tabRefs) {
+                    tabRefs.current[index] = el
+                  }
+                }}
+                id={getShowcaseTabId(tab.id)}
                 type="button"
-                onClick={() => setActiveTabId(tab.id)}
-                aria-selected={isActive}
                 role="tab"
-                className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
+                aria-selected={isActive}
+                aria-controls={getShowcasePanelId(tab.id)}
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => onSelectTab(tab.id)}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
+                className={`w-full md:w-auto px-3 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-center flex items-center justify-center min-h-[3rem] h-auto cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-siftrix-gold ${
                   isActive
-                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/60 shadow-md dark:bg-siftrix-sand dark:border-siftrix-gold'
-                    : 'bg-siftrix-white/90 text-siftrix-graphite border border-siftrix-border hover:border-siftrix-gold/50 hover:bg-siftrix-beige/50 dark:bg-[#1B1B20] dark:text-[#C9C2B7] dark:border-siftrix-charcoal-border'
+                    ? 'bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-gold/60 shadow-md dark:bg-[#292A32] dark:border-siftrix-gold dark:text-[#FAF6EF]'
+                    : 'bg-siftrix-white/90 text-siftrix-graphite border border-siftrix-border hover:border-siftrix-gold/50 hover:bg-siftrix-beige/50 dark:bg-[#1B1C23] dark:text-[#C5BFB4] dark:border-[#2E2F3B] hover:dark:border-siftrix-gold/50 hover:dark:bg-[#20212B]'
                 }`}
               >
                 <span>{tab.label}</span>
@@ -151,118 +210,143 @@ export default function ModernVisualShowcase({ onNavigate }: ModernVisualShowcas
           })}
         </div>
 
-        {/* Large Visual Area with Overlay Telemetry & Real-Time Context */}
-        <div className="siftrix-card-charcoal relative overflow-hidden rounded-3xl border border-siftrix-charcoal-border shadow-2xl">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-siftrix-champagne/80 to-transparent"
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[26rem] sm:min-h-[30rem]">
-            {/* Left Context Information */}
-            <div className="lg:col-span-5 p-6 sm:p-8 md:p-10 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-siftrix-gold/20 border border-siftrix-gold/50 px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider text-siftrix-champagne">
-                    {activeCategory.shortTag}
-                  </span>
-                  <span className="text-xs text-[#9E968B] font-mono">
-                    SIFTRIX Core Engine
-                  </span>
-                </div>
-
-                <h3 className="text-2xl sm:text-3xl font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight leading-snug">
-                  {activeCategory.headline}
-                </h3>
-
-                <p className="text-sm sm:text-base text-[#CBC4B9] leading-relaxed">
-                  {activeCategory.description}
-                </p>
-              </div>
-
-              {/* Highlights List */}
-              <div className="space-y-3 pt-4 border-t border-siftrix-charcoal-border/70">
-                {activeCategory.highlights.map((item) => (
-                  <div key={item.title} className="flex items-start gap-2.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold mt-2 shrink-0" aria-hidden="true" />
-                    <div>
-                      <p className="text-xs sm:text-sm font-semibold text-siftrix-white dark:text-[#FAF6EF]">
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-[#A8A196]">
-                        {item.detail}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Call to Action Link */}
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => (onNavigate ? onNavigate('/scanner') : (window.location.href = '/scanner'))}
-                  className="siftrix-btn-gold inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold cursor-pointer"
-                >
-                  <span>Launch Threat Scanner</span>
-                  <span aria-hidden="true">→</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Right Large Image & Telemetry Showcase */}
-            <div className="lg:col-span-7 relative min-h-[18rem] lg:min-h-full overflow-hidden bg-[#0C0C0F] border-t lg:border-t-0 lg:border-l border-siftrix-charcoal-border flex items-center justify-center">
-              <img
-                src={activeCategory.image}
-                alt={activeCategory.headline}
-                className="absolute inset-0 w-full h-full object-cover filter brightness-[0.75] contrast-110"
-              />
+        {/* Tab Panels Container (active visual card + hidden inactive panel targets) */}
+        <div>
+          {SHOWCASE_CATEGORIES.map((category) => {
+            const isActive = category.id === activeCategory.id
+            return (
               <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#15151A] via-[#15151A]/40 to-transparent"
-              />
+                key={category.id}
+                id={getShowcasePanelId(category.id)}
+                role="tabpanel"
+                aria-labelledby={getShowcaseTabId(category.id)}
+                hidden={!isActive}
+                className={
+                  isActive
+                    ? 'siftrix-card-charcoal relative overflow-hidden rounded-3xl border border-siftrix-charcoal-border shadow-2xl'
+                    : undefined
+                }
+              >
+                {isActive ? (
+                  <>
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-siftrix-champagne/80 to-transparent"
+                    />
 
-              {/* Floating Live HUD Telemetry Card */}
-              <div className="relative z-10 m-6 sm:m-8 max-w-md w-full rounded-2xl bg-black/75 backdrop-blur-md border border-siftrix-gold/45 p-5 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-siftrix-champagne">
-                      Active Telemetry Matrix
-                    </span>
-                  </div>
-                  <span className="font-mono text-xs font-bold text-siftrix-white">
-                    {activeCategory.metricValue}
-                  </span>
-                </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[26rem] sm:min-h-[30rem]">
+                      {/* Left Context Information */}
+                      <div className="lg:col-span-5 p-6 sm:p-8 md:p-10 flex flex-col justify-between space-y-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-md bg-siftrix-gold/20 border border-siftrix-gold/50 px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider text-siftrix-champagne">
+                              {category.shortTag}
+                            </span>
+                            <span className="text-xs text-[#9E968B] font-mono">
+                              SIFTRIX Core Engine
+                            </span>
+                          </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-white/5 p-3 border border-white/10">
-                    <p className="text-[10px] font-mono text-[#A8A196] uppercase">Metric</p>
-                    <p className="text-xs sm:text-sm font-bold text-siftrix-white mt-0.5">
-                      {activeCategory.metricLabel}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-white/5 p-3 border border-white/10">
-                    <p className="text-[10px] font-mono text-[#A8A196] uppercase">Mode</p>
-                    <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-0.5">
-                      Real-Time AI
-                    </p>
-                  </div>
-                </div>
+                          <h3 className="text-2xl sm:text-3xl font-bold text-siftrix-white dark:text-[#FAF6EF] tracking-tight leading-snug">
+                            {category.headline}
+                          </h3>
 
-                <div className="space-y-1.5 text-xs text-[#BEB7AC]">
-                  <div className="flex justify-between">
-                    <span>Protocol Compliance</span>
-                    <span className="text-emerald-400 font-mono">100% Passed</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-siftrix-gold to-emerald-400 w-full" />
-                  </div>
-                </div>
+                          <p className="text-sm sm:text-base text-[#CBC4B9] leading-relaxed">
+                            {category.description}
+                          </p>
+                        </div>
+
+                        {/* Highlights List */}
+                        <div className="space-y-3 pt-4 border-t border-siftrix-charcoal-border/70">
+                          {category.highlights.map((item) => (
+                            <div key={item.title} className="flex items-start gap-2.5">
+                              <span
+                                className="h-1.5 w-1.5 rounded-full bg-siftrix-gold mt-2 shrink-0"
+                                aria-hidden="true"
+                              />
+                              <div>
+                                <p className="text-xs sm:text-sm font-semibold text-siftrix-white dark:text-[#FAF6EF]">
+                                  {item.title}
+                                </p>
+                                <p className="text-xs text-[#A8A196]">{item.detail}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Call to Action Link */}
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onNavigate ? onNavigate('/scanner') : (window.location.href = '/scanner')
+                            }
+                            className="siftrix-btn-gold inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold cursor-pointer"
+                          >
+                            <span>Launch Threat Scanner</span>
+                            <span aria-hidden="true">→</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Right Large Image & Telemetry Showcase */}
+                      <div className="lg:col-span-7 relative min-h-[18rem] lg:min-h-full overflow-hidden bg-[#0C0C0F] border-t lg:border-t-0 lg:border-l border-siftrix-charcoal-border flex items-center justify-center">
+                        <img
+                          src={category.image}
+                          alt={category.headline}
+                          className="absolute inset-0 w-full h-full object-cover filter brightness-[0.75] contrast-110"
+                        />
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#15151A] via-[#15151A]/40 to-transparent"
+                        />
+
+                        {/* Floating Live HUD Telemetry Card */}
+                        <div className="relative z-10 m-3 sm:m-6 md:m-8 max-w-md w-full rounded-2xl bg-black/75 backdrop-blur-md border border-siftrix-gold/45 p-4 sm:p-5 shadow-2xl space-y-4">
+                          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="text-xs font-semibold uppercase tracking-wider text-siftrix-champagne">
+                                Active Telemetry Matrix
+                              </span>
+                            </div>
+                            <span className="font-mono text-xs font-bold text-siftrix-white">
+                              {category.metricValue}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-xl bg-white/5 p-3 border border-white/10">
+                              <p className="text-[10px] font-mono text-[#A8A196] uppercase">Metric</p>
+                              <p className="text-xs sm:text-sm font-bold text-siftrix-white mt-0.5">
+                                {category.metricLabel}
+                              </p>
+                            </div>
+                            <div className="rounded-xl bg-white/5 p-3 border border-white/10">
+                              <p className="text-[10px] font-mono text-[#A8A196] uppercase">Mode</p>
+                              <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-0.5">
+                                Real-Time AI
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 text-xs text-[#BEB7AC]">
+                            <div className="flex justify-between">
+                              <span>Protocol Compliance</span>
+                              <span className="text-emerald-400 font-mono">100% Passed</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-siftrix-gold to-emerald-400 w-full" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : null}
               </div>
-            </div>
-          </div>
+            )
+          })}
         </div>
 
         {/* 3 Modular Information Cards Below Showcase */}
@@ -311,5 +395,22 @@ export default function ModernVisualShowcase({ onNavigate }: ModernVisualShowcas
         </div>
       </div>
     </section>
+  )
+}
+
+export default function ModernVisualShowcase({
+  onNavigate,
+  defaultTabId = 'url-intelligence',
+}: ModernVisualShowcaseProps) {
+  const [activeTabId, setActiveTabId] = useState<string>(defaultTabId)
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
+
+  return (
+    <ModernVisualShowcaseContent
+      activeTabId={activeTabId}
+      onSelectTab={setActiveTabId}
+      onNavigate={onNavigate}
+      tabRefs={tabRefs}
+    />
   )
 }

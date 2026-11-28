@@ -9,7 +9,22 @@ import {
   fetchScanById,
   normalizeScanListResponse,
 } from './api'
-import { SESSION_ID_HEADER, SESSION_ID_STORAGE_KEY, loadSessionId } from '../utils/session'
+import {
+  AUTH_STORAGE_KEY,
+  getActiveUser,
+  getAuthToken,
+  logoutUser,
+} from './authService'
+import { resolveScanHistoryState } from '../utils/scanHistory'
+import {
+  AUTHORIZATION_HEADER,
+  AUTH_TOKEN_STORAGE_KEY,
+  SESSION_ID_HEADER,
+  SESSION_ID_STORAGE_KEY,
+  isMissingSessionUnauthorized,
+  loadSessionId,
+  setMemoryAuthToken,
+} from '../utils/session'
 
 function createMemoryStorage(initial: Record<string, string> = {}) {
   const backing = new Map<string, string>(Object.entries(initial))
@@ -29,6 +44,8 @@ function createMemoryStorage(initial: Record<string, string> = {}) {
 
 describe('SIFTRIX API Client & Service', () => {
   afterEach(() => {
+    setMemoryAuthToken(null)
+    logoutUser()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
@@ -622,5 +639,467 @@ describe('SIFTRIX API Client & Service', () => {
     const retrySuccess = await fetchScanById(validRecord.id)
     expect(retrySuccess.ok).toBe(true)
     expect(retrySuccess.data).toEqual(validRecord)
+  })
+
+  it('sends Authorization Bearer without X-Session-ID for authenticated requests across localStorage, sessionStorage, and memory, and never saves echoed X-Session-ID', async () => {
+    const userId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+    const staleGuestId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+    const jwtLocal = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.local_jwt'
+    const jwtSession = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.session_jwt'
+
+    const { storage: localStore, backing: localBacking } = createMemoryStorage({
+      [AUTH_TOKEN_STORAGE_KEY]: jwtLocal,
+      [SESSION_ID_STORAGE_KEY]: staleGuestId,
+      [AUTH_STORAGE_KEY]: JSON.stringify({
+        id: userId,
+        name: 'Authenticated Analyst',
+        email: 'auth@siftrix.internal',
+        role: 'analyst',
+        createdAt: '2026-11-28T02:00:00Z',
+      }),
+    })
+    const { storage: sessionStore, backing: sessionBacking } = createMemoryStorage()
+
+    vi.stubGlobal('localStorage', localStore)
+    vi.stubGlobal('sessionStorage', sessionStore)
+
+    const scanRecord = {
+      id: '44444444-4444-4444-8444-444444444444',
+      user_id: userId,
+      target_type: 'url' as const,
+      target_content: 'https://private-scan.example',
+      overall_risk_score: 14,
+      verdict: 'safe' as const,
+      risk_level: 'low' as const,
+      summary: { en: 'Clean URL', ur: 'محفوظ لنک' },
+      recommendations: { en: [], ur: [] },
+      agent_findings: {},
+      created_at: '2026-11-28T02:00:00Z',
+      updated_at: '2026-11-28T02:00:00Z',
+    }
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(scanRecord), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            [SESSION_ID_HEADER]: userId,
+          },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [scanRecord],
+            total: 1,
+            page: 1,
+            page_size: 100,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false,
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(scanRecord), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+
+    // 1. Authenticated submitScan (localStorage token): sends Bearer, omits X-Session-ID, and refuses to overwrite/recreate guest session ID
+    localBacking.delete(SESSION_ID_STORAGE_KEY)
+    const submitRes = await submitScan({
+      target_type: 'url',
+      content: 'https://private-scan.example',
+    })
+    expect(submitRes.ok).toBe(true)
+    const submitHeaders = fetchSpy.mock.calls[0][1]?.headers as Record<string, string>
+    expect(submitHeaders[AUTHORIZATION_HEADER]).toBe(`Bearer ${jwtLocal}`)
+    expect(submitHeaders[SESSION_ID_HEADER]).toBeUndefined()
+    expect(localBacking.get(SESSION_ID_STORAGE_KEY)).toBeUndefined()
+
+    // 2. Authenticated fetchScans (sessionStorage token, even when stale guest ID exists in localStorage): sends Bearer only
+    localBacking.delete(AUTH_TOKEN_STORAGE_KEY)
+    localBacking.set(SESSION_ID_STORAGE_KEY, staleGuestId)
+    sessionBacking.set(AUTH_TOKEN_STORAGE_KEY, jwtSession)
+
+    const historyRes = await fetchScans()
+    expect(historyRes.ok).toBe(true)
+    expect(historyRes.data).toHaveLength(1)
+    const historyHeaders = fetchSpy.mock.calls[1][1]?.headers as Record<string, string>
+    expect(historyHeaders[AUTHORIZATION_HEADER]).toBe(`Bearer ${jwtSession}`)
+    expect(historyHeaders[SESSION_ID_HEADER]).toBeUndefined()
+
+    // 3. Authenticated fetchScanById (memory token fallback): sends Bearer only
+    sessionBacking.delete(AUTH_TOKEN_STORAGE_KEY)
+    setMemoryAuthToken('jwt_memory_scan_detail')
+
+    const detailRes = await fetchScanById(scanRecord.id)
+    expect(detailRes.ok).toBe(true)
+    const detailHeaders = fetchSpy.mock.calls[2][1]?.headers as Record<string, string>
+    expect(detailHeaders[AUTHORIZATION_HEADER]).toBe('Bearer jwt_memory_scan_detail')
+    expect(detailHeaders[SESSION_ID_HEADER]).toBeUndefined()
+  })
+
+  it('prevents an in-flight guest scan response from recreating X-Session-ID if login completes before response arrives', async () => {
+    const { storage: localStore, backing } = createMemoryStorage()
+    vi.stubGlobal('localStorage', localStore)
+
+    const echoedGuestId = '99999999-9999-4999-8999-999999999999'
+    const mockScan = {
+      id: '55555555-5555-4555-8555-555555555555',
+      user_id: echoedGuestId,
+      target_type: 'url' as const,
+      target_content: 'https://example.org',
+      overall_risk_score: 5,
+      verdict: 'safe' as const,
+      risk_level: 'low' as const,
+      summary: { en: 'Safe', ur: 'محفوظ' },
+      recommendations: { en: [], ur: [] },
+      agent_findings: {},
+      created_at: '2026-11-28T02:01:00Z',
+      updated_at: '2026-11-28T02:01:00Z',
+    }
+
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      // Simulate user completing login while guest scan was in flight
+      backing.set(AUTH_TOKEN_STORAGE_KEY, 'jwt_logged_in_mid_flight')
+      return new Response(JSON.stringify(mockScan), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          [SESSION_ID_HEADER]: echoedGuestId,
+        },
+      })
+    })
+
+    const res = await submitScan({
+      target_type: 'url',
+      content: 'https://example.org',
+    })
+    expect(res.ok).toBe(true)
+    expect(backing.get(SESSION_ID_STORAGE_KEY)).toBeUndefined()
+  })
+
+  it('invokes logoutUser() on authenticated 401 across submitScan, fetchScans, and fetchScanById while preserving error details and never misclassifying as missing guest session', async () => {
+    const { storage: localStore, backing } = createMemoryStorage()
+    const { storage: sessionStore } = createMemoryStorage()
+    const eventTarget = new EventTarget()
+
+    vi.stubGlobal('localStorage', localStore)
+    vi.stubGlobal('sessionStorage', sessionStore)
+    vi.stubGlobal('window', {
+      localStorage: localStore,
+      sessionStorage: sessionStore,
+      addEventListener: eventTarget.addEventListener.bind(eventTarget),
+      removeEventListener: eventTarget.removeEventListener.bind(eventTarget),
+      dispatchEvent: eventTarget.dispatchEvent.bind(eventTarget),
+    })
+
+    let authChangeCount = 0
+    eventTarget.addEventListener('siftrix:auth-change', () => {
+      authChangeCount += 1
+    })
+
+    const seedAuthenticatedState = (token: string) => {
+      backing.set(AUTH_TOKEN_STORAGE_KEY, token)
+      backing.set(
+        AUTH_STORAGE_KEY,
+        JSON.stringify({
+          id: 'aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb',
+          name: 'Sarah Analyst',
+          email: 'sarah@siftrix.internal',
+          role: 'analyst',
+          createdAt: '2026-11-28T02:00:00Z',
+        })
+      )
+    }
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: 'Token has expired' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: 'Token has expired' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ detail: 'Could not validate authentication credentials' }),
+          {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+
+    // 1. Authenticated submitScan -> 401 logs out, does not retry, returns original error
+    seedAuthenticatedState('jwt_expired_scan')
+    authChangeCount = 0
+    const scan401 = await submitScan({
+      target_type: 'url',
+      content: 'https://example.com',
+    })
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(scan401.ok).toBe(false)
+    expect(scan401.status).toBe(401)
+    expect(scan401.error).toBe('Token has expired')
+    expect(getAuthToken()).toBeNull()
+    expect(getActiveUser()).toBeNull()
+    expect(authChangeCount).toBe(1)
+
+    // 2. Authenticated fetchScans -> 401 logs out, does not retry, and is NEVER classified as missing-session guest history
+    seedAuthenticatedState('jwt_expired_history')
+    authChangeCount = 0
+    const history401 = await fetchScans()
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(history401.ok).toBe(false)
+    expect(history401.status).toBe(401)
+    expect(history401.error).toBe('Token has expired')
+    expect(getAuthToken()).toBeNull()
+    expect(getActiveUser()).toBeNull()
+    expect(authChangeCount).toBe(1)
+    expect(
+      isMissingSessionUnauthorized(history401.status, localStore, history401.error)
+    ).toBe(false)
+    expect(resolveScanHistoryState(history401, localStore)).toEqual({
+      scans: [],
+      errorMessage: 'Token has expired',
+    })
+
+    // 3. Authenticated fetchScanById -> 401 logs out, does not retry, surfaces error
+    seedAuthenticatedState('jwt_invalid_detail')
+    authChangeCount = 0
+    const detail401 = await fetchScanById('44444444-4444-4444-8444-444444444444')
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(detail401.ok).toBe(false)
+    expect(detail401.status).toBe(401)
+    expect(detail401.error).toBe('Could not validate authentication credentials')
+    expect(getAuthToken()).toBeNull()
+    expect(authChangeCount).toBe(1)
+  })
+
+  it('classifies unauthenticated guest missing-session 401 cleanly without invoking logoutUser and preserves genuine non-401 API errors for authenticated users', async () => {
+    const { storage: localStore, backing } = createMemoryStorage()
+    const { storage: sessionStore } = createMemoryStorage()
+    const eventTarget = new EventTarget()
+
+    vi.stubGlobal('localStorage', localStore)
+    vi.stubGlobal('sessionStorage', sessionStore)
+    vi.stubGlobal('window', {
+      localStorage: localStore,
+      sessionStorage: sessionStore,
+      addEventListener: eventTarget.addEventListener.bind(eventTarget),
+      removeEventListener: eventTarget.removeEventListener.bind(eventTarget),
+      dispatchEvent: eventTarget.dispatchEvent.bind(eventTarget),
+    })
+
+    let authChangeCount = 0
+    eventTarget.addEventListener('siftrix:auth-change', () => {
+      authChangeCount += 1
+    })
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            detail:
+              'Authentication or X-Session-ID header required to access scan history',
+          }),
+          {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ detail: 'Service temporarily unavailable' }),
+          {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: 'User account is inactive' }), {
+          status: 403,
+          statusText: 'Forbidden',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+
+    // 1. First-time guest missing-session 401 does NOT invoke logoutUser and resolves to clean empty history
+    const guestHistoryRes = await fetchScans()
+    expect(guestHistoryRes.ok).toBe(false)
+    expect(guestHistoryRes.status).toBe(401)
+    expect(authChangeCount).toBe(0)
+    const guestHeaders = fetchSpy.mock.calls[0][1]?.headers as Record<string, string>
+    expect(guestHeaders[AUTHORIZATION_HEADER]).toBeUndefined()
+    expect(guestHeaders[SESSION_ID_HEADER]).toBeUndefined()
+    expect(resolveScanHistoryState(guestHistoryRes, localStore)).toEqual({
+      scans: [],
+      errorMessage: '',
+    })
+
+    // 2. Genuine non-401 errors (503, 403) on authenticated requests preserve JWT and remain visible to callers
+    backing.set(AUTH_TOKEN_STORAGE_KEY, 'jwt_keep_on_503')
+    const authed503 = await fetchScans()
+    expect(authed503.ok).toBe(false)
+    expect(authed503.status).toBe(503)
+    expect(authed503.error).toBe('Service temporarily unavailable')
+    expect(getAuthToken()).toBe('jwt_keep_on_503')
+    expect(authChangeCount).toBe(0)
+    expect(resolveScanHistoryState(authed503, localStore)).toEqual({
+      scans: [],
+      errorMessage: 'Service temporarily unavailable',
+    })
+
+    const authed403 = await submitScan({
+      target_type: 'url',
+      content: 'https://example.com',
+    })
+    expect(authed403.ok).toBe(false)
+    expect(authed403.status).toBe(403)
+    expect(authed403.error).toBe('User account is inactive')
+    expect(getAuthToken()).toBe('jwt_keep_on_503')
+    expect(authChangeCount).toBe(0)
+  })
+
+  it('preserves User B session and emits no spurious logout auth-change when User A stale in-flight requests return 401 across submitScan, fetchScans, and fetchScanById', async () => {
+    const { storage: localStore, backing } = createMemoryStorage()
+    const { storage: sessionStore } = createMemoryStorage()
+    const eventTarget = new EventTarget()
+
+    vi.stubGlobal('localStorage', localStore)
+    vi.stubGlobal('sessionStorage', sessionStore)
+    vi.stubGlobal('window', {
+      localStorage: localStore,
+      sessionStorage: sessionStore,
+      addEventListener: eventTarget.addEventListener.bind(eventTarget),
+      removeEventListener: eventTarget.removeEventListener.bind(eventTarget),
+      dispatchEvent: eventTarget.dispatchEvent.bind(eventTarget),
+    })
+
+    const userA = {
+      id: '11111111-aaaa-4111-8111-111111111111',
+      name: 'User A',
+      email: 'user.a@siftrix.internal',
+      role: 'analyst' as const,
+      createdAt: '2026-11-28T02:00:00Z',
+    }
+    const userB = {
+      id: '22222222-bbbb-4222-8222-222222222222',
+      name: 'User B',
+      email: 'user.b@siftrix.internal',
+      role: 'analyst' as const,
+      createdAt: '2026-11-28T02:05:00Z',
+    }
+
+    let authChangeEvents = 0
+    eventTarget.addEventListener('siftrix:auth-change', () => {
+      authChangeEvents += 1
+    })
+
+    const simulateSwitchToUserBWhileInFlight = () => {
+      // User A logs out, then User B logs in while User A's request is still in flight
+      logoutUser()
+      backing.set(AUTH_TOKEN_STORAGE_KEY, 'jwt_user_b_active')
+      backing.set(AUTH_STORAGE_KEY, JSON.stringify(userB))
+      // Reset counter right after User B login so we measure only what the resolving 401 response emits
+      authChangeEvents = 0
+    }
+
+    vi.spyOn(globalThis, 'fetch')
+      .mockImplementationOnce(async () => {
+        simulateSwitchToUserBWhileInFlight()
+        return new Response(JSON.stringify({ detail: 'Token has expired' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      })
+      .mockImplementationOnce(async () => {
+        simulateSwitchToUserBWhileInFlight()
+        return new Response(JSON.stringify({ detail: 'Token has expired' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      })
+      .mockImplementationOnce(async () => {
+        simulateSwitchToUserBWhileInFlight()
+        return new Response(JSON.stringify({ detail: 'Token has expired' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      })
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: 'Token has expired' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+
+    // 1. submitScan started as User A -> switches to User B in flight -> returns 401
+    backing.set(AUTH_TOKEN_STORAGE_KEY, 'jwt_user_a_stale_1')
+    backing.set(AUTH_STORAGE_KEY, JSON.stringify(userA))
+    const staleScanRes = await submitScan({
+      target_type: 'url',
+      content: 'https://example.com',
+    })
+    expect(staleScanRes.status).toBe(401)
+    expect(staleScanRes.error).toBe('Token has expired')
+    expect(getAuthToken()).toBe('jwt_user_b_active')
+    expect(getActiveUser()?.id).toBe(userB.id)
+    expect(authChangeEvents).toBe(0)
+
+    // 2. fetchScans started as User A -> switches to User B in flight -> returns 401
+    backing.set(AUTH_TOKEN_STORAGE_KEY, 'jwt_user_a_stale_2')
+    backing.set(AUTH_STORAGE_KEY, JSON.stringify(userA))
+    const staleHistoryRes = await fetchScans()
+    expect(staleHistoryRes.status).toBe(401)
+    expect(staleHistoryRes.error).toBe('Token has expired')
+    expect(getAuthToken()).toBe('jwt_user_b_active')
+    expect(getActiveUser()?.id).toBe(userB.id)
+    expect(authChangeEvents).toBe(0)
+
+    // 3. fetchScanById started as User A -> switches to User B in flight -> returns 401
+    backing.set(AUTH_TOKEN_STORAGE_KEY, 'jwt_user_a_stale_3')
+    backing.set(AUTH_STORAGE_KEY, JSON.stringify(userA))
+    const staleDetailRes = await fetchScanById('44444444-4444-4444-8444-444444444444')
+    expect(staleDetailRes.status).toBe(401)
+    expect(staleDetailRes.error).toBe('Token has expired')
+    expect(getAuthToken()).toBe('jwt_user_b_active')
+    expect(getActiveUser()?.id).toBe(userB.id)
+    expect(authChangeEvents).toBe(0)
+
+    // 4. Conversely, a 401 for the CURRENTLY active User B token DOES log out and emit siftrix:auth-change
+    const activeUserB401 = await fetchScans()
+    expect(activeUserB401.status).toBe(401)
+    expect(getAuthToken()).toBeNull()
+    expect(getActiveUser()).toBeNull()
+    expect(authChangeEvents).toBe(1)
   })
 })

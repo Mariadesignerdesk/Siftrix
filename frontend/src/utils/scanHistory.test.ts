@@ -1,12 +1,17 @@
-import { describe, it, expect } from 'vitest'
-import type { ScanResponse } from '../services/api'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { describe, it, expect, vi } from 'vitest'
+import ScanHistoryPage from '../pages/ScanHistoryPage'
+import type { ApiResponse, ScanResponse } from '../services/api'
 import {
   DEFAULT_SCAN_FILTERS,
   filterScans,
   hasActiveScanFilters,
   paginateItems,
+  resolveScanHistoryState,
   sortScansByField,
 } from './scanHistory'
+import { saveSessionId, type SessionStorageLike } from './session'
 
 function makeScan(
   overrides: Partial<ScanResponse> & Pick<ScanResponse, 'id'>
@@ -202,5 +207,171 @@ describe('scanHistory utilities', () => {
     expect(emptyPage.totalPages).toBe(1)
     expect(emptyPage.startIndex).toBe(0)
     expect(emptyPage.endIndex).toBe(0)
+  })
+
+  describe('resolveScanHistoryState and ScanHistoryPage guest 401 handling', () => {
+    function createSessionStorage(): SessionStorageLike {
+      const store = new Map<string, string>()
+      return {
+        getItem: (key) => store.get(key) ?? null,
+        setItem: (key, value) => {
+          store.set(key, value)
+        },
+        removeItem: (key) => {
+          store.delete(key)
+        },
+      }
+    }
+
+    it('renders clean empty history state instead of an error alert for a first-time guest 401 missing X-Session-ID', () => {
+      const emptyStorage = createSessionStorage()
+      const resolved = resolveScanHistoryState(
+        {
+          ok: false,
+          status: 401,
+          data: null,
+          error:
+            'Authentication or X-Session-ID header required to access scan history',
+        },
+        emptyStorage
+      )
+
+      expect(resolved).toEqual({
+        scans: [],
+        errorMessage: '',
+      })
+
+      const html = renderToStaticMarkup(
+        createElement(ScanHistoryPage, {
+          onNavigate: vi.fn(),
+          initialState: resolved,
+        })
+      )
+
+      expect(html).toContain('0 Total Scans')
+      expect(html).toContain('No scans recorded yet')
+      expect(html).toContain('Run Your First Scan')
+      expect(html).not.toContain('role="alert"')
+      expect(html).not.toContain('Could not load scan history')
+      expect(html).not.toContain('Scans: Unavailable')
+    })
+
+    it('preserves genuine authentication and API error alerts on /scans', () => {
+      const emptyStorage = createSessionStorage()
+      const storageWithSession = createSessionStorage()
+      saveSessionId('sess-existing-guest-001', storageWithSession)
+
+      const errorCases: Array<{
+        label: string
+        response: ApiResponse<ScanResponse[]>
+        storage: SessionStorageLike
+        expectedMessage: string
+      }> = [
+        {
+          label: 'expired Bearer token 401 without session ID',
+          response: {
+            ok: false,
+            status: 401,
+            data: null,
+            error: 'Token has expired',
+          },
+          storage: emptyStorage,
+          expectedMessage: 'Token has expired',
+        },
+        {
+          label: 'registered user UUID collision 401',
+          response: {
+            ok: false,
+            status: 401,
+            data: null,
+            error:
+              'Authentication required to access registered user scan history',
+          },
+          storage: emptyStorage,
+          expectedMessage:
+            'Authentication required to access registered user scan history',
+        },
+        {
+          label: '401 when X-Session-ID was already saved',
+          response: {
+            ok: false,
+            status: 401,
+            data: null,
+            error:
+              'Authentication or X-Session-ID header required to access scan history',
+          },
+          storage: storageWithSession,
+          expectedMessage:
+            'Authentication or X-Session-ID header required to access scan history',
+        },
+        {
+          label: 'inactive account 403',
+          response: {
+            ok: false,
+            status: 403,
+            data: null,
+            error: 'User account is inactive',
+          },
+          storage: emptyStorage,
+          expectedMessage: 'User account is inactive',
+        },
+        {
+          label: 'backend 503 outage',
+          response: {
+            ok: false,
+            status: 503,
+            data: null,
+            error: 'Service temporarily unavailable',
+          },
+          storage: emptyStorage,
+          expectedMessage: 'Service temporarily unavailable',
+        },
+      ]
+
+      for (const testCase of errorCases) {
+        const resolved = resolveScanHistoryState(
+          testCase.response,
+          testCase.storage
+        )
+        expect(resolved, testCase.label).toEqual({
+          scans: [],
+          errorMessage: testCase.expectedMessage,
+        })
+
+        const html = renderToStaticMarkup(
+          createElement(ScanHistoryPage, {
+            onNavigate: vi.fn(),
+            initialState: resolved,
+          })
+        )
+        expect(html, testCase.label).toContain('role="alert"')
+        expect(html, testCase.label).toContain('Could not load scan history')
+        expect(html, testCase.label).toContain(testCase.expectedMessage)
+        expect(html, testCase.label).toContain('Scans: Unavailable')
+        expect(html, testCase.label).not.toContain('No scans recorded yet')
+      }
+    })
+
+    it('resolves and renders recorded scan history items on 200 OK', () => {
+      const resolved = resolveScanHistoryState({
+        ok: true,
+        status: 200,
+        data: SAMPLE_DATASET.slice(0, 2),
+        error: null,
+      })
+
+      expect(resolved.errorMessage).toBe('')
+      expect(resolved.scans).toHaveLength(2)
+
+      const html = renderToStaticMarkup(
+        createElement(ScanHistoryPage, {
+          onNavigate: vi.fn(),
+          initialState: resolved,
+        })
+      )
+      expect(html).toContain('2 Total Scans')
+      expect(html).toContain('https://google.com')
+      expect(html).not.toContain('role="alert"')
+    })
   })
 })

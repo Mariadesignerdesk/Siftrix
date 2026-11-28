@@ -1,8 +1,6 @@
-import type { ReactNode } from 'react'
-import {
-  clearAuthPreviewSession,
-  type AuthPreviewSession,
-} from '../utils/authPreview'
+import { isValidElement, type ReactNode } from 'react'
+import { logoutUser } from '../services/authService'
+import type { AuthPreviewSession } from '../utils/authPreview'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
 import BrandMark from './BrandMark'
 
@@ -17,6 +15,19 @@ interface AuthFormShellProps {
   children: ReactNode
 }
 
+function hasSuccessStatusBanner(node: ReactNode): boolean {
+  if (Array.isArray(node)) {
+    return node.some(hasSuccessStatusBanner)
+  }
+  if (isValidElement<{ role?: string; children?: ReactNode }>(node)) {
+    if (node.type === 'div' && node.props.role === 'status') {
+      return true
+    }
+    return hasSuccessStatusBanner(node.props.children)
+  }
+  return false
+}
+
 export default function AuthFormShell({
   badgeLabel,
   title,
@@ -27,8 +38,11 @@ export default function AuthFormShell({
   onNavigate,
   children,
 }: AuthFormShellProps) {
-  const handlePreviewSignOut = () => {
-    clearAuthPreviewSession()
+  const isRealAuthSession = Boolean(authSession?.id?.trim())
+  const showSuccessFormState = hasSuccessStatusBanner(children)
+
+  const handleSignOut = () => {
+    logoutUser()
     onSignOut?.()
   }
 
@@ -49,7 +63,11 @@ export default function AuthFormShell({
 
         <span className="inline-flex items-center gap-1.5 rounded-full border border-siftrix-gold/50 bg-siftrix-pearl px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-siftrix-antique-ink">
           <span className="h-1.5 w-1.5 rounded-full bg-siftrix-gold" aria-hidden="true" />
-          Frontend UI Preview · Backend Auth Pending
+          {isRealAuthSession
+            ? 'Authenticated JWT Session'
+            : authSession
+              ? 'UI Preview Session'
+              : 'JWT Account Authentication'}
         </span>
       </div>
 
@@ -110,26 +128,40 @@ export default function AuthFormShell({
           </div>
         </aside>
 
-        {/* Right Form / Preview Session Card */}
+        {/* Right Form / Session Card */}
         <div className="min-w-0 lg:col-span-7 siftrix-card rounded-2xl p-5 sm:p-7 md:p-8 flex flex-col justify-center">
-          {authSession ? (
+          {authSession && !showSuccessFormState ? (
             <div className="space-y-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-siftrix-gold/55 bg-[#FAF4E7] dark:bg-siftrix-sand dark:text-siftrix-champagne px-3 py-1 text-xs font-semibold text-siftrix-charcoal">
                 <span className="h-2 w-2 rounded-full bg-siftrix-gold" aria-hidden="true" />
-                <span>UI Preview Session Active</span>
+                <span>
+                  {isRealAuthSession
+                    ? 'Authenticated Session Active'
+                    : 'UI Preview Session Active'}
+                </span>
               </div>
 
               <div className="space-y-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-siftrix-charcoal">
                   Welcome, {authSession.name}
                 </h2>
-                <p className="text-sm text-siftrix-muted-dark leading-relaxed">
-                  You submitted the frontend {authSession.mode === 'signup' ? 'registration' : 'sign-in'} preview with{' '}
-                  <span className="font-mono text-siftrix-charcoal break-all">
-                    {authSession.email}
-                  </span>
-                  . No backend account token was created; threat scans continue to run via your browser session ID.
-                </p>
+                {isRealAuthSession ? (
+                  <p className="text-sm text-siftrix-muted-dark leading-relaxed">
+                    You are signed in as{' '}
+                    <span className="font-mono text-siftrix-charcoal break-all">
+                      {authSession.email}
+                    </span>{' '}
+                    with an active JWT bearer session. Threat scans and history are linked to your SIFTRIX account.
+                  </p>
+                ) : (
+                  <p className="text-sm text-siftrix-muted-dark leading-relaxed">
+                    Active local {authSession.mode === 'signup' ? 'registration' : 'sign-in'} preview for{' '}
+                    <span className="font-mono text-siftrix-charcoal break-all">
+                      {authSession.email}
+                    </span>
+                    . No backend account token is attached to this preview session; threat scans continue to run via your browser session ID.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -156,10 +188,10 @@ export default function AuthFormShell({
                 </button>
                 <button
                   type="button"
-                  onClick={handlePreviewSignOut}
+                  onClick={handleSignOut}
                   className="py-2.5 px-4 rounded-xl border border-red-300 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
-                  Sign Out (Clear Preview)
+                  {isRealAuthSession ? 'Sign Out' : 'Sign Out (Clear Preview)'}
                 </button>
               </div>
             </div>

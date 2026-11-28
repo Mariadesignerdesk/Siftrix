@@ -1,11 +1,9 @@
 import { useState } from 'react'
+import type { ScanResponse } from '../services/api'
 import {
-  isValidScanResponse,
-  submitScan,
-  type ScanResponse,
-} from '../services/api'
-import { addXp, type UserGamificationProfile } from '../services/gamificationService'
-import { addNotification } from '../services/notificationService'
+  runScopedScanRequest,
+  type UserGamificationProfile,
+} from '../services/gamificationService'
 import XpPopup from './gamification/XpPopup'
 import {
   detectScannerTargetType,
@@ -140,48 +138,23 @@ export default function Scanner() {
     setIsAnalyzing(true)
 
     try {
-      const response = await submitScan(prepared.request)
-
-      if (!response.ok) {
+      const outcome = await runScopedScanRequest(prepared.request)
+      if (outcome.status === 'stale') {
+        return
+      }
+      if (
+        outcome.status === 'request_error' ||
+        outcome.status === 'invalid_response'
+      ) {
         setIsError(true)
-        setMessage(
-          response.error || 'Scan submission failed. Please ensure the backend server is reachable.'
-        )
+        setMessage(outcome.errorMessage)
         setScanResult(null)
         return
       }
 
-      if (!isValidScanResponse(response.data)) {
-        setIsError(true)
-        setMessage('Received an incomplete or unexpected response from the backend server.')
-        setScanResult(null)
-        return
-      }
-
-      const finalResult = response.data
-
-      setScanResult(finalResult)
-      playScanCompletionChime(finalResult.verdict)
-
-      // Award Gamification XP
-      const xpAmount = finalResult.verdict === 'malicious' ? 100 : 50
-      const xpRes = addXp(xpAmount)
-      setXpPopup({
-        amount: xpAmount,
-        profile: xpRes.profile,
-        leveledUp: xpRes.leveledUp,
-      })
-
-      // Add to in-app notification center
-      addNotification({
-        title:
-          finalResult.verdict === 'malicious'
-            ? 'Malicious Threat Isolated'
-            : 'Threat Investigation Completed',
-        message: `Analyzed ${finalResult.target_type} (${finalResult.verdict.toUpperCase()}). +${xpAmount} XP awarded.`,
-        type: finalResult.verdict === 'malicious' ? 'threat' : 'system',
-        link: `/scans/${finalResult.id}`,
-      })
+      setScanResult(outcome.scanResult)
+      playScanCompletionChime(outcome.scanResult.verdict)
+      setXpPopup(outcome.xpAward)
     } finally {
       setIsAnalyzing(false)
     }

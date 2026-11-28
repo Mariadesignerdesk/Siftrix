@@ -6,10 +6,8 @@ import {
   setThemePreference,
   type ThemeMode,
 } from '../services/themeService'
-import {
-  clearAuthPreviewSession,
-  type AuthPreviewSession,
-} from '../utils/authPreview'
+import { logoutUser } from '../services/authService'
+import type { AuthPreviewSession } from '../utils/authPreview'
 import { formatTimestamp } from '../utils/scanPresentation'
 import { handleSpaLinkClick, type NavigateFn } from '../utils/router'
 import {
@@ -79,6 +77,7 @@ export function SettingsContent({
   onNavigate,
 }: SettingsContentProps) {
   const isCheckingHealth = diagnosticState.status === 'checking'
+  const isRealAuthSession = Boolean(authSession?.id?.trim())
   const timeoutSeconds = API_CONFIG.TIMEOUT_MS / 1000
   const defaultOptionLabel =
     LANGUAGE_PREFERENCE_OPTIONS.find(
@@ -494,7 +493,11 @@ export function SettingsContent({
                 Account Profile
               </h3>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-siftrix-charcoal text-siftrix-champagne border border-siftrix-charcoal-border whitespace-nowrap shrink-0 dark:bg-siftrix-sand dark:border-siftrix-gold/40">
-                {authSession ? 'UI Preview' : 'Not Configured'}
+                {isRealAuthSession
+                  ? 'Authenticated'
+                  : authSession
+                    ? 'UI Preview'
+                    : 'Guest Session'}
               </span>
             </div>
 
@@ -509,23 +512,25 @@ export function SettingsContent({
                   </p>
                 </div>
                 <p className="text-xs sm:text-sm text-[#494641] dark:text-siftrix-muted-dark leading-relaxed">
-                  Showing a frontend-only authentication preview session. Real backend user accounts and tokens are pending integration.
+                  {isRealAuthSession
+                    ? 'Signed in with an active JWT bearer session. Threat scans and history are linked to your SIFTRIX account, while display preferences on this page are stored locally in this browser.'
+                    : 'Active local authentication preview session without a backend account token. Sign in with a registered account for JWT-authenticated access.'}
                 </p>
                 <button
                   type="button"
                   onClick={() => {
-                    clearAuthPreviewSession()
+                    logoutUser()
                     onSignOut?.()
                   }}
                   className="px-4 py-2 rounded-xl border border-red-300 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
-                  Sign Out (Clear Preview)
+                  {isRealAuthSession ? 'Sign Out' : 'Sign Out (Clear Preview)'}
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-[#494641] dark:text-siftrix-muted-dark leading-relaxed">
-                  Account authentication and user profile management are not currently configured. SIFTRIX scans and history operate without a signed-in account, and display preferences on this page are stored only in your local browser.
+                  You are currently browsing as a guest. SIFTRIX scans and history operate via your browser session ID without requiring a signed-in account, and display preferences on this page are stored locally in this browser.
                 </p>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <a
