@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.coverage
+
+# Temporary Alembic migration backups
+backend/alembic/versions/*.py.bak
