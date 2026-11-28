@@ -132,7 +132,7 @@ def generate_pseudonym(owner_id: uuid.UUID) -> str:
 
 def calculate_utc_daily_streak(db: Session, owner_id: uuid.UUID) -> int:
     """Calculate the active consecutive UTC day streak strictly from real scan records.
-    
+
     If the most recent scan is > 1 day ago, the streak is broken (returns 0).
     """
     records = (
@@ -295,7 +295,7 @@ def evaluate_and_unlock_badges(
 
 def award_scan_rewards(db: Session, scan_record: ScanRecord, owner_id: uuid.UUID) -> Optional[Dict[str, Any]]:
     """Concurrency-safe, database-enforced scan reward distribution.
-    
+
     Uses atomic conditional update on scans.xp_awarded_at to guarantee exactly-once execution.
     """
     now = datetime.now(timezone.utc)

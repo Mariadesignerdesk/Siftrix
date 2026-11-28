@@ -166,7 +166,7 @@ class GeminiClient:
                     return self._heuristic_fallback(prompt, reason=f"error_{type(e).__name__}")
 
             return self._heuristic_fallback(prompt, reason=last_fallback_reason)
-    
+
     async def chat(
         self,
         prompt: str,
@@ -255,7 +255,7 @@ class GeminiClient:
                 str(e) or repr(e),
             )
             return fallback
-        
+
     def _heuristic_fallback(self, prompt: str, reason: str = "fallback") -> Dict[str, Any]:
         """Offline fallback returning valid bilingual JSON structure, clearly marked as fallback."""
         prompt_lower = prompt.lower()

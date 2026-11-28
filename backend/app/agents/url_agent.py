@@ -121,7 +121,7 @@ VERIFIED_OFFICIAL_BRAND_DOMAINS: Dict[str, Set[str]] = {
 
 def is_official_brand_domain(hostname: str, brand: str) -> bool:
     """Check if hostname is strictly a verified official brand domain or legitimate subdomain.
-    
+
     Only exact registered domains in VERIFIED_OFFICIAL_BRAND_DOMAINS and their genuine
     subdomains (e.g. login.paypal.com) are excluded.
     Unverified domains (e.g. paypal.org, paypal.net) are NOT assumed official.
@@ -141,11 +141,11 @@ def map_confusables(text: str) -> str:
 
 def detect_brand_homoglyph(hostname: str, targeted_brands: List[str] = TARGETED_BRANDS) -> Optional[str]:
     """Detect if a hostname uses Unicode confusables or homoglyphs to impersonate a protected brand.
-    
+
     Evaluates each decoded domain label independently to prevent cross-label false positives.
     A candidate label must itself contain at least one mapped confusable character,
     and its own skeleton must match a protected brand or an explicitly supported brand-lure pattern.
-    
+
     Returns the impersonated brand name if a confirmed homoglyph attack is detected, or None.
     """
     if not hostname:

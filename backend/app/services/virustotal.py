@@ -102,7 +102,7 @@ class VirusTotalClient:
                 response.raise_for_status()
                 data = response.json()
                 attributes = data.get("data", {}).get("attributes", {})
-                
+
                 # Check if analysis is still in progress on VirusTotal
                 analysis_status = attributes.get("status")
                 if analysis_status in ("queued", "in-progress"):

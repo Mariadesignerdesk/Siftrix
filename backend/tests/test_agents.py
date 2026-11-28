@@ -2292,8 +2292,3 @@ async def test_phase4_end_to_end_scans_urdu_summary_dedicated_translations():
         assert resp_def.verdict == Verdict.SUSPICIOUS
         assert "No immediate threat detected" in resp_def.agent_findings.security_advisor.action_required
         assert_urdu_script_purity(resp_def.summary.ur)
-
-
-
-
-
