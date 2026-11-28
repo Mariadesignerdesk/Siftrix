@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SIFTRIX — Offline Security Mode</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root {
+        --color-beige: #F0EBE2;
+        --color-pearl: #F7F3EC;
+        --color-charcoal: #25252A;
+        --color-gold: #C5A15D;
+        --color-champagne: #D8B56D;
+        --color-graphite: #302E2B;
+        --color-border: #D7CFC2;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        background-color: var(--color-beige);
+        color: var(--color-graphite);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background-image: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(216, 181, 109, 0.22), transparent 75%);
+      }
+      .card {
+        background: #FFFFFF;
+        border: 1px solid var(--color-gold);
+        border-radius: 1.25rem;
+        padding: 2.5rem 2rem;
+        max-width: 32rem;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(37,37,42,0.06), 0 24px 48px -18px rgba(37,37,42,0.18);
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #A77B32, #D8B56D, #C5A15D);
+      }
+      .emblem {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1.5rem;
+        border-radius: 1rem;
+        background: var(--color-charcoal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(197, 161, 93, 0.5);
+        box-shadow: 0 4px 12px rgba(37,37,42,0.15);
+      }
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: var(--color-pearl);
+        border: 1px solid var(--color-gold);
+        color: #765214;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        border-radius: 9999px;
+        margin-bottom: 0.75rem;
+      }
+      h1 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--color-charcoal);
+        letter-spacing: -0.02em;
+        margin-bottom: 0.75rem;
+      }
+      p {
+        font-size: 0.9375rem;
+        color: #58544E;
+        line-height: 1.6;
+        margin-bottom: 1.75rem;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #EBD49E 0%, #D8B56D 32%, #C5A15D 68%, #A77B32 100%);
+        color: #1F1E22;
+        border: 1px solid #966D28;
+        font-weight: 700;
+        font-size: 0.9375rem;
+        padding: 0.75rem 1.75rem;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: transform 180ms ease, filter 180ms ease;
+        box-shadow: 0 2px 4px rgba(37,37,42,0.12), 0 10px 22px -10px rgba(167,123,50,0.56);
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.04);
+      }
+      .footer-note {
+        font-size: 0.75rem;
+        color: #77736D;
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="emblem">
+        <svg viewBox="0 0 64 64" width="36" height="36" fill="none">
+          <path d="M32 9.5L51 17.5V31.5C51 43.4 42.9 52 32 55.5C21.1 52 13 43.4 13 31.5V17.5L32 9.5Z" fill="#35343B" stroke="#D8B56D" stroke-width="2.5"/>
+          <path d="M25.2 32.6L29.9 37.3L39.4 27.1" stroke="#F7F3EC" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="badge">Offline Cached Mode</span>
+      <h1>Network Offline</h1>
+      <p>
+        Your internet connection is temporarily unavailable. SIFTRIX cached intelligence and previously inspected scans remain securely preserved in your local session.
+      </p>
+      <button class="btn" onclick="window.location.reload()">
+        <span>Retry Connection</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
+      <div class="footer-note">
+        SIFTRIX AI Threat Defense &bull; Progressive Web App
+      </div>
+    </div>
+  </body>
+</html>
